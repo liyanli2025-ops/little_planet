@@ -1,7 +1,7 @@
-import {createTeddy} from './teddy.js?v=6';
+import {createTeddy} from './teddy.js?v=7';
 import {createPet} from './pet.js?v=5';
 import {createWeather} from './weather-fx.js?v=3';
-import {createLifestyle} from './lifestyle.js?v=6';
+import {createLifestyle} from './lifestyle.js?v=7';
 import * as T from './vendor/three.module.js';
 import {R,normal,coordinates,height,river,bridge,step,distance,walkable,route} from './surface-nav.js';
 export function createScene(host,onAction){
@@ -50,7 +50,7 @@ for(const [t,l,s]of [[-.64,-.05,.9],[-.65,-.4,.88],[.34,-.18,1],[.67,-.4,.8],[.3
 const garden=place(scenery,.63,.08);for(let k=0;k<6;k++){let x=(k%3-.9)*.31,z=(Math.floor(k/3)-.5)*.33;box(garden,0xa08055,x,.025,z,.29,.065,.29);box(garden,0x735f41,x,.064,z,.24,.02,.24);for(let j=0;j<3;j++){let xx=x+(j-1)*.07;let leaf=ball(garden,0x548d43,xx,.14,z,.071,8);leaf.scale.y*=.55;ball(garden,k<3?0xd77c44:0xc5533f,xx,.15,z+.04,.045,8)}}interactive('garden',.63,.08,.55,.63,.32);
 function fence(t,l,count=5){let g=place(scenery,t,l);for(let i=0;i<count;i++){let x=(i-(count-1)/2)*.27;cylinder(g,0xc5aa78,x,.2,0,.028,.036,.42,8);ball(g,0xe1c99d,x,.42,0,.04,8)}for(let y of [.16,.32])box(g,0xcab084,0,y,0,(count-1)*.27,.048,.035)}
 fence(.65,-.06,6);fence(-.52,.11,4);fence(2.22,.44,6);
-function bench(t,l){let g=place(scenery,t,l);for(let i=0;i<4;i++)box(g,0xc6a77b,0,.3,-.14+i*.085,1.24,.035,.073);for(let i=0;i<3;i++)box(g,0xbb9763,0,.44+i*.08,-.19,1.26,.055,.033);for(let x of [-.48,.48]){box(g,0x716b4c,x,.15,0,.045,.3,.27);box(g,0x716b4c,x,.43,-.19,.043,.48,.04)}return g}bench(.92,.52);interactive('sit',.92,.52,.45,.92,.63);
+function bench(t,l){let g=place(scenery,t,l);for(let i=0;i<4;i++)box(g,0xc6a77b,0,.3,-.14+i*.085,1.68,.035,.073);for(let i=0;i<3;i++)box(g,0xbb9763,0,.44+i*.08,-.19,1.70,.055,.033);for(let x of [-.68,.68]){box(g,0x716b4c,x,.15,0,.045,.3,.27);box(g,0x716b4c,x,.43,-.19,.043,.48,.04)}return g}bench(.92,.52);interactive('sit',.92,.52,.45,.92,.63);
 const mailbox=place(scenery,-.47,.22);box(mailbox,0x9b835c,0,.24,0,.045,.48,.045);box(mailbox,0xb77b59,0,.52,0,.2,.19,.24);box(mailbox,0xf0deb6,0,.52,.124,.13,.02,.01);interactive('journal',-.47,.22,.22,-.47,.36);
 const potGroup=place(outdoor,-.4,.02);cylinder(potGroup,0xb9835b,0,.08,0,.13,.09,.16);for(let i=0;i<5;i++)flower(potGroup,(rand()-.5)*.17,(rand()-.5)*.17,0xf3c56e,.8);
 for(let t of [1.6,-2.05]){for(let j=0;j<13;j++){let l=.62+j*.034,g=place(scenery,t,l,.015);box(g,0xb89a68,0,.025,0,.7,.07,.15);for(let x of [-.32,.32]){if(j%3===0)cylinder(g,0x998150,x,.23,0,.025,.033,.43);box(g,0xc0a675,x,.39,0,.032,.035,.18)}}}

@@ -72,7 +72,7 @@ cd ~/little-planet
 sudo sh scripts/backup.sh
 ```
 
-生成 backups/planet-时间.sqlite，并执行 SQLite 完整性检查。备份使用 SQLite 在线备份接口，适合运行中的 WAL 数据库，不是只复制主文件。备份包含两人的全部记录和账号，请另存到你控制的其他设备；同一硬盘上的备份不能防止服务器磁盘损坏。
+生成 backups/planet-时间.sqlite，并执行 SQLite 完整性检查。备份使用 SQLite 在线备份接口，适合运行中的 WAL 数据库，不是只复制主文件。脚本通过 docker compose exec 从容器内部导出备份，并在服务器端再次校验；校验成功后才生成最终 .sqlite 文件，失败时清理本次临时文件。备份包含两人的全部记录和账号，请另存到你控制的其他设备；同一硬盘上的备份不能防止服务器磁盘损坏。
 
 脚本不自动删除旧备份。请留意磁盘占用，确认异地副本可用后再自行整理旧文件。可以以后为该脚本配置定时备份，此版本没有替你创建系统定时任务。
 
@@ -98,6 +98,7 @@ sudo docker stats --no-stream
 
 正常重建容器会复用数据卷。**不要执行 docker compose down -v 或删除 little-planet_planet_data**，那会删除存档。也不要执行针对整个 Docker 的 prune 清理命令来处理本项目问题。
 
+- 旧脚本备份提示找不到 /tmp/planet-…sqlite：这是 docker cp 读取 tmpfs 的限制。先执行 git pull --ff-only 获取修复后的脚本，再运行 sudo sh scripts/backup.sh；出现 Backup saved 后再重建容器。无需删除数据库或数据卷。
 - 手机上打不开，但服务器 health 正常：检查公网 IP、腾讯入站规则、端口和网络。
 - 页面提示来源不匹配：检查 .env 中 PUBLIC_ORIGIN 与地址栏一致（协议/域名/IP/端口），然后 sudo docker compose up -d。
 - 手机出现保存冲突：先导出未提交副本，再重新载入；另一台设备可能刚修改了同一份存档。

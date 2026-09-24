@@ -1,0 +1,80 @@
+/* A viewport-sized world. Only dialogs and drawers scroll, never the page. */
+html{width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none}
+#app{position:relative;width:100%;height:100vh;height:100dvh;overflow:hidden;isolation:isolate}
+#app main{position:absolute;inset:0;display:block;min-height:0;width:100%;height:100%}
+#app .scene-wrap{width:100%;height:100%;min-height:0}
+#scene{overflow:hidden}#scene canvas{max-width:100%;touch-action:none}
+#app header{position:absolute;top:0;left:0;right:0;height:calc(80px + env(safe-area-inset-top,0px));padding:calc(14px + env(safe-area-inset-top,0px)) max(18px,env(safe-area-inset-right,0px)) 14px max(18px,env(safe-area-inset-left,0px));border:0;background:none;z-index:5;pointer-events:none}
+#app header>*{pointer-events:auto}
+#app .brand{gap:8px;padding:6px 14px 6px 10px;border-radius:20px;background:#fcfcf3d9;backdrop-filter:blur(12px);font-size:18px;line-height:1.35;box-shadow:0 4px 24px #304c4009}
+#app .brandmark{font-size:30px}#app .brand small{font-size:9px}
+#world-tabs{position:absolute;left:50%;top:calc(18px + env(safe-area-inset-top,0px));transform:translateX(-50%);max-width:calc(100% - 32px);background:#fcfcf2d9;backdrop-filter:blur(14px);white-space:nowrap}
+#world-tabs button{padding:9px 19px;font-size:13px}
+.header-actions{display:flex;align-items:center;gap:8px;margin-left:auto}
+#app .identity{position:static;padding:0;width:40px;height:40px;border:1px solid #fff9;background:#fafbf5cf;border-radius:50%;display:grid;place-items:center}
+#app .identity #identity-text,#app .identity small{display:none}#app .identity .avatar{width:30px;height:30px}
+#app header .round{background:#fcfcf2d9;backdrop-filter:blur(12px)}
+#app .scene-title,#app .partner-peek{display:none}
+#app footer{position:absolute;left:50%;right:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);width:min(460px,calc(100% - 32px));height:64px;z-index:5;border:1px solid #fff9;border-radius:26px;background:#fcfcf2dc;backdrop-filter:blur(18px);box-shadow:0 8px 35px #2d4c4012}
+#app footer nav{width:100%;padding:5px;display:flex;justify-content:space-around;gap:0}
+#app footer nav button{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px;padding:6px 4px;font-size:11px;border-radius:18px}
+#app footer nav button>span{font-size:21px;line-height:1.1}
+#app .enter{top:auto;left:50%;right:auto;bottom:calc(94px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);padding:11px 18px;font-size:12px;white-space:nowrap}
+#app .scene-controls{left:max(18px,env(safe-area-inset-left,0px));right:auto;bottom:calc(98px + env(safe-area-inset-bottom,0px));transform:none;gap:7px}
+#app .walk-pad{right:max(18px,env(safe-area-inset-right,0px));bottom:calc(150px + env(safe-area-inset-bottom,0px));gap:5px}
+#app .walk-pad button{width:36px;height:36px}#app .walk-pad>div{gap:5px}
+#app #walk-status{bottom:calc(155px + env(safe-area-inset-bottom,0px));left:30%;right:30%;font-size:11px}
+.daybook-toggle{position:absolute;top:calc(96px + env(safe-area-inset-top,0px));right:max(18px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:9px;padding:10px 15px;border:1px solid #ffffffb0;border-radius:18px;background:#fcfcf2e0;backdrop-filter:blur(12px);box-shadow:0 5px 24px #304c400c;z-index:4;font-size:12px}
+.daybook-toggle>span:first-child{font-size:20px}.daybook-toggle>span:last-child{font-size:20px;color:#83927b}
+#daybook-drawer{position:fixed;inset:0 0 0 auto;margin:0;padding:0;width:min(390px,calc(100% - 28px));max-width:100%;height:100vh;height:100dvh;max-height:100dvh;border:0;border-left:1px solid #e3e7d8;border-radius:26px 0 0 26px;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
+#daybook-drawer::backdrop{background:#233d352b;backdrop-filter:blur(3px)}
+.drawer-header{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;padding:calc(20px + env(safe-area-inset-top,0px)) 24px 14px;background:#fcfbf4ee;backdrop-filter:blur(15px);border-bottom:1px solid #e4e7dc}
+.drawer-header .eyebrow{text-transform:none}
+#daybook-drawer .daybook{padding:16px 24px calc(28px + env(safe-area-inset-bottom,0px));border:0;background:none;min-width:0}
+#daybook-drawer .daybook h2{margin:12px 0 26px;font-size:24px}
+#daybook-drawer .connection{display:flex}
+.drawer-tools{border-top:1px solid var(--line);margin-top:24px;padding-top:8px}
+.drawer-tools h3{font-size:13px;font-weight:500;margin:18px 0 12px}
+#daybook-drawer #travel-controls,#daybook-drawer .outdoor-actions{position:static;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:8px}
+#daybook-drawer #travel-controls{margin-bottom:10px}
+#daybook-drawer #travel-controls button,#daybook-drawer .outdoor-actions button{font-size:12px;padding:9px 12px;background:#eef1e4;border-color:#e2e6d7}
+#daybook-drawer .weather{position:static;pointer-events:auto;padding:15px;border:1px solid var(--line);border-radius:16px;background:#f1f2e8}
+#daybook-drawer .weather-line{height:54px}#daybook-drawer .weather-line strong{font-size:38px}
+#daybook-drawer .weather-switch{position:static;display:flex;width:max-content;max-width:100%;margin-top:12px}
+#daybook-drawer .weather-switch button{width:40px;height:36px}
+#panel{overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;max-width:calc(100% - 24px)}
+#panel .grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+#panel .form-actions{flex-wrap:wrap}#panel input,#panel textarea,#panel select{min-width:0;max-width:100%}
+.memory,.memory .reply,.recent-item,.cover-mini p{overflow-wrap:anywhere;min-width:0}
+#app #activity-dock{bottom:calc(152px + env(safe-area-inset-bottom,0px));max-height:calc(100dvh - 290px);overflow:auto;overscroll-behavior:contain}
+#app .pet-active .walk-pad{bottom:calc(365px + env(safe-area-inset-bottom,0px))}
+.cloud-gate{overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;touch-action:pan-y}
+.cloud-card{flex:none;min-width:0;max-width:100%;overflow-wrap:anywhere}
+.cloud-status{top:auto;bottom:calc(153px + env(safe-area-inset-bottom,0px));left:max(18px,env(safe-area-inset-left,0px));transform:none;max-width:160px;overflow:hidden;text-overflow:ellipsis;z-index:6;font-size:11px}
+#toast{bottom:calc(220px + env(safe-area-inset-bottom,0px))}
+@media(max-width:760px){
+ #app header{height:calc(70px + env(safe-area-inset-top,0px));padding-top:calc(12px + env(safe-area-inset-top,0px))}
+ #app .brand{font-size:16px;padding:6px 12px 6px 8px}.header-actions{gap:6px}
+ #world-tabs{top:calc(82px + env(safe-area-inset-top,0px))}
+ #world-tabs button{font-size:12px;padding:8px 17px}
+ .daybook-toggle{top:calc(138px + env(safe-area-inset-top,0px));padding:8px 12px}
+ #app #walk-status{display:none}
+ #app .walk-pad button{width:32px;height:32px}
+ #app .scene-controls{gap:5px}
+ #app .scene-controls .round{width:30px;height:30px}
+ #app .enter{padding:10px 14px;font-size:11px}
+ input,textarea,select,.cloud-card input,.cloud-card select{font-size:16px}
+ #app #activity-dock{width:calc(100% - 32px)}
+}
+@media(max-height:500px) and (orientation:landscape){
+ #world-tabs{top:calc(12px + env(safe-area-inset-top,0px))}
+ #app footer{height:52px;bottom:8px;width:380px;max-width:calc(100% - 32px)}
+ #app footer nav button{font-size:10px;padding:3px}#app footer nav button>span{font-size:17px}
+ .daybook-toggle{top:78px}
+ #app .enter{bottom:72px}#app .scene-controls{bottom:76px}
+ #app .walk-pad{bottom:78px}#app .walk-pad button{width:28px;height:28px}
+ #app #walk-status{display:none}.cloud-status{bottom:123px}
+ #app #activity-dock{bottom:76px;max-height:calc(100dvh - 152px);width:min(440px,60%)}
+ #app .pet-active .walk-pad{bottom:78px}
+}

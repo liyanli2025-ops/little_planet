@@ -3,3 +3,5 @@
 #city-search{display:grid;gap:12px}#city-search label{display:grid;gap:8px}#city-results{display:grid;gap:8px;margin-top:16px}.city-choice{text-align:left;padding:13px;border:1px solid #dbe2d3;border-radius:14px;background:#f3f5ea;overflow-wrap:anywhere}#location-message{line-height:1.7}button:disabled{opacity:.5;cursor:default}
 @media(max-width:760px){#world-clock{top:calc(140px + env(safe-area-inset-top,0px));font-size:12px}}
 @media(max-height:500px) and (orientation:landscape){#world-clock{top:78px}}
+
+#city-fallback{margin-top:18px}#city-fallback summary{cursor:pointer;font-size:13px;padding:12px 0}#city-fallback[open] summary{margin-bottom:8px}

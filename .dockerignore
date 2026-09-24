@@ -1,0 +1,9 @@
+.git
+.openai
+data
+backups
+.env
+.env.*
+work
+node_modules
+tests

@@ -1,0 +1,35 @@
+name: little-planet
+services:
+  planet:
+    build: .
+    restart: unless-stopped
+    init: true
+    ports:
+      - "${BIND_ADDRESS:-0.0.0.0}:${HOST_PORT:-8081}:8080"
+    environment:
+      PUBLIC_ORIGIN: "${PUBLIC_ORIGIN:?Run scripts/configure.py first}"
+      REGISTRATION_CODE: "${REGISTRATION_CODE:?Run scripts/configure.py first}"
+    volumes:
+      - planet_data:/data
+    mem_limit: 256m
+    cpus: 0.75
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m,mode=1777
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:8080/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "5m"
+        max-file: "2"
+volumes:
+  planet_data:

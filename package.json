@@ -1,0 +1,13 @@
+{
+  "name": "little-planet",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "start": "node backend/server.mjs",
+    "demo": "node server.mjs",
+    "test": "node --test tests/*.test.mjs"
+  }
+}

@@ -20,15 +20,21 @@ export async function connectCloud(){
   gate.querySelector('button').onclick=()=>location.reload();await new Promise(()=>{});
  }
  if(!session.authenticated)session=await new Promise(resolve=>{
-  let register=false;
+  let register=!!session.registration?.first;
   const render=()=>{
-   gate.innerHTML='<div class="cloud-card"><div class="eyebrow">Echoo</div><h1>'+ (register?'为自己留一颗星球':'欢迎回到阿球')+'</h1><p class="subtle">打个喷嚏，是有人在惦记你。<br>两颗星球，用邀请码连接彼此。</p>'+(!session.secure?'<p class="cloud-warning">当前是 HTTP 试玩连接。请只用临时测试密码和测试手账；正式使用请先配置 HTTPS。</p>':'')+'<form id="cloud-auth"><label>账号名<input name="username" autocomplete="username" pattern="[a-zA-Z0-9_-]{3,24}" minlength="3" maxlength="24" placeholder="3–24 位字母、数字或下划线" required></label><label>密码<input type="password" name="password" autocomplete="'+(register?'new-password':'current-password')+'" minlength="10" maxlength="128" required></label>'+(register?'<label>注册口令<input type="password" name="code" autocomplete="off" required><small>由服务器主人从 .env 文件中取得。</small></label><label>你的形象<select name="actor"><option value="0">白熊 · 小禾 · 慢慢星</option><option value="1">棕熊 · 阿远 · 晚风星</option></select></label><p class="subtle">每个形象只属于一个账号。注册后不会自动配对。</p>':'')+'<p id="cloud-error" role="alert"></p><button type="submit" class="pill primary">'+(register?'创建账号':'登录')+'</button></form><button class="cloud-link" id="cloud-toggle">'+(register?'已有账号，去登录':'第一次来？创建账号')+'</button><small>忘记密码时，请联系服务器主人重置。</small></div>';
+
+   const info=session.registration,first=info.first;
+   const codeField='<label>'+(first?'设置两个人的加入口令':'对方的加入口令')+'<input name="code" autocomplete="off" '+(first?'pattern="[a-zA-Z0-9]{6,24}" minlength="6" maxlength="24" placeholder="自己设置，6–24 位字母或数字"':'maxlength="128" placeholder="输入第一位住户设置的口令"')+' required><small>'+(first?'告诉对方，注册时就用它。这与你自己的登录密码不同。':info.legacy?'请让第一位住户先在「账号与配对」里设置一个好记的口令。':'向第一位住户确认口令，注意字母大小写。')+'</small></label>';
+   gate.innerHTML='<div class="cloud-card"><div class="eyebrow">Echoo</div><h1>'+ (register?(first?'先住下来，等一个人':'为自己留一颗星球'):'欢迎回到阿球')+'</h1><p class="subtle">打个喷嚏，是有人在惦记你。<br>两颗星球，用邀请码连接彼此。</p>'+(!session.secure?'<p class="cloud-warning">当前是 HTTP 试玩连接。请只用临时测试密码和测试手账；正式使用请先配置 HTTPS。</p>':'')+'<form id="cloud-auth"><label>账号名<input name="username" autocomplete="username" pattern="[a-zA-Z0-9_-]{3,24}" minlength="3" maxlength="24" placeholder="3–24 位字母、数字或下划线" required></label><label>登录密码<input type="password" name="password" autocomplete="'+(register?'new-password':'current-password')+'" minlength="10" maxlength="128" required></label>'+(register?codeField+'<label>你的形象<select name="actor">'+info.availableActors.map(i=>'<option value="'+i+'">'+(i===0?'白熊 · 小禾 · 慢慢星':'棕熊 · 阿远 · 晚风星')+'</option>').join('')+'</select></label><p class="subtle">每个形象只属于一个账号。注册后再用配对邀请连接星球。</p>':'')+'<p id="cloud-error" role="alert"></p><button type="submit" class="pill primary">'+(register?'创建账号':'登录')+'</button></form><button class="cloud-link" id="cloud-toggle" '+(info.full?'disabled':'')+'>'+(info.full?'两位住户都已入住，请直接登录':register?'已有账号，去登录':first?'创建第一个账号':'用对方的口令加入')+'</button><small>忘记密码时，请联系服务器主人重置。</small></div>';
    gate.querySelector('#cloud-toggle').onclick=()=>{register=!register;render()};
    gate.querySelector('form').onsubmit=async e=>{
-    e.preventDefault();const form=e.target,b=form.querySelector('button'),d=Object.fromEntries(new FormData(form));if(register)d.actor=Number(d.actor);
+    e.preventDefault();const form=e.target,b=form.querySelector('button'),d=Object.fromEntries(new FormData(form));if(register){d.actor=Number(d.actor);d.setup=session.registration.first;}
     b.disabled=true;gate.querySelector('#cloud-error').textContent='';
     try{resolve(await api(register?'/api/register':'/api/login',d))}
-    catch(err){gate.querySelector('#cloud-error').textContent=err.message||'网络异常，请重试';b.disabled=false}
+    catch(err){
+     if(register&&err.status===409){try{session=await api('/api/session');register=!session.registration.full;render();gate.querySelector('[name="username"]').value=d.username;gate.querySelector('[name="password"]').value=d.password}catch{}}
+     gate.querySelector('#cloud-error').textContent=err.message||'网络异常，请重试';b.disabled=false;
+    }
    };
   };render();
  });
@@ -88,6 +94,7 @@ export async function connectCloud(){
   save:schedule,flush,refresh,
   attach(h){hooks=h;status.onclick=()=>h.settings();setInterval(refresh,5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();else if(!blocked)flush()})},
   async invite(){return action('/api/invite')},
+  async setJoinCode(code){return action('/api/join-code',{code})},
   async pair(code){const r=await action('/api/pair',{code});if(r)location.reload()},
   async unpair(){const r=await action('/api/unpair');if(r)location.reload()},
   async logout(){const r=await action('/api/logout');if(r)location.reload()},

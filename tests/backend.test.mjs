@@ -83,7 +83,7 @@ test('restart and verified online SQLite backup retain data and accounts',async(
 test('HTTP registration, sessions, CSRF, origin, pairing, privacy and logout',async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'little-planet-http-'));dirs.push(dir);
  const socket=net.createServer();await new Promise(r=>socket.listen(0,'127.0.0.1',r));const port=socket.address().port;await new Promise(r=>socket.close(r));
- const origin='http://127.0.0.1:'+port,code='test-only-registration-secret-123456';
+ const origin='http://127.0.0.1:'+port,code='echoo123';
  const child=spawn(process.execPath,['backend/server.mjs'],{env:{...process.env,PORT:String(port),PUBLIC_ORIGIN:origin,REGISTRATION_CODE:code,DATABASE_PATH:path.join(dir,'planet.sqlite')},stdio:['ignore','pipe','pipe']});
  let log='';child.stderr.on('data',c=>log+=c);child.stdout.on('data',c=>log+=c);
  try{
@@ -93,10 +93,10 @@ test('HTTP registration, sessions, CSRF, origin, pairing, privacy and logout',as
    return {status:res.status,body:await res.json(),cookie:res.headers.get('set-cookie')?.split(';')[0],headers:res.headers};
   }
   assert.equal((await request('/api/state')).status,401);
-  assert.equal((await request('/api/register',{username:'alice',password:'test-password-123',actor:0,code:'wrong'})).status,403);
-  const a=await request('/api/register',{username:'alice',password:'test-password-123',actor:0,code});assert.equal(a.status,201);assert.match(a.headers.get('set-cookie'),/HttpOnly/);
+  assert.equal((await request('/api/register',{username:'alice',password:'test-password-123',actor:0,code:'short',setup:true})).status,400);
+  const a=await request('/api/register',{username:'alice',password:'test-password-123',actor:0,code,setup:true});assert.equal(a.status,201);assert.match(a.headers.get('set-cookie'),/HttpOnly/);
   const auth={cookie:a.cookie,csrf:a.body.csrf};
-  const b=await request('/api/register',{username:'bobby',password:'test-password-456',actor:1,code});assert.equal(b.status,201);
+  const b=await request('/api/register',{username:'bobby',password:'test-password-456',actor:1,code,setup:false});assert.equal(b.status,201);
   assert.equal((await request('/api/register',{username:'third',password:'test-password-789',actor:1,code})).status,409);
   assert.equal((await request('/api/invite',{}, {cookie:a.cookie})).status,403);
   assert.equal((await request('/api/invite',{}, {...auth,origin:'https://evil.example'})).status,403);

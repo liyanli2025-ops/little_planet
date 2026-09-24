@@ -24,12 +24,13 @@ export function openStore(filename){
  const db=new DatabaseSync(filename,{timeout:5000});
  db.exec(`
  PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA cache_size=-4096;
+ CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS users (slot INTEGER PRIMARY KEY CHECK(slot IN (0,1)), username TEXT UNIQUE NOT NULL, salt TEXT NOT NULL, password TEXT NOT NULL, created INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS sessions (token TEXT PRIMARY KEY, slot INTEGER NOT NULL REFERENCES users(slot), csrf TEXT NOT NULL, expires INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS invitations (token TEXT PRIMARY KEY, slot INTEGER NOT NULL REFERENCES users(slot), expires INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS saves (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL, paired INTEGER NOT NULL DEFAULT 0, state TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS receipts (slot INTEGER NOT NULL, command TEXT NOT NULL, digest TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY(slot,command));
- PRAGMA user_version=1;`);
+ PRAGMA user_version=2;`);
  db.prepare('INSERT OR IGNORE INTO saves(id,revision,paired,state) VALUES(1,0,0,?)').run(JSON.stringify(initial()));
  const read=()=>{const r=db.prepare('SELECT * FROM saves WHERE id=1').get();return {...r,state:JSON.parse(r.state)}};
  const visible=(e,slot,paired)=>e.actor===slot || (paired && (e.shared || e.target===slot));

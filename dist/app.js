@@ -111,7 +111,10 @@ function cloudSettings(){
  (!cloud.session.secure?'<p class="cloud-warning">HTTP 试玩连接：请仅使用临时测试密码和测试记录。正式记录前请配置 HTTPS。</p>':'')+
  (cloud.paired?'<p>♡ 已配对：'+names[1-actor]+' · '+planets[1-actor]+'</p><div class="form-actions">'+btn('go-partner','去对方的星球',true)+btn('unpair','解除配对')+'</div>':
  '<p>尚未配对。两个人先各自注册账号，一人生成邀请码，另一人输入。</p><div class="form-actions">'+btn('make-invite','生成邀请码',true)+'</div><div id="cloud-invite"></div><form id="pair-form" class="cloud-account-form"><label for="pair-code">对方的邀请码</label><input id="pair-code" name="code" required maxlength="36" autocomplete="off" placeholder="粘贴 36 位邀请码"><button type="submit" class="pill primary">接受邀请，连接星球</button></form>')+
+
+ (cloud.session.registration?.canManage&&!cloud.session.registration.full?'<form id="join-code-form" class="cloud-account-form"><label for="join-code">设置新的加入口令</label><input id="join-code" name="code" required pattern="[a-zA-Z0-9]{6,24}" minlength="6" maxlength="24" autocomplete="off" placeholder="自己设置，6–24 位字母或数字"><p class="subtle">把口令告诉对方，用来注册第二个账号。保存后旧口令就失效。</p><button type="submit" class="pill">保存加入口令</button><p id="join-code-result" role="status"></p></form>':'')+
  '<div class="form-actions">'+btn('export-all','导出手账')+btn('logout','退出登录')+'</div>');
+ const join=$('#join-code-form');if(join)join.onsubmit=async e=>{e.preventDefault();const b=join.querySelector('button');b.disabled=true;const result=await cloud.setJoinCode(join.elements.code.value);b.disabled=false;if(result){$('#join-code-result').textContent='已保存。把刚设置的口令告诉对方，就可以注册了。';join.reset()}};
  const form=$('#pair-form');if(form)form.onsubmit=e=>{e.preventDefault();const b=form.querySelector('button');b.disabled=true;cloud.pair(form.elements.code.value.trim()).finally(()=>b.disabled=false)};
 }
 if(cloud){

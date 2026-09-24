@@ -14,7 +14,7 @@ const originURL=new URL(ORIGIN);
 if(!['http:','https:'].includes(originURL.protocol)||originURL.origin!==ORIGIN)throw Error('PUBLIC_ORIGIN 必须为完整来源（不带路径或结尾斜线）');
 const secure=originURL.protocol==='https:';
 const REGISTRATION_CODE=process.env.REGISTRATION_CODE||'';
-if(REGISTRATION_CODE.length<24)throw Error('请设置至少 24 字符的 REGISTRATION_CODE；可用部署脚本生成');
+
 const filename=process.env.DATABASE_PATH||path.resolve('data/planet.sqlite');
 const store=openStore(filename),db=store.db;
 const ttl=7*86400000;
@@ -55,11 +55,33 @@ async function passwordHash(password,salt){
  fail(hashes<2,'服务器正忙，请稍后重试',429);hashes++;
  try{return await derive(password,salt,64,{N:16384,r:8,p:1,maxmem:32*1024*1024})}finally{hashes--}
 }
+
+function registrationInfo(user){
+ const users=db.prepare('SELECT slot FROM users ORDER BY created,slot').all();
+ return {first:users.length===0,full:users.length===2,availableActors:[0,1].filter(i=>!users.some(u=>u.slot===i)),canManage:!!user&&users[0]?.slot===user.slot,
+  legacy:users.length>0&&!db.prepare("SELECT value FROM settings WHERE key='join_code'").get()};
+}
+function chosenCode(code){
+ fail(typeof code==='string'&&/^[a-zA-Z0-9]{6,24}$/.test(code),'加入口令请使用 6–24 位字母或数字');
+}
+function readJoinCode(){return db.prepare("SELECT value FROM settings WHERE key='join_code'").get()?.value||null}
+async function encodedCode(code){
+ chosenCode(code);
+ const salt=randomBytes(24).toString('hex'),digest=(await passwordHash(code,salt)).toString('hex');
+ return JSON.stringify({salt,digest});
+}
+async function matchesCode(code,encoded){
+ if(typeof code!=='string'||code.length>128)return false;
+ if(!encoded)return !!REGISTRATION_CODE&&timingSafeEqual(Buffer.from(hash(code)),Buffer.from(hash(REGISTRATION_CODE)));
+ const stored=JSON.parse(encoded),computed=await passwordHash(code,stored.salt);
+ return timingSafeEqual(computed,Buffer.from(stored.digest,'hex'));
+}
+
 async function api(req,res,p){
  if(req.method==='GET'&&p==='/api/health')return json(res,200,{ok:true});
  if(req.method==='GET'&&p==='/api/session'){
   const u=session(req);
-  return json(res,200,{authenticated:!!u,secure,actor:u?.slot,username:u?.username,csrf:u?.csrf,paired:u?store.get(u.slot).paired:false});
+  return json(res,200,{authenticated:!!u,secure,actor:u?.slot,username:u?.username,csrf:u?.csrf,paired:u?store.get(u.slot).paired:false,registration:registrationInfo(u)});
  }
  if(req.method==='GET'&&p==='/api/state')return json(res,200,store.get(requireUser(req).slot));
  fail(req.method==='POST','接口不存在',404);
@@ -69,26 +91,47 @@ async function api(req,res,p){
   rate(req,'auth',20);
   const username=credentials(b);
   if(p==='/api/register'){
-   fail(typeof b.code==='string'&&timingSafeEqual(Buffer.from(hash(b.code)),Buffer.from(hash(REGISTRATION_CODE))),'注册口令不正确',403);
+
+   const info=registrationInfo(),first=info.first,joinCode=readJoinCode();
+   fail(!info.full,'两位住户都已注册，请直接登录',409);
+   fail(b.setup===first,first?'第一位住户请直接设置加入口令，刷新页面后再试。':'第一位住户已经注册，请刷新页面并输入对方设置的加入口令。',409);
+   if(first)chosenCode(b.code);
+   else fail(await matchesCode(b.code,joinCode),'加入口令不正确，请向第一位住户确认',403);
    fail(b.actor===0||b.actor===1,'请选择自己的熊');
    fail(!db.prepare('SELECT slot FROM users WHERE slot=? OR username=?').get(b.actor,username),'这个账号名或角色已被使用',409);
+   const encoded=first?await encodedCode(b.code):null;
    const salt=randomBytes(24).toString('hex'),password=(await passwordHash(b.password,salt)).toString('hex');
-   // Recheck after asynchronous hashing: simultaneous registrations cannot take the same slot.
    store.transaction(()=>{
+    // Both account creation and the first chosen code commit together. Concurrent setup cannot replace either.
+    fail(registrationInfo().first===first,'注册状态已变化，请刷新页面后再试',409);
+    fail(first||readJoinCode()===joinCode,'加入口令刚刚更新，请向第一位住户确认后重试',409);
     fail(!db.prepare('SELECT slot FROM users WHERE slot=? OR username=?').get(b.actor,username),'这个账号名或角色已被使用',409);
     db.prepare('INSERT INTO users(slot,username,salt,password,created) VALUES(?,?,?,?,?)').run(b.actor,username,salt,password,Date.now());
+    if(first)db.prepare("INSERT INTO settings(key,value) VALUES('join_code',?)").run(encoded);
    });
    const auth=issue(b.actor,res);
-   return json(res,201,{authenticated:true,actor:b.actor,username,secure,...auth,...store.get(b.actor)});
+   return json(res,201,{authenticated:true,actor:b.actor,username,secure,registration:registrationInfo({slot:b.actor}),...auth,...store.get(b.actor)});
   }
   const user=db.prepare('SELECT * FROM users WHERE username=?').get(username);
   const computed=await passwordHash(b.password,user?.salt||'invalid-user-salt');
   fail(user&&timingSafeEqual(computed,Buffer.from(user.password,'hex')),'账号或密码不正确',401);
   const auth=issue(user.slot,res);
-  return json(res,200,{authenticated:true,actor:user.slot,username,secure,...auth,...store.get(user.slot)});
+  return json(res,200,{authenticated:true,actor:user.slot,username,secure,registration:registrationInfo(user),...auth,...store.get(user.slot)});
  }
  const u=requireUser(req);
  fail(req.headers['x-csrf-token']===u.csrf,'会话验证失败，请刷新页面',403);
+
+ if(p==='/api/join-code'){
+  rate(req,'join-code',20);
+  fail(registrationInfo(u).canManage,'只有第一位住户可以修改加入口令',403);
+  fail(!registrationInfo().full,'两位住户都已注册，无需再设置加入口令',409);
+  const encoded=await encodedCode(b?.code);
+  store.transaction(()=>{
+   fail(!registrationInfo().full,'两位住户都已注册，无需再设置加入口令',409);
+   db.prepare("INSERT INTO settings(key,value) VALUES('join_code',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(encoded);
+  });
+  return json(res,200,{ok:true});
+ }
  if(p==='/api/state'){rate(req,'save',400);return json(res,200,store.save(u.slot,b))}
  if(p==='/api/invite'){rate(req,'invite',30);return json(res,200,store.invite(u.slot))}
  if(p==='/api/pair'){rate(req,'pair',20);return json(res,200,store.accept(u.slot,b.code))}

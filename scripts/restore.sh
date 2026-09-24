@@ -15,7 +15,7 @@ docker compose run --rm -T --no-deps --user 0:0 -v "$source_file:/restore.sqlite
 import fs from "node:fs"; import {DatabaseSync} from "node:sqlite";
 const source=new DatabaseSync("/restore.sqlite",{readOnly:true});
 if(source.prepare("PRAGMA integrity_check").get().integrity_check!=="ok")throw Error("Invalid backup");
-if(source.prepare("PRAGMA user_version").get().user_version!==1)throw Error("Unsupported schema");
+if(![1,2].includes(source.prepare("PRAGMA user_version").get().user_version))throw Error("Unsupported schema");
 for(const table of ["users","sessions","invitations","saves","receipts"])source.prepare("SELECT * FROM "+table+" LIMIT 1").all();
 source.close();
 const target="/data/planet.sqlite";

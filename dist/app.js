@@ -1,4 +1,4 @@
-import {createScene} from './scene.js?v=5';
+import {createScene} from './scene.js?v=6';
 import {createModelView} from './model-room.js?v=3';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const names=['小禾','阿远'],planets=['慢慢星','晚风星'],cities=['上海','杭州'];

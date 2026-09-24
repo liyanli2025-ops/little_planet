@@ -1,3 +1,4 @@
+import {createRainGear} from './rain-gear.js?v=6';
 import * as T from './vendor/three.module.js';
 export function createTeddy(parent,identity=0){
  const avatar=new T.Group(),body=new T.Group();parent.add(avatar);avatar.add(body);body.name='body';
@@ -34,7 +35,8 @@ export function createTeddy(parent,identity=0){
  for(let y of [.48,.39,.3]){box(boy,0xc2a171,0,y,.176,.17,.012,.014);for(let x of [-.065,.065]){let toggle=cyl(boy,0xad7a43,x,y,.19,.012,.012,.043);toggle.rotation.z=Math.PI/2}}
  for(let s of [-1,1])box(boy,0x416977,s*.12,.32,.156,.074,.083,.016);
  cyl(boyHat,0x9c4c38,0,.218,0,.264,.272,.023);cyl(boyHat,0xb25a40,0,.267,-.005,.14,.19,.11);cyl(boyHat,0x783d30,0,.23,0,.185,.192,.022);
- function setIdentity(i){const female=i===0;fur.color.set(female?0xd9b783:0xb77a43);cloth.color.set(female?0xb77880:0x3c7184);girl.visible=girlHat.visible=female;boy.visible=boyHat.visible=!female;face.scale.set(female?.23:.24,female?.217:.225,female?.2:.205);avatar.userData.identity=i}
- setIdentity(identity);return {avatar,body,legs,arms,setIdentity};
+ const rainGear=createRainGear({body,head,arms});let rainy=false,currentIdentity=identity;
+ function setIdentity(i){currentIdentity=i;const female=i===0;fur.color.set(female?0xd9b783:0xb77a43);cloth.color.set(female?0xb77880:0x3c7184);girl.visible=girlHat.visible=female&&!rainy;boy.visible=boyHat.visible=!female&&!rainy;if(rainy)cloth.color.set(0xe8ba47);face.scale.set(female?.23:.24,female?.217:.225,female?.2:.205);avatar.userData.identity=i}
+ setIdentity(identity);return {avatar,body,legs,arms,setIdentity,rain(v){if(rainy!==v){rainy=v;rainGear.set(v);setIdentity(currentIdentity)}},rainTick(t,hold=true,shared=false){rainGear.tick(t,hold,shared)},rainState:rainGear.state};
 }
 

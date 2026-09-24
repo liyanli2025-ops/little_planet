@@ -16,13 +16,13 @@ export async function connectCloud(){
   }finally{clearTimeout(timeout)}
  }
  try{session=await api('/api/session')}catch{
-  gate.innerHTML='<div class="cloud-card"><h1>暂时连接不到小星球</h1><p>请检查网络或服务器，然后重新载入。云端模式不会切换为本地存档。</p><button class="pill primary" id="cloud-reload">重新载入</button></div>';
+  gate.innerHTML='<div class="cloud-card"><h1>暂时连接不到阿球</h1><p>请检查网络或服务器，然后重新载入。云端模式不会切换为本地存档。</p><button class="pill primary" id="cloud-reload">重新载入</button></div>';
   gate.querySelector('button').onclick=()=>location.reload();await new Promise(()=>{});
  }
  if(!session.authenticated)session=await new Promise(resolve=>{
   let register=false;
   const render=()=>{
-   gate.innerHTML='<div class="cloud-card"><div class="eyebrow">OUR LITTLE SKIES</div><h1>'+ (register?'为自己留一颗星球':'回到你的小星球')+'</h1><p class="subtle">两个账号，两颗星球。用邀请码连接彼此。</p>'+(!session.secure?'<p class="cloud-warning">当前是 HTTP 试玩连接。请只用临时测试密码和测试手账；正式使用请先配置 HTTPS。</p>':'')+'<form id="cloud-auth"><label>账号名<input name="username" autocomplete="username" pattern="[a-zA-Z0-9_-]{3,24}" minlength="3" maxlength="24" placeholder="3–24 位字母、数字或下划线" required></label><label>密码<input type="password" name="password" autocomplete="'+(register?'new-password':'current-password')+'" minlength="10" maxlength="128" required></label>'+(register?'<label>注册口令<input type="password" name="code" autocomplete="off" required><small>由服务器主人从 .env 文件中取得。</small></label><label>你的形象<select name="actor"><option value="0">白熊 · 小禾 · 慢慢星</option><option value="1">棕熊 · 阿远 · 晚风星</option></select></label><p class="subtle">每个形象只属于一个账号。注册后不会自动配对。</p>':'')+'<p id="cloud-error" role="alert"></p><button type="submit" class="pill primary">'+(register?'创建账号':'登录')+'</button></form><button class="cloud-link" id="cloud-toggle">'+(register?'已有账号，去登录':'第一次来？创建账号')+'</button><small>忘记密码时，请联系服务器主人重置。</small></div>';
+   gate.innerHTML='<div class="cloud-card"><div class="eyebrow">Echoo</div><h1>'+ (register?'为自己留一颗星球':'欢迎回到阿球')+'</h1><p class="subtle">打个喷嚏，是有人在惦记你。<br>两颗星球，用邀请码连接彼此。</p>'+(!session.secure?'<p class="cloud-warning">当前是 HTTP 试玩连接。请只用临时测试密码和测试手账；正式使用请先配置 HTTPS。</p>':'')+'<form id="cloud-auth"><label>账号名<input name="username" autocomplete="username" pattern="[a-zA-Z0-9_-]{3,24}" minlength="3" maxlength="24" placeholder="3–24 位字母、数字或下划线" required></label><label>密码<input type="password" name="password" autocomplete="'+(register?'new-password':'current-password')+'" minlength="10" maxlength="128" required></label>'+(register?'<label>注册口令<input type="password" name="code" autocomplete="off" required><small>由服务器主人从 .env 文件中取得。</small></label><label>你的形象<select name="actor"><option value="0">白熊 · 小禾 · 慢慢星</option><option value="1">棕熊 · 阿远 · 晚风星</option></select></label><p class="subtle">每个形象只属于一个账号。注册后不会自动配对。</p>':'')+'<p id="cloud-error" role="alert"></p><button type="submit" class="pill primary">'+(register?'创建账号':'登录')+'</button></form><button class="cloud-link" id="cloud-toggle">'+(register?'已有账号，去登录':'第一次来？创建账号')+'</button><small>忘记密码时，请联系服务器主人重置。</small></div>';
    gate.querySelector('#cloud-toggle').onclick=()=>{register=!register;render()};
    gate.querySelector('form').onsubmit=async e=>{
     e.preventDefault();const form=e.target,b=form.querySelector('button'),d=Object.fromEntries(new FormData(form));if(register)d.actor=Number(d.actor);
@@ -43,7 +43,7 @@ export async function connectCloud(){
  function showFailure(error){
   blocked=true;document.querySelectorAll('dialog[open]').forEach(d=>d.close());status.textContent=error.status===409?'⚠ 存档有更新':'⚠ 尚未保存';document.body.append(gate);
   gate.innerHTML='<div class="cloud-card"><h1>这次修改尚未确认保存</h1><p>'+escapeHTML(error.status?error.message:'网络连接中断。服务器可能已收到修改，重试不会重复赠送物品。')+'</p><p class="subtle">请先导出未提交副本。重新载入会放弃当前页面尚未提交的修改。</p><div class="cloud-buttons"><button id="cloud-draft" class="pill">导出未提交副本</button>'+(!error.status||error.status>=500?'<button id="cloud-retry" class="pill primary">重试保存</button>':'')+'<button id="cloud-reload" class="pill">放弃未提交修改，重新载入</button></div></div>';
-  gate.querySelector('#cloud-draft').onclick=()=>download(hooks.getState(),'little-planet-unsaved.json');
+  gate.querySelector('#cloud-draft').onclick=()=>download(hooks.getState(),'echoo-unsaved.json');
   gate.querySelector('#cloud-reload').onclick=()=>location.reload();
   const retry=gate.querySelector('#cloud-retry');if(retry)retry.onclick=()=>{blocked=false;gate.remove();flush()};
  }
@@ -91,6 +91,6 @@ export async function connectCloud(){
   async pair(code){const r=await action('/api/pair',{code});if(r)location.reload()},
   async unpair(){const r=await action('/api/unpair');if(r)location.reload()},
   async logout(){const r=await action('/api/logout');if(r)location.reload()},
-  exportDraft(){download(hooks.getState(),'little-planet-save.json')}
+  exportDraft(){download(hooks.getState(),'echoo-save.json')}
  };
 }

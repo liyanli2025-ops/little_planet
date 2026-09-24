@@ -125,6 +125,6 @@ export const server=http.createServer(async(req,res)=>{
  }
 });
 server.requestTimeout=20000;server.headersTimeout=15000;server.keepAliveTimeout=5000;
-server.listen(PORT,HOST,()=>console.log('Little Planet listening on '+HOST+':'+PORT+'; public origin '+ORIGIN));
+server.listen(PORT,HOST,()=>console.log('Echoo listening on '+HOST+':'+PORT+'; public origin '+ORIGIN));
 function shutdown(){server.close(()=>{db.close();process.exit(0)});setTimeout(()=>process.exit(1),8000).unref()}
 process.on('SIGTERM',shutdown);process.on('SIGINT',shutdown);

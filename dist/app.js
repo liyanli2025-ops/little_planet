@@ -105,7 +105,7 @@ $('#activity-dock').addEventListener('click',e=>{const b=e.target.closest('[data
 
 
 function cloudSettings(){
- modal('settings','OUR CONNECTED SKIES','账号与两颗星球',
+ modal('settings','Echoo','账号与两颗星球',
  '<p>你好，'+esc(cloud.session.username)+'。这是'+names[actor]+'的'+planets[actor]+'。</p>'+
  '<div class="cloud-account-note">账号身份固定，存档保存在服务器。私人手账仅本人可读；配对后可访问彼此的院子、冰箱、餐桌和共同回忆。<br>当前为异步互访，每隔约 5 秒在空闲时同步。天气仍是手动演示，双人同时走动、并坐与共同做饭尚未开放。</div>'+
  (!cloud.session.secure?'<p class="cloud-warning">HTTP 试玩连接：请仅使用临时测试密码和测试记录。正式记录前请配置 HTTPS。</p>':'')+

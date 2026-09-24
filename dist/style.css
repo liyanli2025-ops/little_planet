@@ -14,3 +14,4 @@ dialog.model-panel{width:min(760px,calc(100vw - 24px))}#model-stage{height:330px
 
 
 .selected-food{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#eeefdf;border-radius:14px;padding:14px;margin-top:12px}.selected-food small{display:block;font-size:11px;color:#8a917f;margin-top:4px}.selected-food button{border-radius:18px;padding:8px 13px;font-size:12px}.model-picks button.active{background:#d4e0c5;border-color:#acbd9b}@media(max-width:760px){.selected-food{align-items:flex-start;flex-direction:column}.cooking-progress{gap:4px}.cooking-progress span{padding:4px 7px;font-size:10px}}
+.pet-active.engaged .walk-pad,.pet-active.engaged #walk-status{visibility:visible}.pet-active #activity-dock{max-width:470px}.pet-active .scene-title{visibility:hidden}@media(max-width:760px){.pet-active .walk-pad{bottom:290px}.pet-active #walk-status{display:none}.outdoor-actions{gap:5px}.outdoor-actions button{padding:6px 10px}}

@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {randomBytes,scrypt,timingSafeEqual} from 'node:crypto';
 import {promisify} from 'node:util';
 import {openStore,AppError,fail,hash} from './store.mjs';
+import {createWeatherService} from './weather.mjs';
 const derive=promisify(scrypt);
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..','dist');
 const PORT=Number(process.env.PORT||8080),HOST=process.env.HOST||'127.0.0.1';
@@ -17,6 +18,13 @@ const REGISTRATION_CODE=process.env.REGISTRATION_CODE||'';
 
 const filename=process.env.DATABASE_PATH||path.resolve('data/planet.sqlite');
 const store=openStore(filename),db=store.db;
+const weatherService=createWeatherService(db);
+async function environmentFor(slot){
+ const result=await weatherService.get(slot,store.get(slot).paired);
+ // Pairing can change while an upstream forecast is in flight.
+ if(!store.get(slot).paired)result.worlds[1-slot]=null;
+ return result;
+}
 const ttl=7*86400000;
 const rates=new Map();
 function rate(req,kind,max=20){
@@ -83,6 +91,12 @@ async function api(req,res,p){
   const u=session(req);
   return json(res,200,{authenticated:!!u,secure,actor:u?.slot,username:u?.username,csrf:u?.csrf,paired:u?store.get(u.slot).paired:false,registration:registrationInfo(u)});
  }
+ if(req.method==='GET'&&p==='/api/environment'){
+  const u=requireUser(req);rate(req,'weather',120);return json(res,200,await environmentFor(u.slot));
+ }
+ if(req.method==='GET'&&p==='/api/cities'){
+  requireUser(req);rate(req,'cities',40);return json(res,200,{cities:await weatherService.search(new URL(req.url,'http://local').searchParams.get('q'))});
+ }
  if(req.method==='GET'&&p==='/api/state')return json(res,200,store.get(requireUser(req).slot));
  fail(req.method==='POST','接口不存在',404);
  fail(req.headers.origin===ORIGIN,'请求来源不匹配，请检查 PUBLIC_ORIGIN',403);
@@ -121,6 +135,9 @@ async function api(req,res,p){
  const u=requireUser(req);
  fail(req.headers['x-csrf-token']===u.csrf,'会话验证失败，请刷新页面',403);
 
+ if(p==='/api/environment'){
+  rate(req,'location',30);weatherService.configure(u.slot,b);return json(res,200,await environmentFor(u.slot));
+ }
  if(p==='/api/join-code'){
   rate(req,'join-code',20);
   fail(registrationInfo(u).canManage,'只有第一位住户可以修改加入口令',403);

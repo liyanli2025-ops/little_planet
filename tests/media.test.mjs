@@ -24,3 +24,5 @@ percent=100;r=await m.progress(0,id);assert.match(r.state.events[0].title,/读�
 cmd(s,m,0,{type:'share-progress',kind:'book',id,shared:false});percent=20;r=await m.progress(0,id);assert.match(r.state.events[0].body,/100% 更新到 20%/);assert.equal(r.state.events[0].shared,false);assert.equal(s.get(1).state.events.length,2);
 const v=s.get(0);s.save(0,{state:v.state,revision:v.revision,command:randomUUID()});
 });
+
+test('unpaired reflection saves privately and rejected sharing preserves the saved journal',t=>{const {s,m}=setup(t);cmd(s,m,0,{type:'add',kind:'book',title:'自己的书',shared:false});const id=m.view(0).items[0].id;cmd(s,m,0,{type:'note',kind:'book',id,message:'私人读书感想',shared:false});const before=s.get(0);assert.equal(before.state.events[0].body,'私人读书感想');assert.equal(before.state.events[0].shared,false);assert.throws(()=>cmd(s,m,0,{type:'note',kind:'book',id,message:'共同感想',shared:true}),/配对/);assert.deepEqual(s.get(0),before);assert.equal(s.get(1).state.events.length,0);});

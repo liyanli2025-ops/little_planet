@@ -78,3 +78,5 @@ body{position:fixed;inset:0;width:100%;height:100%;overflow:hidden;overscroll-be
  #app #activity-dock{bottom:76px;max-height:calc(100dvh - 152px);width:min(440px,60%)}
  #app .pet-active .walk-pad{bottom:78px}
 }
+
+#house-floor{position:absolute;top:calc(148px + env(safe-area-inset-top,0px));left:18px;z-index:4;background:#fcfcf2ed;font-size:12px}#house-floor[hidden]{display:none}@media(max-width:760px){#house-floor{top:calc(191px + env(safe-area-inset-top,0px))}}

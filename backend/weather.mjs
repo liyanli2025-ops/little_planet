@@ -1,3 +1,4 @@
+import {nearestPlace} from './place.mjs';
 import {fail} from './store.mjs';
 const TTL=15*60*1000;
 export function validLocation(v){
@@ -31,6 +32,7 @@ export function createWeatherService(db,request=fetch,clock=Date.now){
  function configure(slot,b){
   fail(b&&['auto','manual'].includes(b.mode),'请选择真实天气或手动天气');
   const old=read(slot),location=b.location===undefined?old.location:validLocation(b.location);
+  if(location&&['设备所在地','定位中','地名待识别'].includes(location.label))location.label=nearestPlace(location.latitude,location.longitude)||'地名待识别';
   const same=JSON.stringify(location)===JSON.stringify(old.location);
   const next={mode:b.mode,location,snapshot:same?old.snapshot:null};write(slot,next);retry.delete(slot);return next;
  }
@@ -49,7 +51,7 @@ export function createWeatherService(db,request=fetch,clock=Date.now){
  async function get(slot,paired){
   const slots=paired?[0,1]:[slot];await Promise.all(slots.map(refresh));
   const worlds=[null,null];
-  for(const i of slots){const c=read(i);worlds[i]={mode:c.mode,location:c.location?{label:c.location.label}:null,snapshot:c.snapshot,stale:!!c.snapshot&&clock()-c.snapshot.fetchedAt>=TTL,unavailable:c.mode==='auto'&&!!c.location&&!c.snapshot}}
+  for(const i of slots){const c=read(i);if(c.location?.label==='设备所在地'){c.location.label=nearestPlace(c.location.latitude,c.location.longitude)||'地名待识别';write(i,c)}worlds[i]={mode:c.mode,location:c.location?{label:c.location.label}:null,snapshot:c.snapshot,stale:!!c.snapshot&&clock()-c.snapshot.fetchedAt>=TTL,unavailable:c.mode==='auto'&&!!c.location&&!c.snapshot}}
   return {worlds,source:'Open-Meteo'};
  }
  return {search,configure,get};

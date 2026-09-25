@@ -4,9 +4,9 @@ const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>'
 export function createEnvironment({cloud,context,modal,toast,cities,planets}){
  let worlds=[null,null],lastScene='',serial=0,busy=false;
  let locationNotice='',locating=false,locationAttempted=false,locationToken=0;
- const clock=document.createElement('div');clock.id='world-clock';clock.setAttribute('aria-label','所在地时间');$('.scene-wrap').append(clock);
+ const clock=document.createElement('button');clock.type='button';clock.id='world-clock';clock.setAttribute('aria-label','所在地时间');$('.scene-wrap').append(clock);
  const controls=document.createElement('div');controls.className='live-weather-controls';
- controls.innerHTML='<div class="weather-live-actions"><button id="location-settings" class="pill">设置所在地</button><button id="sync-weather" class="pill">刷新天气</button></div><p id="weather-status" class="subtle" role="status"></p><small>天气数据：<a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a><br>下方按钮可切换为手动天气</small>';
+ controls.innerHTML='<div class="weather-live-actions"><button id="location-settings" class="pill">设置所在地</button><button id="sync-weather" class="pill">刷新天气</button></div><p id="weather-status" class="subtle" role="status"></p><small>天气数据：<a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a><br>地名：<a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> · 附近城市（CC BY 4.0）</small>';
  $('.weather-switch').before(controls);
  async function api(route,data){
   const r=await fetch(route,{method:data===undefined?'GET':'POST',headers:data===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':cloud.session.csrf},body:data===undefined?undefined:JSON.stringify(data),signal:AbortSignal.timeout(20000)});
@@ -17,7 +17,7 @@ export function createEnvironment({cloud,context,modal,toast,cities,planets}){
   const fallback=state.worlds[world].weather;
   const k=manual?{mode:fallback,icon:({sun:'☀',rain:'☂',snow:'❄',night:'☾'})[fallback],label:'手动天气'}:s?weatherKind(s.code):{mode:'sun',icon:'◌',label:'等待天气'};
   const night=manual&&fallback==='night'||t.night;
-  clock.textContent=t.text+(w?.location?.label?' · '+w.location.label.split(' · ')[0]:'');
+  const city=w?.location?.label?.split(' · ')[0];const label=city&&city!=='设备所在地'?city:(locating?'定位中…':'定位未开启');const weatherText=manual?'手动天气':s?k.label+(w.stale?' · 上次更新':''):'天气待同步';clock.innerHTML='<span class="sky-place">'+escape(label)+'</span><strong>'+t.text+'</strong><span class="sky-weather">'+escape(k.mode==='sun'&&night&&!k.cloudy?'☾':k.icon)+' '+(!manual&&s?Math.round(s.temperature)+'° · ':'')+escape(weatherText)+'</span>';clock.hidden=!!context().inside;clock.setAttribute('aria-label',label+'，'+t.text+'，'+weatherText+'，查看天气');clock.classList.toggle('sky-compact',visual?.readState?.().view==='follow');
   $('#date-stamp').textContent=t.date.slice(5).replace('-',' / ');
   $('#place').textContent=planets[world]+' · '+(w?.location?.label||'尚未设置所在地');
   $('#weather-icon').textContent=k.mode==='sun'&&night&&!k.cloudy?'☾':k.icon;
@@ -40,7 +40,7 @@ export function createEnvironment({cloud,context,modal,toast,cities,planets}){
    const p=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:false,timeout:12000,maximumAge:300000}));
    if(token!==locationToken)return false;
    locationNotice='已获取大致位置，正在同步天气…';paint();
-   const ok=await configure({mode:'auto',location:{label:'设备所在地',latitude:Math.round(p.coords.latitude*10)/10,longitude:Math.round(p.coords.longitude*10)/10}});
+   const ok=await configure({mode:'auto',location:{label:'定位中',latitude:Math.round(p.coords.latitude*10)/10,longitude:Math.round(p.coords.longitude*10)/10}});
    locationNotice=ok?'已自动同步手机所在地。':'位置已获取，但未确认保存成功，请重试。';return ok;
   }catch(e){
    if(token===locationToken)locationNotice=e.code===1?'定位未获允许；可在浏览器设置中允许后重试。':e.code===3?'定位超时，请点击重新定位，或使用备用城市选择。':'暂时无法获取位置，请点击重新定位，或使用备用城市选择。';
@@ -88,6 +88,7 @@ export function createEnvironment({cloud,context,modal,toast,cities,planets}){
   };
   if($('#restore-auto'))$('#restore-auto').onclick=async()=>{++locationToken;locationNotice='';message.textContent=await configure({mode:'auto'})?'已恢复自动天气。':'恢复失败，请重试。'};
  }
+ clock.onclick=()=>{const drawer=$('#daybook-drawer');if(!drawer.open)drawer.showModal();$('.weather').scrollIntoView({block:'center',behavior:'smooth'})};
  $('#location-settings').onclick=settings;
  $('#sync-weather').onclick=load;
  setInterval(()=>{if(!document.hidden)paint()},1000);

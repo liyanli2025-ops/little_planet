@@ -16,13 +16,23 @@ export function createMusicService(store,{fetcher=fetch}={}){
   const u=new URL('https://u.y.qq.com/cgi-bin/musicu.fcg');u.search=new URLSearchParams({format:'json',data:JSON.stringify({comm:{ct:23,cv:0},data_id:{module:'track_info.UniformRuleCtrlServer',method:'GetTrackInfo',param:{mids:[mid],types:[0]}}})});
   try{const r=await fetcher(u.href,{redirect:'error',signal:AbortSignal.timeout(10000)});fail(r.ok,'QQ 音乐暂时连接不上，请重试',502);let n=0,parts=[];for await(const c of r.body){n+=c.length;fail(n<2000000,'歌曲数据过大',502);parts.push(c)}const d=JSON.parse(Buffer.concat(parts));const x=d.data_id?.data?.tracks?.[0];fail(x&&x.mid===mid,'没有找到这首 QQ 音乐歌曲',404);const album=x.album?.mid;return {id:'qq:'+mid,mid,provider:'qq',title:String(x.title||x.name||'未命名歌曲').slice(0,160),artist:Object.values(x.singer||{}).map(s=>s.name).join(' / ').slice(0,160),cover:/^[a-zA-Z0-9]{14}$/.test(album||'')?'https://y.gtimg.cn/music/photo_new/T002R300x300M000'+album+'.jpg':'',url:'https://y.qq.com/n/ryqq/songDetail/'+mid,duration:Number(x.interval)||0};}catch(e){if(e.status)throw e;fail(false,'QQ 音乐暂时连接不上，请重试',502)}
  }
+
+ let refreshed=0,refreshing=null,discoveryWarning='';
+ async function discover(){
+  if(Date.now()-refreshed<3600000)return;if(refreshing)return refreshing;
+  refreshing=(async()=>{let count=0;const results=await Promise.allSettled([26,27,4].map(async topid=>{const u=new URL('https://u.y.qq.com/cgi-bin/musicu.fcg');u.search=new URLSearchParams({format:'json',data:JSON.stringify({comm:{ct:24,cv:0},top:{module:'musicToplist.ToplistInfoServer',method:'GetDetail',param:{topid,offset:0,num:300}}})});const r=await fetcher(u.href,{redirect:'error',signal:AbortSignal.timeout(12000)});fail(r.ok,'榜单暂不可用',502);let size=0,parts=[];for await(const c of r.body){size+=c.length;fail(size<5000000,'榜单数据过大',502);parts.push(c)}const d=JSON.parse(Buffer.concat(parts));fail(d.top?.code===0&&Array.isArray(d.top?.data?.songInfoList),'榜单暂不可用',502);return d.top.data.songInfoList;}));
+   for(const r of results){if(r.status!=='fulfilled')continue;for(const x of r.value){if(x.pay?.pay_play!==0||!/^[a-zA-Z0-9]{14}$/.test(x.mid||''))continue;const album=x.album?.mid;remember({id:'qq:'+x.mid,mid:x.mid,provider:'qq',title:String(x.title||x.name||'未命名歌曲').slice(0,160),artist:Object.values(x.singer||{}).map(a=>a.name).join(' / ').slice(0,160),cover:/^[a-zA-Z0-9]{14}$/.test(album||'')?'https://y.gtimg.cn/music/photo_new/T002R300x300M000'+album+'.jpg':'',url:'https://y.qq.com/n/ryqq/songDetail/'+x.mid,duration:Number(x.interval)||0});count++;}}
+   discoveryWarning=count?'':'暂时未能更新 QQ 榜单，先听已保存的歌曲。';refreshed=Date.now()-(count?0:3540000);
+  })().finally(()=>refreshing=null);return refreshing;
+ }
  async function list(slot,mode='discover'){
   fail(['discover','hearts','gifts'].includes(mode),'频道不存在');const v=view(slot);
   if(mode==='hearts')return {...v,tracks:v.hearts.map(id=>publicTrack(saved(id))).filter(t=>t?.provider==='qq')};
   if(mode==='gifts')return {...v,tracks:v.gifts.map(x=>x.song).filter(t=>t?.provider==='qq')};
+  await discover();
   let tracks=db.prepare("SELECT value FROM fm_tracks WHERE id LIKE 'qq:%' ORDER BY updated DESC LIMIT 500").all().map(x=>JSON.parse(x.value));
   if(!tracks.length){const t=await resolve('003IPDsn4ZWb5H');remember(t);tracks=[t]}
-  return {...v,tracks:tracks.map(publicTrack)};
+  return {...v,tracks:tracks.map(publicTrack),notice:discoveryWarning,source:"QQ 音乐公开榜单"};
  }
  async function track(slot,id){fail(/^qq:[a-zA-Z0-9]{14}$/.test(id),'歌曲编号不正确');const t=saved(id);fail(t,'请先添加这首歌',404);return {track:publicTrack(t)}}
  async function add(slot,b){let mid=String(b.link||'').trim();if(!/^[a-zA-Z0-9]{14}$/.test(mid)){try{const u=new URL(mid);fail(u.protocol==='https:'&&(u.hostname==='y.qq.com'||u.hostname==='i.y.qq.com'),'请使用 QQ 音乐官方歌曲链接');mid=u.searchParams.get('songmid')||u.pathname.match(/songDetail\/([a-zA-Z0-9]{14})/)?.[1]||'';}catch(e){if(e.status)throw e;fail(false,'请粘贴 QQ 音乐歌曲详情链接')}}const t=await resolve(mid);remember(t);return {...store.get(slot),...view(slot),track:t}}

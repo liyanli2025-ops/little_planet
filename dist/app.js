@@ -155,4 +155,4 @@ handlers['sleep-now']=()=>{
 const lifeUI=createLifeUI({context:()=>({state,world,actor,visual,panel:currentPanel}),replace:next=>state=next,save,refresh,cloud,modal,close,toast,handlers,request:requestAction,dock,endOutdoor,setMode:m=>outdoorMode=m});
 $('#go-garden').onclick=()=>requestAction(world===0?'garden':'basketball');
 
-const mediaUI=createMediaUI({context:()=>({state,actor,world,visual,panel:currentPanel}),cloud,modal,close,toast,handlers,request:requestAction,enter,bench:()=>{if(inside){inside=false;visual?.enter(false);refresh()}visual?.request('sit')},journal,record,save});
+const mediaUI=createMediaUI({context:()=>({state,actor,world,visual,panel:currentPanel}),cloud,modal,close,toast,handlers,request:requestAction,enter,bench:()=>{if(inside){inside=false;visual?.enter(false);refresh()}visual?.request('sit')},journal,record,save,returnOwnShelf:()=>{go(actor);enter()}});

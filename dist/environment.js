@@ -17,7 +17,7 @@ export function createEnvironment({cloud,context,modal,toast,cities,planets}){
   const fallback=state.worlds[world].weather;
   const k=manual?{mode:fallback,icon:({sun:'☀',rain:'☂',snow:'❄',night:'☾'})[fallback],label:'手动天气'}:s?weatherKind(s.code):{mode:'sun',icon:'◌',label:'等待天气'};
   const night=manual&&fallback==='night'||t.night;
-  clock.textContent=t.text+' · '+(w?.location?.label.split(' · ')[0]||'设备时间');
+  clock.textContent=t.text+(w?.location?.label?' · '+w.location.label.split(' · ')[0]:'');
   $('#date-stamp').textContent=t.date.slice(5).replace('-',' / ');
   $('#place').textContent=planets[world]+' · '+(w?.location?.label||'尚未设置所在地');
   $('#weather-icon').textContent=k.mode==='sun'&&night&&!k.cloudy?'☾':k.icon;

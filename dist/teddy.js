@@ -18,11 +18,18 @@ export function createTeddy(parent,identity=0){
  let mouth=new T.Mesh(new T.CapsuleGeometry(.004,.032,6,10),black);mouth.position.set(0,-.010,.294);head.add(mouth);
  for(let s of [-1,1]){ell(head,black,s*.094,.060,.218,.018,.022,.014);let glint=ell(head,new T.MeshBasicMaterial({color:0xf5f4ed}),s*.094-.004,.067,.229,.004,.005,.003)}
 
+
+ // Ear cups align with the actual teddy ear centers in head-local coordinates.
  const headphones=new T.Group();headphones.name='music-headphones';headphones.visible=false;head.add(headphones);
- const bandMat=new T.MeshStandardMaterial({color:0x385b50,roughness:.65}),padMat=new T.MeshStandardMaterial({color:0xc8b994,roughness:.9});
- const arc=[];for(let i=0;i<=32;i++){const a=i/32*Math.PI;arc.push(new T.Vector3(Math.cos(a)*.318,.07+Math.sin(a)*.255,-.025))}
- headphones.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(arc),32,.022,8,false),bandMat));
- for(const side of [-1,1]){ell(headphones,padMat,side*.284,.075,0,.037,.082,.070);ell(headphones,bandMat,side*.321,.075,0,.031,.073,.061)}
+ const bandMat=new T.MeshStandardMaterial({color:0x385b50,roughness:.58}),padMat=new T.MeshStandardMaterial({color:0xc8b994,roughness:.96}),metalMat=new T.MeshStandardMaterial({color:0xbab89f,metalness:.55,roughness:.4});
+ const arc=[];for(let i=0;i<=48;i++){const a=i/48*Math.PI;arc.push(new T.Vector3(Math.cos(a)*.222,.238+Math.sin(a)*.162,-.014))}
+ const band=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(arc),48,.019,12,false),bandMat);band.castShadow=true;headphones.add(band);
+ for(const side of [-1,1]){const cup=new T.Group();cup.position.set(side*.218,.215,.033);headphones.add(cup);cup.rotation.y=side*.12;
+  ell(cup,padMat,0,0,.008,.098,.104,.048);ell(cup,bandMat,0,0,.050,.085,.090,.029);
+  const seam=new T.Mesh(new T.TorusGeometry(.074,.0035,8,40),metalMat);seam.position.z=.070;seam.scale.y=1.07;cup.add(seam);
+  const badge=new T.Mesh(new T.CircleGeometry(.021,24),metalMat);badge.position.z=.080;cup.add(badge);
+  const hinge=new T.Mesh(new T.CapsuleGeometry(.012,.050,8,12),metalMat);hinge.position.set(0,.092,-.029);cup.add(hinge);
+ }
  const rainGear=createRainGear({body,head,arms});let rainy=false,currentIdentity=identity;
  function setIdentity(i){currentIdentity=i;const white=i===0;fur.color.set(white?0xf3f2ed:0x70432f);earMat.color.set(white?0xe0ddd6:0x753c28);muzzleMat.color.set(white?0xf3f2ed:0xf3e9d9);nose.scale.set(white?.041:.032,white?.032:.026,white?.028:.023);torso.scale.x=white?1.02:1;avatar.userData.identity=i}
  const scarf=new T.Group();body.add(scarf);scarf.visible=false;const cloth=new T.MeshStandardMaterial({color:0x82b3a0,roughness:1});const collar=new T.Mesh(new T.TorusGeometry(.282,.037,12,40),cloth);collar.rotation.x=Math.PI/2;collar.scale.y=.81;collar.position.y=.69;scarf.add(collar);for(const x of [.07,.14]){const tail=new T.Mesh(new T.BoxGeometry(.055,.19,.027),cloth);tail.position.set(x,.60,.245);tail.rotation.z=x===.07?-.12:.15;scarf.add(tail)}

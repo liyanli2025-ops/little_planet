@@ -93,7 +93,7 @@ const sleeves=[];for(let i=0;i<5;i++){const g=group(record,.27-i*.11,1.03,-.22);
 const lowerFurniture=[...indoor.children];lowerFurniture.forEach(g=>g.userData.floor=0);
 const loft=createLoft({indoor,box,ball,cylinder,group,tag});loft.upper.userData.floor=1;
 const floorButton=document.createElement('button');floorButton.id='house-floor';floorButton.className='pill';floorButton.hidden=true;host.parentElement.append(floorButton);floorButton.onclick=()=>request('stairs');
-function updateFloor(){loft.show(floor);floorButton.textContent=floor?'二层卧室 · 下楼 ↓':'一层客厅 · 上楼 ↑';floorButton.hidden=!room;floorButton.disabled=!!stairMotion}
+function updateFloor(){loft.show(floor);floorButton.textContent=floor?'下楼 ↓':'上楼 ↑';floorButton.hidden=!room;floorButton.disabled=!!stairMotion}
 function wake(){if(!sleeping)return;sleeping=false;loft.sleep(false);avatar.rotation.set(0,0,0);avatar.position.set(-1.2,2.722,.95);body.position.y=groundedBody([0,0]);onAction('activity-ended')}
 function climb(){wake();keys.clear();roomPath=[];roomAction=null;stairMotion={to:1-floor,t:0,from:avatar.position.clone()};loft.show(1);floorButton.disabled=true;message(floor?'扶着栏杆，慢慢下楼…':'走上楼梯，去卧室看看…')}
 const weatherFX=createWeather(scene,camera);

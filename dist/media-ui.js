@@ -1,9 +1,11 @@
+import {createRadio} from './radio.js';
 import {applyMedia,visibleMedia,mediaLink,coverLink} from './media-state.js';
 import {createReadingSync} from './reading-sync.js';
 import {newId} from './cloud.js';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const names=['小禾','阿远'];
 export function createMediaUI({context,cloud,modal,close,toast,handlers,request,enter,bench,journal,record,save,returnOwnShelf}){
+ const radio=createRadio({cloud,context,modal,records:()=>records()});
  const c=context;let items=[],binding={},busy=false,selected=null,loadError='',actionError='',page=0;
  let autoMessage='';
  const key='echoo-media-v1';if(!cloud)try{items=JSON.parse(localStorage.getItem(key))||[]}catch{}
@@ -78,5 +80,5 @@ export function createMediaUI({context,cloud,modal,close,toast,handlers,request,
   report:message=>{autoMessage=message;document.querySelectorAll('[data-auto-reading]').forEach(el=>el.textContent=message||('自动同步已开启 · 书架最近同步：'+new Date(binding.synced).toLocaleString('zh-CN')+'。阅读进度按最近阅读顺序逐本更新。'));}
  }):null;
  if(autoSync){document.addEventListener('visibilitychange',()=>{if(!document.hidden)autoSync.tick()});window.addEventListener('focus',()=>autoSync.tick());window.addEventListener('online',()=>autoSync.tick());setInterval(()=>autoSync.tick(),8000);}
- load().then(()=>autoSync?.tick());return {settings,reading,selected:()=>selected,show(a){if(a==='bookshelf'){shelf();return true}if(a==='music'){records();return true}return false}};
+ load().then(()=>autoSync?.tick());return {settings,reading,selected:()=>selected,show(a){if(a==='bookshelf'){shelf();return true}if(a==='music'){radio.open();return true}return false}};
 }

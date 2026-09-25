@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {randomBytes,scrypt,timingSafeEqual} from 'node:crypto';
 import {promisify} from 'node:util';
 import {openStore,AppError,fail,hash} from './store.mjs';
+import {createMusicService} from './music.mjs';
 import {createMediaService} from './media.mjs';
 import {createWeatherService} from './weather.mjs';
 const derive=promisify(scrypt);
@@ -21,6 +22,7 @@ const filename=process.env.DATABASE_PATH||path.resolve('data/planet.sqlite');
 const store=openStore(filename),db=store.db;
 const weatherService=createWeatherService(db);
 const mediaService=createMediaService(store);
+const musicService=createMusicService(store);
 async function environmentFor(slot){
  const result=await weatherService.get(slot,store.get(slot).paired);
  // Pairing can change while an upstream forecast is in flight.
@@ -99,6 +101,8 @@ async function api(req,res,p){
  if(req.method==='GET'&&p==='/api/cities'){
   requireUser(req);rate(req,'cities',40);return json(res,200,{cities:await weatherService.search(new URL(req.url,'http://local').searchParams.get('q'))});
  }
+ if(req.method==='GET'&&p==='/api/fm'){const u=requireUser(req);rate(req,'fm-read',200);return json(res,200,await musicService.list(u.slot,new URL(req.url,'http://local').searchParams.get('mode')||'discover'));}
+ if(req.method==='GET'&&p==='/api/fm/track'){const u=requireUser(req);rate(req,'fm-track',200);return json(res,200,await musicService.track(u.slot,new URL(req.url,'http://local').searchParams.get('id')||''));}
  if(req.method==='GET'&&p==='/api/media')return json(res,200,mediaService.view(requireUser(req).slot));
  if(req.method==='GET'&&p==='/api/state')return json(res,200,store.get(requireUser(req).slot));
  fail(req.method==='POST','接口不存在',404);
@@ -152,6 +156,7 @@ async function api(req,res,p){
   });
   return json(res,200,{ok:true});
  }
+ if(p==='/api/fm'){rate(req,'fm-write',150);if(b.action==='configure'){rate(req,'fm-config',10);return json(res,200,await musicService.configure(u.slot,b));}return json(res,200,musicService.mutate(u.slot,b));}
  if(p==='/api/media'){rate(req,'media',150);return json(res,200,mediaService.mutate(u.slot,b))}
  if(p==='/api/weread'){
   rate(req,b.action==='progress'?'weread-progress':'weread',b.action==='progress'?120:25);fail(secure||['127.0.0.1','localhost','[::1]'].includes(originURL.hostname),'请通过 HTTPS 绑定微信读书',403);

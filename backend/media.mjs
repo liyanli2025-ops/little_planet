@@ -60,6 +60,17 @@ export function createMediaService(store,{fetcher=fetch}={}){
   }finally{flights.delete(slot)}
  }
  function disconnect(slot){generations[slot]++;db.prepare('DELETE FROM weread_bindings WHERE slot=?').run(slot);return {...store.get(slot),...view(slot)}}
+
+ const infoFlights=new Map();
+ async function info(slot,id){
+  const item=all().find(x=>x.id===id&&x.owner===slot&&x.kind==='book');fail(item?.source==='weread'&&item.sourceId?.startsWith('book:'),'这本书没有连接微信读书',400);
+  if(item.infoSynced&&Date.now()-item.infoSynced<86400000)return {...store.get(slot),...view(slot)};
+  const flightKey=slot+':'+id;if(infoFlights.has(flightKey))return infoFlights.get(flightKey);
+  const credential=db.prepare('SELECT credential FROM weread_bindings WHERE slot=?').get(slot)?.credential,generation=generations[slot];fail(credential,'请先连接微信读书');
+  const task=(async()=>{const data=await gateway(credential,'/book/info',{bookId:item.sourceId.slice(5)});fail(String(data.bookId)===item.sourceId.slice(5),'这本书的信息暂时无法获取',502);
+   return store.transaction(()=>{fail(generation===generations[slot]&&db.prepare('SELECT credential FROM weread_bindings WHERE slot=?').get(slot)?.credential===credential,'连接已变更，请重试',409);const items=all(),current=items.find(x=>x.id===id&&x.owner===slot);fail(current&&current.sourceId===item.sourceId,'这本书已移走',409);if(typeof data.intro==='string')current.intro=data.intro.slice(0,10000);const cover=coverLink(data.cover),url=mediaLink(data.deepLink,'book',true);if(cover)current.cover=cover;if(url)current.url=url;current.infoSynced=Date.now();put(items);db.exec('UPDATE saves SET revision=revision+1 WHERE id=1');return {...store.get(slot),...view(slot)}});
+  })().finally(()=>infoFlights.delete(flightKey));infoFlights.set(flightKey,task);return task;
+ }
  async function progress(slot,id,automatic=false){
   fail(!flights.has(slot),'正在同步，请稍等',409);
   const item=all().find(x=>x.id===id&&x.owner===slot&&x.kind==='book');
@@ -97,5 +108,5 @@ export function createMediaService(store,{fetcher=fetch}={}){
    });
   }finally{flights.delete(slot)}
  }
- return {view,mutate,sync,disconnect,progress};
+ return {view,mutate,sync,disconnect,progress,info};
 }

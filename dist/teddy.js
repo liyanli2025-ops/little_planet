@@ -19,16 +19,15 @@ export function createTeddy(parent,identity=0){
  for(let s of [-1,1]){ell(head,black,s*.094,.060,.218,.018,.022,.014);let glint=ell(head,new T.MeshBasicMaterial({color:0xf5f4ed}),s*.094-.004,.067,.229,.004,.005,.003)}
 
 
- // Ear cups align with the actual teddy ear centers in head-local coordinates.
+ // Pads face inward across the head; only the thin cup edges face the viewer.
  const headphones=new T.Group();headphones.name='music-headphones';headphones.visible=false;head.add(headphones);
- const bandMat=new T.MeshStandardMaterial({color:0x385b50,roughness:.58}),padMat=new T.MeshStandardMaterial({color:0xc8b994,roughness:.96}),metalMat=new T.MeshStandardMaterial({color:0xbab89f,metalness:.55,roughness:.4});
- const arc=[];for(let i=0;i<=48;i++){const a=i/48*Math.PI;arc.push(new T.Vector3(Math.cos(a)*.222,.238+Math.sin(a)*.162,-.014))}
- const band=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(arc),48,.019,12,false),bandMat);band.castShadow=true;headphones.add(band);
- for(const side of [-1,1]){const cup=new T.Group();cup.position.set(side*.218,.215,.033);headphones.add(cup);cup.rotation.y=side*.12;
-  ell(cup,padMat,0,0,.008,.098,.104,.048);ell(cup,bandMat,0,0,.050,.085,.090,.029);
-  const seam=new T.Mesh(new T.TorusGeometry(.074,.0035,8,40),metalMat);seam.position.z=.070;seam.scale.y=1.07;cup.add(seam);
-  const badge=new T.Mesh(new T.CircleGeometry(.021,24),metalMat);badge.position.z=.080;cup.add(badge);
-  const hinge=new T.Mesh(new T.CapsuleGeometry(.012,.050,8,12),metalMat);hinge.position.set(0,.092,-.029);cup.add(hinge);
+ const bandMat=new T.MeshStandardMaterial({color:0x385b50,roughness:.8}),padMat=new T.MeshStandardMaterial({color:0xd5ccb5,roughness:1}),metalMat=new T.MeshStandardMaterial({color:0x809087,metalness:.25,roughness:.65});
+ const arc=[];for(let i=0;i<=48;i++){const a=i/48*Math.PI;arc.push(new T.Vector3(Math.cos(a)*.302,.226+Math.sin(a)*.133,-.016))}
+ const band=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(arc),48,.016,12,false),bandMat);band.castShadow=true;headphones.add(band);
+ for(const side of [-1,1]){const cup=new T.Group();cup.position.set(side*.277,.208,-.013);headphones.add(cup);cup.rotation.y=side*Math.PI/2;cup.rotation.z=-side*.18;
+  ell(cup,padMat,0,0,-.010,.076,.099,.034);ell(cup,bandMat,0,0,.025,.073,.093,.024);
+  const seam=new T.Mesh(new T.TorusGeometry(.066,.002,8,40),metalMat);seam.position.z=.043;seam.scale.y=1.27;cup.add(seam);
+  const hinge=new T.Mesh(new T.CapsuleGeometry(.009,.038,8,12),metalMat);hinge.position.set(0,.078,.022);cup.add(hinge);
  }
  const rainGear=createRainGear({body,head,arms});let rainy=false,currentIdentity=identity;
  function setIdentity(i){currentIdentity=i;const white=i===0;fur.color.set(white?0xf3f2ed:0x70432f);earMat.color.set(white?0xe0ddd6:0x753c28);muzzleMat.color.set(white?0xf3f2ed:0xf3e9d9);nose.scale.set(white?.041:.032,white?.032:.026,white?.028:.023);torso.scale.x=white?1.02:1;avatar.userData.identity=i}

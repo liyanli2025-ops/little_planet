@@ -156,7 +156,7 @@ async function api(req,res,p){
   });
   return json(res,200,{ok:true});
  }
- if(p==='/api/fm'){rate(req,'fm-write',150);if(b.action==='configure'){rate(req,'fm-config',10);return json(res,200,await musicService.configure(u.slot,b));}return json(res,200,musicService.mutate(u.slot,b));}
+ if(p==='/api/fm'){rate(req,'fm-write',150);if(b.action==='add'){rate(req,'fm-add',20);return json(res,200,await musicService.add(u.slot,b));}return json(res,200,musicService.mutate(u.slot,b));}
  if(p==='/api/media'){rate(req,'media',150);return json(res,200,mediaService.mutate(u.slot,b))}
  if(p==='/api/weread'){
   rate(req,b.action==='progress'?'weread-progress':'weread',b.action==='progress'?120:25);fail(secure||['127.0.0.1','localhost','[::1]'].includes(originURL.hostname),'请通过 HTTPS 绑定微信读书',403);

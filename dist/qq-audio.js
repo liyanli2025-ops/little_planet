@@ -1,0 +1,8 @@
+// Official QQ Music web player. No stream URL extraction or membership bypass.
+let sdk;
+function loadSDK(){if(window.QMplayer)return Promise.resolve();if(!sdk)sdk=new Promise((resolve,reject)=>{const s=document.createElement('script');s.src='https://y.gtimg.cn/music/h5/player/player.js';const timer=setTimeout(()=>{s.remove();sdk=null;reject(Error('QQ 音乐播放器加载超时，请重试'))},12000);s.onload=()=>{clearTimeout(timer);if(window.QMplayer)resolve();else{sdk=null;reject(Error('QQ 音乐播放器暂不可用'))}};s.onerror=()=>{clearTimeout(timer);sdk=null;s.remove();reject(Error('QQ 音乐播放器加载失败，请重试'))};document.head.append(s)});return sdk}
+export function createQQAudio(){const events=new EventTarget();let player,source='',epoch=0,paused=true;const emit=name=>events.dispatchEvent(new Event(name));return {
+ get paused(){return paused},get src(){return source},set src(v){source=v},get duration(){return Number(player?.data?.duration)||NaN},get currentTime(){return Number(player?.data?.currentTime)||0},set currentTime(v){if(player)player.currentTime=v},
+ addEventListener:(...args)=>events.addEventListener(...args),getAttribute:()=>source,removeAttribute(){source='';epoch++;player?.pause();paused=true},load(){},pause(){epoch++;player?.pause();paused=true;emit('pause')},
+ async play(){const id=++epoch;await loadSDK();if(id!==epoch||!source)return;if(!player){player=new window.QMplayer({target:'web'});for(const name of ['play','pause','timeupdate','ended','error'])player.on(name,()=>{if(name==='play')paused=false;if(['pause','ended','error'].includes(name))paused=true;emit(name)});}if(player.data?.song?.mid===source&&player.data?.state!=='error')player.play();else player.play(source,{target:'web'});}
+}}

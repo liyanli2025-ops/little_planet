@@ -20,7 +20,8 @@ export function applyMedia(items,actor,paired,b,now=Date.now(),id=()=>crypto.ran
  }else{
   const item=items.find(x=>x.id===b.id&&x.kind===kind&&x.owner===b.world&&(x.owner===actor||(paired&&x.shared)));
   check(item,'这件物品不存在或未分享',404);
-  if(b.type==='share'){check(item.owner===actor,'只有主人可以分享书籍',403);check(typeof b.shared==='boolean','请选择分享状态');check(!b.shared||paired,'请先配对',403);item.shared=b.shared;}
+  if(b.type==='share'){check(item.owner===actor,'只有主人可以分享书籍',403);check(typeof b.shared==='boolean','请选择分享状态');check(!b.shared||paired,'请先配对',403);item.shared=b.shared;if(!b.shared)item.shareProgress=false;}
+  else if(b.type==='share-progress'){check(kind==='book'&&item.owner===actor,'只有主人可以分享阅读进度',403);check(typeof b.shared==='boolean','请选择分享状态');check(!b.shared||(paired&&item.shared),'请先分享这本书',403);item.shareProgress=b.shared;}
   else if(b.type==='remove'){check(item.addedBy===actor||item.owner===actor,'不能移走对方的物品',403);items.splice(items.indexOf(item),1);}
   else if(b.type==='note'){
    const body=text(b.message,1000,true);check(!b.shared||paired,'请先配对',403);
@@ -32,4 +33,6 @@ export function applyMedia(items,actor,paired,b,now=Date.now(),id=()=>crypto.ran
  }
  return event;
 }
-export const visibleMedia=(items,actor,paired)=>items.filter(x=>x.owner===actor||(paired&&x.shared));
+export const visibleMedia=(items,actor,paired)=>items.filter(x=>x.owner===actor||(paired&&x.shared)).map(x=>{if(x.owner===actor||x.shareProgress)return {...x};const {progress,finished,...rest}=x;return rest});
+
+export function coverLink(value){if(typeof value!=='string'||value.length>2048)return '';try{const u=new URL(value);if(!['http:','https:'].includes(u.protocol)||u.username||u.password||u.port)return '';if(u.hostname!=='wfqqreader-1252317822.image.myqcloud.com'&&!['qpic.cn','qq.com'].some(h=>u.hostname===h||u.hostname.endsWith('.'+h)))return '';u.protocol='https:';return u.href}catch{return ''}}

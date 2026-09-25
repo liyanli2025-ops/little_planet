@@ -1,6 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {fail,hash} from './store.mjs';
-import {applyMedia,visibleMedia,mediaLink} from '../dist/media-state.js';
+import {applyMedia,visibleMedia,mediaLink,coverLink} from '../dist/media-state.js';
 export function createMediaService(store,{fetcher=fetch}={}){
  const db=store.db;
  db.exec(`CREATE TABLE IF NOT EXISTS media_items(id TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -20,19 +20,23 @@ export function createMediaService(store,{fetcher=fetch}={}){
   db.prepare('INSERT INTO receipts VALUES(?,?,?,?)').run(slot,b.command,digest,Date.now());
   return {...store.get(slot),...view(slot)};
  })}
- async function shelf(key){
+ async function gateway(key,api_name,params={}){
   fail(typeof key==='string'&&/^wrk-[A-Za-z0-9_-]{8,500}$/.test(key),'请粘贴微信读书提供的完整 API Key');
   let r,data;try{
-   r=await fetcher('https://i.weread.qq.com/api/agent/gateway',{method:'POST',redirect:'error',signal:AbortSignal.timeout(10000),headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({api_name:'/shelf/sync',skill_version:'1.0.4'})});
+   r=await fetcher('https://i.weread.qq.com/api/agent/gateway',{method:'POST',redirect:'error',signal:AbortSignal.timeout(10000),headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},body:JSON.stringify({api_name,skill_version:'1.0.4',...params})});
    fail(r.ok,'微信读书未能验证授权，请检查 API Key 或稍后重试',502);
    let size=0,chunks=[];for await(const chunk of r.body){size+=chunk.length;fail(size<=4*1024*1024,'书架数据过大，请稍后再试',502);chunks.push(chunk)}data=JSON.parse(Buffer.concat(chunks).toString('utf8'));
   }catch(e){if(e.status)throw e;fail(false,'暂时连接不到微信读书，请稍后重试',502)}
   fail(!data.upgrade_info,'微信读书接口需要升级，请更新阿球后再同步',502);
   fail(data.errcode===undefined||data.errcode===0,'微信读书授权失效或请求失败，请重新获取 API Key',502);
+  return data;
+ }
+ async function shelf(key){
+  const data=await gateway(key,'/shelf/sync');
   fail(Array.isArray(data.books),'微信读书返回格式有变化，暂时无法同步',502);
-  const books=data.books.map(x=>({sourceId:'book:'+String(x.bookId),title:x.title,author:x.author,url:mediaLink(x.deepLink,'book',true),finished:x.finishReading===1,format:'电子书'}));
+  const books=data.books.map(x=>({sourceId:'book:'+String(x.bookId),title:x.title,author:x.author,cover:coverLink(x.cover),url:mediaLink(x.deepLink,'book',true),finished:x.finishReading===1,format:'电子书'}));
   fail(data.albums===undefined||Array.isArray(data.albums),'微信读书返回格式有变化',502);
-  for(const a of data.albums||[]){const x=a.albumInfo;if(x)books.push({sourceId:'album:'+String(x.albumId),title:x.name,author:x.authorName,url:mediaLink(a.deepLink||x.deepLink,'book',true),format:'有声书'})}
+  for(const a of data.albums||[]){const x=a.albumInfo;if(x)books.push({sourceId:'album:'+String(x.albumId),title:x.name,author:x.authorName,cover:coverLink(x.cover),url:mediaLink(a.deepLink||x.deepLink,'book',true),format:'有声书'})}
   if(data.mp&&Object.keys(data.mp).length)books.push({sourceId:'articles',title:'文章收藏',author:'微信读书',url:'https://weread.qq.com/',format:'收藏入口'});
   fail(books.length<=1400,'书架超过 1400 条，暂时无法完整同步',502);
   return books.filter(x=>x.title&&x.sourceId&&!x.sourceId.endsWith(':undefined')).map(x=>({...x,title:String(x.title).slice(0,120),author:String(x.author||'').slice(0,120)}));
@@ -55,5 +59,24 @@ export function createMediaService(store,{fetcher=fetch}={}){
   }finally{flights.delete(slot)}
  }
  function disconnect(slot){generations[slot]++;db.prepare('DELETE FROM weread_bindings WHERE slot=?').run(slot);return {...store.get(slot),...view(slot)}}
- return {view,mutate,sync,disconnect};
+ async function progress(slot,id){
+  fail(!flights.has(slot),'正在同步，请稍等',409);
+  const item=all().find(x=>x.id===id&&x.owner===slot&&x.kind==='book');
+  fail(item?.source==='weread'&&item.sourceId?.startsWith('book:'),'只有从微信读书同步的电子书可以读取进度',400);
+  const credential=db.prepare('SELECT credential FROM weread_bindings WHERE slot=?').get(slot)?.credential;
+  fail(credential,'请先绑定微信读书');const generation=generations[slot];flights.add(slot);
+  try{
+   const bookId=item.sourceId.slice(5),[data,catalog]=await Promise.all([gateway(credential,'/book/getprogress',{bookId}),gateway(credential,'/book/chapterinfo',{bookId}).catch(()=>null)]);
+   const b=data.book;fail(b&&Number.isInteger(b.progress)&&b.progress>=0&&b.progress<=100,'微信读书暂未返回有效阅读进度，已保留上次结果',502);
+   const chapter=Array.isArray(catalog?.chapters)?catalog.chapters.find(c=>String(c.chapterUid)===String(b.chapterUid)):null;
+   const unix=v=>Number.isSafeInteger(v)&&v>0&&v<100000000000?v*1000:null;
+   const reading={percent:b.progress,chapter:typeof chapter?.title==='string'?chapter.title.slice(0,160):'',updated:unix(b.updateTime),synced:Date.now()};
+   return store.transaction(()=>{
+    fail(generation===generations[slot]&&db.prepare('SELECT credential FROM weread_bindings WHERE slot=?').get(slot)?.credential===credential,'授权刚刚变更，请重新操作',409);
+    const items=all(),current=items.find(x=>x.id===id&&x.owner===slot);fail(current&&current.sourceId===item.sourceId,'这本书已被移走，请重新打开书架',409);
+    current.progress=reading;current.finished=b.progress===100;put(items);db.exec('UPDATE saves SET revision=revision+1 WHERE id=1');return {...store.get(slot),...view(slot)};
+   });
+  }finally{flights.delete(slot)}
+ }
+ return {view,mutate,sync,disconnect,progress};
 }

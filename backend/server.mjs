@@ -6,6 +6,7 @@ import {fileURLToPath} from 'node:url';
 import {randomBytes,scrypt,timingSafeEqual} from 'node:crypto';
 import {promisify} from 'node:util';
 import {openStore,AppError,fail,hash} from './store.mjs';
+import {createMediaService} from './media.mjs';
 import {createWeatherService} from './weather.mjs';
 const derive=promisify(scrypt);
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..','dist');
@@ -19,6 +20,7 @@ const REGISTRATION_CODE=process.env.REGISTRATION_CODE||'';
 const filename=process.env.DATABASE_PATH||path.resolve('data/planet.sqlite');
 const store=openStore(filename),db=store.db;
 const weatherService=createWeatherService(db);
+const mediaService=createMediaService(store);
 async function environmentFor(slot){
  const result=await weatherService.get(slot,store.get(slot).paired);
  // Pairing can change while an upstream forecast is in flight.
@@ -97,6 +99,7 @@ async function api(req,res,p){
  if(req.method==='GET'&&p==='/api/cities'){
   requireUser(req);rate(req,'cities',40);return json(res,200,{cities:await weatherService.search(new URL(req.url,'http://local').searchParams.get('q'))});
  }
+ if(req.method==='GET'&&p==='/api/media')return json(res,200,mediaService.view(requireUser(req).slot));
  if(req.method==='GET'&&p==='/api/state')return json(res,200,store.get(requireUser(req).slot));
  fail(req.method==='POST','接口不存在',404);
  fail(req.headers.origin===ORIGIN,'请求来源不匹配，请检查 PUBLIC_ORIGIN',403);
@@ -148,6 +151,13 @@ async function api(req,res,p){
    db.prepare("INSERT INTO settings(key,value) VALUES('join_code',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(encoded);
   });
   return json(res,200,{ok:true});
+ }
+ if(p==='/api/media'){rate(req,'media',150);return json(res,200,mediaService.mutate(u.slot,b))}
+ if(p==='/api/weread'){
+  rate(req,'weread',25);fail(secure||['127.0.0.1','localhost','[::1]'].includes(originURL.hostname),'请通过 HTTPS 绑定微信读书',403);
+  if(b.action==='disconnect')return json(res,200,mediaService.disconnect(u.slot));
+  fail(['bind','sync'].includes(b.action),'操作不存在');
+  return json(res,200,await mediaService.sync(u.slot,b.action==='bind'?b.key:undefined));
  }
  if(p==='/api/life'){rate(req,'life',200);return json(res,200,store.life(u.slot,b))}
  if(p==='/api/state'){rate(req,'save',400);return json(res,200,store.save(u.slot,b))}

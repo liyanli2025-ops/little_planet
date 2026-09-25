@@ -70,11 +70,28 @@ export function createMediaService(store,{fetcher=fetch}={}){
    const b=data.book;fail(b&&Number.isInteger(b.progress)&&b.progress>=0&&b.progress<=100,'微信读书暂未返回有效阅读进度，已保留上次结果',502);
    const chapter=Array.isArray(catalog?.chapters)?catalog.chapters.find(c=>String(c.chapterUid)===String(b.chapterUid)):null;
    const unix=v=>Number.isSafeInteger(v)&&v>0&&v<100000000000?v*1000:null;
-   const reading={percent:b.progress,chapter:typeof chapter?.title==='string'?chapter.title.slice(0,160):'',updated:unix(b.updateTime),synced:Date.now()};
+   const reading={percent:b.progress,chapterUid:b.chapterUid==null?'':String(b.chapterUid).slice(0,80),chapter:typeof chapter?.title==='string'?chapter.title.slice(0,160):'',updated:unix(b.updateTime),synced:Date.now()};
    return store.transaction(()=>{
     fail(generation===generations[slot]&&db.prepare('SELECT credential FROM weread_bindings WHERE slot=?').get(slot)?.credential===credential,'授权刚刚变更，请重新操作',409);
     const items=all(),current=items.find(x=>x.id===id&&x.owner===slot);fail(current&&current.sourceId===item.sourceId,'这本书已被移走，请重新打开书架',409);
-    current.progress=reading;current.finished=b.progress===100;put(items);db.exec('UPDATE saves SET revision=revision+1 WHERE id=1');return {...store.get(slot),...view(slot)};
+    const row=store.read(),previous=current.readingLog;
+    const changed=!previous||previous.percent!==reading.percent||(previous.chapterUid&&reading.chapterUid&&previous.chapterUid!==reading.chapterUid);
+    let journalAdded=false;
+    if(changed){
+     fail(row.state.events.length<5000,'手账已满，请先整理后再同步',409);
+     const name=slot===0?'小禾':'阿远';
+     let title,body;
+     if(!previous){title=name+'为《'+current.title+'》留下阅读起点';body='首次记录微信读书进度：已读 '+reading.percent+'%。这是同步时的已有进度。';}
+     else if(reading.percent===100&&previous.percent<100){title=name+'读完了《'+current.title+'》';body='微信读书进度从 '+previous.percent+'% 更新到 100%，为这本书留下一枚读完的书签。';}
+     else{title=name+'的《'+current.title+'》读到 '+reading.percent+'%';body=previous.percent===reading.percent?'阅读章节有了变化，当前进度为 '+reading.percent+'%。':'与上次记录相比，进度从 '+previous.percent+'% 更新到 '+reading.percent+'%。';}
+     if(reading.chapter)body+=' 读到：'+reading.chapter+'。';
+     if(reading.updated)body+=' 微信读书最后阅读时间：'+new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'}).format(new Date(reading.updated))+'（北京时间）。';
+     body+=' 本条按同步时间收进手账。';
+     row.state.events.unshift({id:randomUUID(),actor:slot,world:slot,target:slot,title,body,shared:!!(row.paired&&current.shared&&current.shareProgress),pending:false,kind:'life',created:reading.synced,weather:'微信读书同步',steps:[],comments:[]});
+     current.readingLog={percent:reading.percent,chapterUid:reading.chapterUid};journalAdded=true;
+    }
+    current.progress=reading;current.finished=b.progress===100;put(items);
+    db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state));return {...store.get(slot),...view(slot),journalAdded};
    });
   }finally{flights.delete(slot)}
  }

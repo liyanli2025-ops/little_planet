@@ -1,3 +1,4 @@
+import {freshLife,applyLife} from '../dist/life-state.js';
 
 import {DatabaseSync} from 'node:sqlite';
 import {randomUUID, randomBytes, createHash} from 'node:crypto';
@@ -13,7 +14,8 @@ const integer=(v,min=0,max=1000000)=>Number.isSafeInteger(v)&&v>=min&&v<=max;
 const text=(v,max)=>typeof v==='string'&&v.length<=max;
 const id=v=>typeof v==='string'&&/^[a-zA-Z0-9_-]{8,80}$/.test(v);
 const keys=(v,allowed)=>isObj(v)&&Object.keys(v).every(k=>allowed.includes(k));
-const foods=['milk','pudding','cookie','rice','egg','tomato'];
+const foods=['milk','pudding','cookie','rice','egg','tomato','carrot','strawberry'];
+const bagItems=[...foods,'rose','tulip','sunflower'];
 const baseWorld=i=>({weather:i?'rain':'sun',deco:false,camp:false,pet:{feeds:0,games:0,walks:0},fridge:['milk','pudding','rice','egg','tomato'].map(food=>({id:randomUUID(),food,qty:3})),meals:[]});
 const emptyWorld=()=>({weather:'sun',deco:false,camp:false,pet:{feeds:0,games:0,walks:0},fridge:[],meals:[]});
 const initial=()=>({version:1,worlds:[baseWorld(0),baseWorld(1)],bags:[{cookie:3,pudding:2,milk:2},{cookie:3,pudding:2,milk:2}],events:[],notes:[],favorites:[[],[]]});
@@ -32,13 +34,13 @@ export function openStore(filename){
  CREATE TABLE IF NOT EXISTS receipts (slot INTEGER NOT NULL, command TEXT NOT NULL, digest TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY(slot,command));
  PRAGMA user_version=2;`);
  db.prepare('INSERT OR IGNORE INTO saves(id,revision,paired,state) VALUES(1,0,0,?)').run(JSON.stringify(initial()));
- const read=()=>{const r=db.prepare('SELECT * FROM saves WHERE id=1').get();return {...r,state:JSON.parse(r.state)}};
+ const read=()=>{const r=db.prepare('SELECT * FROM saves WHERE id=1').get();const state=JSON.parse(r.state);state.worlds.forEach(w=>w.life??=freshLife());return {...r,state}};
  const visible=(e,slot,paired)=>e.actor===slot || (paired && (e.shared || e.target===slot));
  function project(row,slot){
   const s=clone(row.state);
   s.actor=slot;
   s.bags[1-slot]={};s.favorites[1-slot]=[];
-  if(!row.paired)s.worlds[1-slot]=emptyWorld();
+  if(!row.paired)s.worlds[1-slot]={...emptyWorld(),life:freshLife()};
   s.events=s.events.filter(e=>visible(e,slot,row.paired));
   s.notes=s.notes.filter(e=>e.actor===slot||(row.paired&&e.shared));
   return {state:s,revision:row.revision,paired:!!row.paired,actor:slot};
@@ -98,7 +100,7 @@ export function openStore(filename){
   return [...current.filter(e=>!allowed.has(e.id)),...proposed];
  }
  function validateWorld(w){
-  fail(keys(w,['weather','deco','camp','pet','fridge','meals'])&&['sun','rain','snow','night'].includes(w.weather)&&typeof w.deco==='boolean'&&typeof w.camp==='boolean');
+  fail(keys(w,['weather','deco','camp','pet','fridge','meals','life'])&&['sun','rain','snow','night'].includes(w.weather)&&typeof w.deco==='boolean'&&typeof w.camp==='boolean');
   fail(keys(w.pet,['feeds','games','walks'])&&['feeds','games','walks'].every(k=>integer(w.pet[k])));
   fail(Array.isArray(w.fridge)&&w.fridge.every(isObj)&&w.fridge.length<=500&&new Set(w.fridge.map(i=>i.id)).size===w.fridge.length,'冰箱最多存放 500 组食物');
   fail(w.fridge.every(i=>keys(i,['id','food','qty','event'])&&id(i.id)&&foods.includes(i.food)&&integer(i.qty,1,999)&&(!i.event||id(i.event))));
@@ -107,6 +109,7 @@ export function openStore(filename){
  }
  function validateWorldChange(prev,next,slot,owner,events,priorEvents){
   validateWorld(next);
+  fail(same(next.life??prev.life,prev.life),'请通过种植或生活互动更新这些物品',403);next.life=prev.life;
   const visitor=slot!==owner;
   if(visitor){
    for(const k of ['weather','deco','camp'])fail(same(prev[k],next[k]),'只有主人可以调整天气和装扮',403);
@@ -150,7 +153,7 @@ export function openStore(filename){
    for(const k of ['worlds','bags','favorites'])fail(Array.isArray(s[k])&&s[k].length===2);
    fail(same(s.bags[1-slot],view.bags[1-slot])&&same(s.favorites[1-slot],view.favorites[1-slot]),'不能修改对方的随身包或珍藏',403);
    if(!row.paired)fail(same(s.worlds[1-slot],view.worlds[1-slot]),'请先配对再访问对方',403);
-   fail(keys(s.bags[slot],foods)&&Object.values(s.bags[slot]).every(n=>integer(n,0,999)),'每种随身食物最多 999 份');
+   fail(keys(s.bags[slot],bagItems)&&Object.values(s.bags[slot]).every(n=>integer(n,0,999)),'每种随身食物最多 999 份');
    fail(Array.isArray(s.favorites[slot])&&s.favorites[slot].length<=5000&&s.favorites[slot].every(id));
    s.worlds.forEach(validateWorld);
    const events=reconcileRecords(row.state.events,s.events,slot,row.paired,false);
@@ -167,6 +170,18 @@ export function openStore(filename){
    db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state));
    db.prepare('INSERT INTO receipts(slot,command,digest,created) VALUES(?,?,?,?)').run(slot,input.command,digest,Date.now());
    db.prepare('DELETE FROM receipts WHERE created<?').run(Date.now()-7*86400000);
+   return get(slot);
+  });
+ }
+ function life(slot,input){
+  fail(input&&id(input.command)&&integer(input.revision),'互动请求不正确');
+  return transaction(()=>{
+   const digest=hash(JSON.stringify(input)),receipt=db.prepare('SELECT digest FROM receipts WHERE slot=? AND command=?').get(slot,input.command);
+   if(receipt){fail(receipt.digest===digest,'重复请求内容不同',409);return get(slot)}
+   const row=read();fail(row.revision===input.revision,'存档刚刚更新，请稍后再试',409);
+   applyLife(row.state,slot,row.paired,input,Date.now(),randomUUID);
+   db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state));
+   db.prepare('INSERT INTO receipts(slot,command,digest,created) VALUES(?,?,?,?)').run(slot,input.command,digest,Date.now());
    return get(slot);
   });
  }
@@ -191,5 +206,5 @@ export function openStore(filename){
   });
  }
  function unlink(){return transaction(()=>{db.exec('UPDATE saves SET paired=0,revision=revision+1 WHERE id=1; DELETE FROM invitations;');});}
- return {db,read,get,save,invite,accept,unlink,transaction};
+ return {db,read,get,save,life,invite,accept,unlink,transaction};
 }

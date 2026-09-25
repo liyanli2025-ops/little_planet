@@ -149,6 +149,7 @@ async function api(req,res,p){
   });
   return json(res,200,{ok:true});
  }
+ if(p==='/api/life'){rate(req,'life',200);return json(res,200,store.life(u.slot,b))}
  if(p==='/api/state'){rate(req,'save',400);return json(res,200,store.save(u.slot,b))}
  if(p==='/api/invite'){rate(req,'invite',30);return json(res,200,store.invite(u.slot))}
  if(p==='/api/pair'){rate(req,'pair',20);return json(res,200,store.accept(u.slot,b.code))}

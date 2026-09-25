@@ -24,11 +24,17 @@ export function createLoft({indoor,box,ball,cylinder,group,tag}){
  const writing=group(upper,1.5,0,.7);box(writing,0xb3936d,0,.72,0,1.2,.1,.65);
  for(const x of [-.48,.48])for(const z of [-.25,.25])box(writing,0x9a7b56,x,.35,z,.07,.7,.07);
  box(writing,0x708d79,-.14,.8,.06,.42,.05,.29);box(writing,0xf7ebd5,-.14,.835,.06,.37,.018,.25);tag(writing,'journal');
- const shelf=group(upper,1.62,0,-1.75);for(const x of [-.48,.48])box(shelf,0xac8b62,x,.7,0,.06,1.4,.4);for(const y of [.1,.65,1.2]){box(shelf,0xbd9c73,0,y,0,1.04,.07,.42);for(let i=0;i<6;i++)box(shelf,[0x8ba39a,0xc3a16e,0xbf8f7b][i%3],-.34+i*.12,y+.2,0,.09,.32,.22)}tag(shelf,'journal');
+ // A tiled washroom occupies the rear-right corner.
+ const bath=group(upper,1.48,0,-1.45);box(bath,0xd0ded3,0,.055,0,1.65,.07,1.25);for(let i=0;i<6;i++)box(bath,0xf2eee0,-.7+i*.28,.094,0,.012,.006,1.2);for(let i=0;i<5;i++)box(bath,0xf2eee0,0,.095,-.5+i*.25,1.6,.006,.012);
+ box(bath,0xc0cdbd,-.85,.6,0,.08,1.2,1.35);box(bath,0xa6bca9,-.34,.42,-.25,.6,.75,.5);const basin=ball(bath,0xf5f0df,-.34,.81,-.25,.3,24);basin.scale.set(.34,.09,.26);const bowl=ball(bath,0xa3c6c1,-.34,.86,-.21,.2,24);bowl.scale.set(.23,.015,.16);cylinder(bath,0x88978b,-.34,1.0,-.43,.022,.022,.23);box(bath,0x88978b,-.34,1.11,-.36,.04,.035,.17);
+ box(bath,0x94aa9c,-.34,1.44,-.66,.68,.69,.06);box(bath,0xc7dcd8,-.34,1.44,-.62,.57,.58,.02);
+ cylinder(bath,0xece9dc,.47,.25,.06,.16,.21,.45);const seat=ball(bath,0xf5f0e4,.47,.48,.06,.24,20);seat.scale.set(.23,.065,.29);box(bath,0xf0ebdc,.47,.65,-.35,.44,.5,.19);tag(bath,'bathroom');
+ const stream=cylinder(bath,0x9bd8d6,-.34,.97,-.29,.015,.015,.21);stream.visible=false;
+ const wardrobe=group(upper,-2.3,0,1.25);box(wardrobe,0xb69572,0,.74,0,.82,1.48,.51);box(wardrobe,0x6f7964,0,.77,.27,.69,1.27,.015);const doors=[];for(const side of [-1,1]){const hinge=group(wardrobe,side*.4,0,.3);box(hinge,0xc2a580,-side*.195,.75,0,.39,1.4,.06);ball(hinge,0x8b7758,-side*.32,.8,.05,.025);doors.push(hinge)}for(const [i,c]of [0x82b3a0,0xd4a15c].entries())box(wardrobe,c,-.15+i*.3,.86,.28,.2,.62,.03);tag(wardrobe,'wardrobe');let opened=false,washLeft=0;
  // Exterior-side staircase leaves the ground-floor furniture intact.
  for(let i=0;i<15;i++){const h=(i+1)*2.7/15,z=1.65-i*.23;box(stairs,0xb49369,3.25,h/2,z,.9,h,.245);if(i%3===0){box(stairs,0x917353,3.68,h+.34,z,.045,.7,.045)}}
  box(stairs,0xb49369,2.85,2.6,-1.7,1.05,.2,.55);tag(stairs,'stairs');
  for(const x of [-2.6,-1.9,-1.2,-.5,.2,.9,1.6,2.3])box(upper,0xb6946a,x,.4,2.15,.045,.75,.045);
  box(upper,0xb6946a,-.15,.8,2.15,5.35,.055,.07);
- return {upper,cover,show(floor){upper.visible=floor===1},sleep(v){cover.visible=v}};
+ return {upper,cover,wardrobe(v){opened=v},wash(){washLeft=3},tick(dt){doors.forEach((g,i)=>g.rotation.y+=((opened?(i?1:-1)*1.3:0)-g.rotation.y)*.12);washLeft=Math.max(0,washLeft-dt);stream.visible=washLeft>0},show(floor){upper.visible=floor===1},sleep(v){cover.visible=v}};
 }

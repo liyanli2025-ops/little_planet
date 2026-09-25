@@ -102,6 +102,10 @@ test('HTTP registration, sessions, CSRF, origin, pairing, privacy and logout',as
   assert.equal((await request('/api/invite',{}, {...auth,origin:'https://evil.example'})).status,403);
   const invitation=await request('/api/invite',{},auth);assert.equal(invitation.status,200);
   assert.equal((await request('/api/pair',{code:invitation.body.code},{cookie:b.cookie,csrf:b.body.csrf})).status,200);
+  let life=(await request('/api/state',undefined,auth)).body;const lifeCmd={world:0,type:'plant',plot:0,crop:'carrot',revision:life.revision,command:randomUUID()};
+  assert.equal((await request('/api/life',lifeCmd,{cookie:a.cookie})).status,403);
+  assert.equal((await request('/api/life',lifeCmd,{...auth,origin:'https://evil.example'})).status,403);
+  const planted=await request('/api/life',lifeCmd,auth);assert.equal(planted.status,200);assert.equal(planted.body.state.worlds[0].life.plots[0].crop,'carrot');assert.equal((await request('/api/life',lifeCmd,auth)).body.revision,planted.body.revision);
   const v=(await request('/api/state',undefined,auth)).body;v.state.notes.push(note(0));
   assert.equal((await request('/api/state',{state:v.state,revision:v.revision,command:randomUUID()},auth)).status,200);
   assert.equal((await request('/api/state',undefined,{cookie:b.cookie})).body.state.notes.length,0);

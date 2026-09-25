@@ -12,6 +12,8 @@ function label(p,text,x,y,z,w=.6,h=.16){let canvas=document.createElement('canva
 function food(type,p){let g=group(p);if(type==='milk'){box(g,0xefeadc,0,.21,0,.25,.42,.2);box(g,0xd8a9a0,0,.18,.103,.22,.17,.005);cyl(g,0xe4b7ab,.065,.438,0,.038,.038,.025);let top=box(g,0xf1eada,0,.44,0,.25,.06,.2);top.rotation.z=.04;label(g,'MILK',0,.28,.106,.18,.045)}
 else if(type==='egg'){let m=ball(g,0xf0dec0,0,.12,0,.11);m.scale.set(.8,1.22,.8)}
 else if(type==='tomato'){ball(g,0xcf644e,0,.14,0,.14);cyl(g,0x6e8b45,0,.278,0,.014,.022,.07);for(let i=0;i<5;i++){let a=i*6.28/5,m=box(g,0x6c934b,Math.cos(a)*.04,.261,Math.sin(a)*.04,.12,.015,.025);m.rotation.y=-a}}
+else if(type==='carrot'){cyl(g,0xe69b48,0,.17,0,.075,.014,.32);for(let i=0;i<3;i++){let leaf=box(g,0x6f984c,(i-1)*.04,.39,0,.025,.17,.035);leaf.rotation.z=(i-1)*.4}}
+else if(type==='strawberry'){let fruit=ball(g,0xd96672,0,.14,0,.13);fruit.scale.y=1.15;for(let i=0;i<10;i++){const a=i*2.4;ball(g,0xf2d49a,Math.sin(a)*.11,.06+(i%4)*.047,Math.cos(a)*.11,.009)}for(let i=0;i<4;i++){let leaf=box(g,0x74974e,0,.28,0,.16,.015,.035);leaf.rotation.y=i*Math.PI/4}}
 else if(type==='pudding'){cyl(g,0xe4c07a,0,.14,0,.105,.145,.23);cyl(g,0x996b3e,0,.26,0,.108,.108,.022);cyl(g,0xf3eee0,0,.025,0,.19,.19,.025)}
 else if(type==='cookie'){cyl(g,0xa9824f,0,.028,0,.17,.17,.04);for(let i=0;i<7;i++){let a=i*2.4;ball(g,0x6f5034,Math.cos(a)*.11,.053,Math.sin(a)*.11,.017)}}
 else if(type==='rice'){cyl(g,0xc0d2bf,0,.085,0,.16,.09,.16);let rice=ball(g,0xf7ebd5,0,.165,0,.148);rice.scale.y*=.48;for(let i=0;i<8;i++)ball(g,0xfaf3e3,(i%3-1)*.045,.20,(Math.floor(i/3)-1)*.04,.018)}
@@ -51,4 +53,3 @@ let mobile=host.clientWidth<450;camera.position.set(mode==='fridge'?3.2:3.2,mode
 const api={select(id){selection=id},step(v){stage=v},consume(id){let e=itemModels.find(e=>e.item.id===id);if(!e)return Promise.resolve();return new Promise(done=>{consuming={g:e.g,scale:e.g.scale.x,start:clock.getElapsedTime(),done}})},state(){return {mode,stage,selected:selection,items:itemModels.map(e=>e.item.id),door:doorAngle}},dispose(){active=false;cancelAnimationFrame(frame);observer.disconnect();if(consuming){consuming.done();consuming=null}scene.traverse(m=>{if(m.isMesh){m.geometry.dispose();if(m.material.map)m.material.map.dispose();m.material.dispose()}});renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove()}};
 host.getModelState=api.state;draw();return api;
 }
-

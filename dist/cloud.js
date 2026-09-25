@@ -43,7 +43,7 @@ export async function connectCloud(){
   gate.innerHTML='<div class="cloud-card"><h1>存档暂时没有载入成功</h1><button class="pill primary">重新载入</button></div>';gate.querySelector('button').onclick=()=>location.reload();await new Promise(()=>{});
  }
  gate.remove();
- let revision=current.revision,paired=current.paired,hooks=null,timer=null,flight=null,pending=null,blocked=false,polling=false;
+ let revision=current.revision,paired=current.paired,hooks=null,timer=null,flight=null,pending=null,blocked=false,polling=false,lifeBusy=false;
  let base=JSON.stringify(current.state);
  status.textContent='☁ 已载入云端存档';
  function showFailure(error){
@@ -75,11 +75,11 @@ export async function connectCloud(){
  }
  function schedule(){if(blocked)return;status.textContent='☁ 等待保存…';clearTimeout(timer);timer=setTimeout(flush,120)}
  async function refresh(){
-  if(blocked||flight||pending||polling||!hooks.canRefresh()||JSON.stringify(hooks.getState())!==base)return;
+  if(lifeBusy||blocked||flight||pending||polling||!hooks.canRefresh()||JSON.stringify(hooks.getState())!==base)return;
   polling=true;try{
    const next=await api('/api/state');
    // Do not replace changes made while the request was travelling.
-   if(blocked||flight||pending||!hooks.canRefresh()||JSON.stringify(hooks.getState())!==base)return;
+   if(lifeBusy||blocked||flight||pending||!hooks.canRefresh()||JSON.stringify(hooks.getState())!==base)return;
    if(next.revision!==revision){revision=next.revision;paired=next.paired;base=JSON.stringify(next.state);hooks.apply(next.state,true);status.textContent='☁ 已同步最新存档'}
   }catch(e){if(e.status===401)showFailure(e);else status.textContent='☁ 暂时离线 · 等待连接'}finally{polling=false}
  }
@@ -93,6 +93,16 @@ export async function connectCloud(){
   state:current.state,session,get paired(){return paired},
   save:schedule,flush,refresh,
   attach(h){hooks=h;status.onclick=()=>h.settings();setInterval(refresh,5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();else if(!blocked)flush()})},
+  async life(data){
+   if(lifeBusy)return null;lifeBusy=true;
+   try{
+    do{if(!(await flush()))return null;}while(pending||JSON.stringify(hooks.getState())!==base);
+    const before=JSON.stringify(hooks.getState());
+    const r=await api('/api/life',{...data,revision,command:newId()},session.csrf);
+    if(JSON.stringify(hooks.getState())!==before){const e=new Error('互动已保存，但页面另有修改，请导出副本后重新载入。');e.status=409;showFailure(e);return null}
+    revision=r.revision;paired=r.paired;base=JSON.stringify(r.state);hooks.apply(r.state,true);status.textContent='☁ 生活互动已保存';return r;
+    }catch(e){if(e.status===409&&!blocked&&!flight&&!pending&&JSON.stringify(hooks.getState())===base){try{const next=await api('/api/state');if(!flight&&!pending&&JSON.stringify(hooks.getState())===base){revision=next.revision;paired=next.paired;base=JSON.stringify(next.state);hooks.apply(next.state,true)}}catch{}}hooks.toast(e.message||'连接中断，请刷新确认本次互动是否已保存');return null}finally{lifeBusy=false}
+  },
   async invite(){return action('/api/invite')},
   async setJoinCode(code){return action('/api/join-code',{code})},
   async pair(code){const r=await action('/api/pair',{code});if(r)location.reload()},

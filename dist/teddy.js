@@ -19,7 +19,7 @@ export function createTeddy(parent,identity=0){
  for(let s of [-1,1]){ell(head,black,s*.094,.060,.218,.018,.022,.014);let glint=ell(head,new T.MeshBasicMaterial({color:0xf5f4ed}),s*.094-.004,.067,.229,.004,.005,.003)}
  const rainGear=createRainGear({body,head,arms});let rainy=false,currentIdentity=identity;
  function setIdentity(i){currentIdentity=i;const white=i===0;fur.color.set(white?0xf3f2ed:0x70432f);earMat.color.set(white?0xe0ddd6:0x753c28);muzzleMat.color.set(white?0xf3f2ed:0xf3e9d9);nose.scale.set(white?.041:.032,white?.032:.026,white?.028:.023);torso.scale.x=white?1.02:1;avatar.userData.identity=i}
+ const scarf=new T.Group();body.add(scarf);scarf.visible=false;const cloth=new T.MeshStandardMaterial({color:0x82b3a0,roughness:1});const collar=new T.Mesh(new T.TorusGeometry(.282,.037,12,40),cloth);collar.rotation.x=Math.PI/2;collar.scale.y=.81;collar.position.y=.69;scarf.add(collar);for(const x of [.07,.14]){const tail=new T.Mesh(new T.BoxGeometry(.055,.19,.027),cloth);tail.position.set(x,.60,.245);tail.rotation.z=x===.07?-.12:.15;scarf.add(tail)}
  setIdentity(identity);
- return {avatar,body,legs,arms,setIdentity,rain(v){if(rainy!==v){rainy=v;rainGear.set(v)}},rainTick(t,hold=true,shared=false){rainGear.tick(t,hold,shared)},rainState:rainGear.state};
+ return {avatar,body,legs,arms,setIdentity,outfit(v){scarf.visible=v!=="plain"&&!!v;cloth.color.set(v==="amber"?0xd4a15c:0x82b3a0)},rain(v){if(rainy!==v){rainy=v;rainGear.set(v)}},rainTick(t,hold=true,shared=false){rainGear.tick(t,hold,shared)},rainState:rainGear.state};
 }
-

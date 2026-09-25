@@ -92,6 +92,7 @@ export async function connectCloud(){
  return {
   state:current.state,session,get lastActionError(){return lastActionError},get paired(){return paired},
   save:schedule,flush,refresh,
+  get canAutoSync(){return !!hooks&&!lifeBusy&&!blocked&&!flight&&!pending&&!polling&&JSON.stringify(hooks.getState())===base},
   attach(h){hooks=h;status.onclick=()=>h.settings();setInterval(refresh,5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();else if(!blocked)flush()})},
   async mediaView(){return api('/api/media')},
   async media(data){return this.life(data,'/api/media')},
@@ -104,7 +105,7 @@ export async function connectCloud(){
     const r=await api(url,{...data,revision,command:newId()},session.csrf);
     if(JSON.stringify(hooks.getState())!==before){const e=new Error('互动已保存，但页面另有修改，请导出副本后重新载入。');e.status=409;lastActionError=e.message;showFailure(e);return null}
     revision=r.revision;paired=r.paired;base=JSON.stringify(r.state);hooks.apply(r.state,true);status.textContent='☁ 生活互动已保存';return r;
-    }catch(e){lastActionError=e.status?e.message:'连接中断，请刷新确认本次互动是否已保存。';if(e.status===409&&!blocked&&!flight&&!pending&&JSON.stringify(hooks.getState())===base){try{const next=await api('/api/state');if(!flight&&!pending&&JSON.stringify(hooks.getState())===base){revision=next.revision;paired=next.paired;base=JSON.stringify(next.state);hooks.apply(next.state,true)}}catch{}}hooks.toast(e.message||'连接中断，请刷新确认本次互动是否已保存');return null}finally{lifeBusy=false}
+    }catch(e){lastActionError=e.status?e.message:'连接中断，请刷新确认本次互动是否已保存。';if(e.status===409&&!blocked&&!flight&&!pending&&JSON.stringify(hooks.getState())===base){try{const next=await api('/api/state');if(!flight&&!pending&&JSON.stringify(hooks.getState())===base){revision=next.revision;paired=next.paired;base=JSON.stringify(next.state);hooks.apply(next.state,true)}}catch{}}if(!data.automatic)hooks.toast(e.message||'连接中断，请刷新确认本次互动是否已保存');return null}finally{lifeBusy=false}
   },
   async invite(){return action('/api/invite')},
   async setJoinCode(code){return action('/api/join-code',{code})},

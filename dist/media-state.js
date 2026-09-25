@@ -33,6 +33,6 @@ export function applyMedia(items,actor,paired,b,now=Date.now(),id=()=>crypto.ran
  }
  return event;
 }
-export const visibleMedia=(items,actor,paired)=>items.filter(x=>x.owner===actor||(paired&&x.shared)).map(x=>{const {readingLog,...visible}=x;if(x.owner===actor||x.shareProgress)return visible;const {progress,finished,...rest}=visible;return rest});
+export const visibleMedia=(items,actor,paired)=>items.filter(x=>x.owner===actor||(paired&&x.shared)).map(x=>{const {readingLog,readUpdateTime,...visible}=x;if(x.owner===actor)return {...visible,readUpdateTime};if(x.shareProgress)return visible;const {progress,finished,...rest}=visible;return rest});
 
 export function coverLink(value){if(typeof value!=='string'||value.length>2048)return '';try{const u=new URL(value);if(!['http:','https:'].includes(u.protocol)||u.username||u.password||u.port)return '';if(u.hostname!=='wfqqreader-1252317822.image.myqcloud.com'&&!['qpic.cn','qq.com'].some(h=>u.hostname===h||u.hostname.endsWith('.'+h)))return '';u.protocol='https:';return u.href}catch{return ''}}

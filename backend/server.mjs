@@ -155,10 +155,10 @@ async function api(req,res,p){
  if(p==='/api/media'){rate(req,'media',150);return json(res,200,mediaService.mutate(u.slot,b))}
  if(p==='/api/weread'){
   rate(req,b.action==='progress'?'weread-progress':'weread',b.action==='progress'?120:25);fail(secure||['127.0.0.1','localhost','[::1]'].includes(originURL.hostname),'请通过 HTTPS 绑定微信读书',403);
-  if(b.action==='progress')return json(res,200,await mediaService.progress(u.slot,b.id));
+  if(b.action==='progress')return json(res,200,await mediaService.progress(u.slot,b.id,b.automatic===true));
   if(b.action==='disconnect')return json(res,200,mediaService.disconnect(u.slot));
   fail(['bind','sync'].includes(b.action),'操作不存在');
-  return json(res,200,await mediaService.sync(u.slot,b.action==='bind'?b.key:undefined));
+  return json(res,200,await mediaService.sync(u.slot,b.action==='bind'?b.key:undefined,b.action==='sync'&&b.automatic===true));
  }
  if(p==='/api/life'){rate(req,'life',200);return json(res,200,store.life(u.slot,b))}
  if(p==='/api/state'){rate(req,'save',400);return json(res,200,store.save(u.slot,b))}

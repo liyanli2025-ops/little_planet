@@ -1,5 +1,7 @@
+import {createFridgeView} from './fridge-view.js';
 import * as T from './vendor/three.module.js';
 export function createModelView(host,options){
+if(options.mode==='fridge')return createFridgeView(host,options);
 const renderer=new T.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;host.appendChild(renderer.domElement);
 const scene=new T.Scene(),camera=new T.PerspectiveCamera(36,1,.1,70),root=new T.Group();scene.add(root);scene.add(new T.HemisphereLight(0xfffbea,0x799280,2.5));let light=new T.DirectionalLight(0xffe8c5,3);light.position.set(-3,7,5);light.castShadow=true;light.shadow.mapSize.set(1024,1024);scene.add(light);
 const cache=new Map();function mat(c){if(!cache.has(c))cache.set(c,new T.MeshStandardMaterial({color:c,roughness:.75}));return cache.get(c)}
@@ -23,14 +25,7 @@ else return food('milk',p);
 return g}
 const itemModels=[],pickables=[],steam=[],mode=options.mode;let selection=null,door=null,doorAngle=0,active=true,frame,phase=0,yaw=mode==='fridge'?-.08:.05,stage=options.stage||0,consuming=null;let panel=null,panGroup=null,plate=null,boardIngredients=[];
 function selectable(g,item){g.userData.item=item;g.traverse(m=>{if(m.isMesh){m.userData.item=item;pickables.push(m)}});itemModels.push({g,item,base:g.position.clone()})}
-if(mode==='fridge'){
-box(root,0x9db5a2,0,1.68,-.62,2.35,3.36,.13);box(root,0xabc0aa,-1.15,1.68,-.05,.14,3.36,1.16);box(root,0xabc0aa,1.15,1.68,-.05,.14,3.36,1.16);box(root,0xbed0b8,0,.04,0,2.35,.14,1.24);box(root,0xbed0b8,0,3.32,0,2.35,.14,1.24);box(root,0xe7ece0,0,1.67,-.535,2.08,3.17,.03);
-for(let y of [.25,1.15,2.05,2.95]){box(root,0xd3ded0,0,y,.02,2.1,.055,.98);box(root,0xf5eee0,0,y,.53,2.1,.065,.035)}
-let bulb=box(root,0xffe8a8,0,3.18,-.18,.42,.035,.24);bulb.material=mat(0xffe8a8).clone();bulb.material.emissive.set(0xffd78a);bulb.material.emissiveIntensity=.5;
-door=group(root,-1.13,0,.59);box(door,0xb1c5ac,1.14,1.68,0,2.28,3.32,.14);box(door,0x758e74,2.07,1.74,.13,.07,.58,.06);box(door,0xf4e4b7,.58,2.62,.084,.48,.37,.015);label(door,'FOR YOU',.58,2.62,.1,.4,.10);
-(options.items||[]).slice(0,9).forEach((item,i)=>{let g=food(item.food,root);g.position.set((i%3-1)*.64,.31+(2-Math.floor(i/3))*.9,.04);g.scale.setScalar(1.48);selectable(g,item);label(root,'×'+item.qty,g.position.x,g.position.y-.015,.555,.26,.09);if(item.gift){let gift=box(g,0xc99983,.13,.13,.06,.045,.25,.045);gift.rotation.z=.1}});
-label(root,'FRESH LITTLE THINGS',0,3.48,.1,1.7,.1);
-}else if(mode==='cook'){
+if(mode==='cook'){
 box(root,0xb39972,0,.02,0,3.8,.18,2);box(root,0xd7c9a4,0,.14,0,3.92,.07,2.07);box(root,0xb69362,-.8,.21,.37,1.45,.08,.78);
 panGroup=group(root,.9,.25,-.03);cyl(panGroup,0x596656,0,.03,0,.53,.48,.1);cyl(panGroup,0x394d42,0,.096,0,.46,.46,.035);box(panGroup,0x9d7c51,0,.04,.75,.14,.09,.65);for(let i=0;i<7;i++){let m=ball(panGroup,0xc0cbb9,(i%3-1)*.12,.2,Math.floor(i/3)*.1,.07);m.material=new T.MeshBasicMaterial({color:0xfaf8e8,transparent:true,opacity:.38,depthWrite:false});steam.push(m)}
 const ingredients=Object.keys(options.needs||{rice:1,egg:1,tomato:1});ingredients.forEach((type,i)=>{let g=food(type,root);g.position.set(-1.35+i*.45,.24,-.51);g.scale.setScalar(1.2);g.userData.type=type;boardIngredients.push(g);selectable(g,{id:type,food:type,step:true})});

@@ -1,3 +1,4 @@
+import {foodCatalog} from '../dist/food-catalog.js';
 import {freshLife,applyLife} from '../dist/life-state.js';
 
 import {DatabaseSync} from 'node:sqlite';
@@ -14,7 +15,7 @@ const integer=(v,min=0,max=1000000)=>Number.isSafeInteger(v)&&v>=min&&v<=max;
 const text=(v,max)=>typeof v==='string'&&v.length<=max;
 const id=v=>typeof v==='string'&&/^[a-zA-Z0-9_-]{8,80}$/.test(v);
 const keys=(v,allowed)=>isObj(v)&&Object.keys(v).every(k=>allowed.includes(k));
-const foods=['milk','pudding','cookie','rice','egg','tomato','carrot','strawberry'];
+const foods=Object.keys(foodCatalog);
 const bagItems=[...foods,'rose','tulip','sunflower'];
 const baseWorld=i=>({weather:i?'rain':'sun',deco:false,camp:false,pet:{feeds:0,games:0,walks:0},fridge:['milk','pudding','rice','egg','tomato'].map(food=>({id:randomUUID(),food,qty:3})),meals:[]});
 const emptyWorld=()=>({weather:'sun',deco:false,camp:false,pet:{feeds:0,games:0,walks:0},fridge:[],meals:[]});

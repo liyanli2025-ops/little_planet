@@ -117,3 +117,14 @@ test('HTTP registration, sessions, CSRF, origin, pairing, privacy and logout',as
  }finally{const exited=new Promise(r=>child.once('exit',r));child.kill();await exited}
 });
 test.after(()=>{for(const dir of dirs)fs.rmSync(dir,{recursive:true,force:true})});
+
+test('expanded fridge stock and bag survive restart without changing old food',()=>{
+ const s=setup(),file=s.db.location();const original=s.get(0).state.worlds[0].fridge;
+ const additions=['noodles','skewers','roujiamo','salad','fish','icecream'].map(food=>({id:randomUUID(),food,qty:2}));
+ commit(s,0,x=>x.worlds[0].fridge.push(...additions));
+ commit(s,0,x=>{x.worlds[0].fridge.find(i=>i.food==='noodles').qty--;x.bags[0].noodles=1;x.worlds[0].fridge.find(i=>i.food==='salad').qty--});
+ assert.deepEqual(s.get(0).state.worlds[0].fridge.slice(0,original.length),original);
+ pair(s);assert.throws(()=>commit(s,1,x=>x.worlds[0].fridge.push({id:randomUUID(),food:'salad',qty:1})),/新食物需要属于自己的赠礼记录/);
+ s.db.close();const reopened=openStore(file);assert.equal(reopened.get(0).state.bags[0].noodles,1);assert.equal(reopened.get(0).state.worlds[0].fridge.find(i=>i.food==='salad').qty,1);reopened.db.close();
+});
+

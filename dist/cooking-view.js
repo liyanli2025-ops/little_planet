@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {createTeddy} from './teddy.js?v=14';
+import {createTeddy} from './teddy.js?v=15';
 import {makeDish} from './dish-models.js';
 import {makeFood} from './food-models.js';
 import {recipes} from './recipe-catalog.js';

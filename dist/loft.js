@@ -15,8 +15,14 @@ export function createLoft({indoor,box,ball,cylinder,group,tag}){
  box(bed,0x8fa99b,0,.58,.23,1.62,.12,1.48);
  for(const x of [-.39,.39]){const pillow=ball(bed,0xf7edda,x,.63,-.71,.3,20);pillow.scale.set(.34,.095,.22)}
  for(let i=0;i<5;i++)box(bed,0xaec2ae,-.65+i*.32,.647,.47,.025,.008,.96);
- tag(bed,'bed');
- const cover=ball(upper,0x9db7a8,-1.2,1.04,.07,.5,24);cover.scale.set(.56,.15,.48);cover.visible=false;
+ const sleepPillow=ball(bed,0xf7edda,0,.65,-.66,.3,24);sleepPillow.scale.set(.43,.105,.26);sleepPillow.visible=false;tag(bed,'bed');
+ const cover=new T.Group();upper.add(cover);cover.visible=false;
+ const cloth=new T.MeshStandardMaterial({color:0xb8cbb4,roughness:1,side:T.DoubleSide});
+ function quiltY(x,z){const edge=Math.abs(x)/.84;const body=.53*Math.exp(-Math.pow(x/.43,4))*Math.exp(-Math.pow((z+.55)/.56,4));return .64+body-.14*Math.pow(edge,6)+.011*Math.sin(x*36+z*10)*(.3+edge);}
+ const verts=[],uv=[],ids=[],nx=40,nz=40;for(let j=0;j<=nz;j++){const z=-.93+j/nz*1.53;for(let i=0;i<=nx;i++){const x=-.84+i/nx*1.68;verts.push(-1.2+x,quiltY(x,z),z);uv.push(i/nx,j/nz);if(i<nx&&j<nz){let k=j*(nx+1)+i;ids.push(k,k+nx+1,k+1,k+1,k+nx+1,k+nx+2)}}}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(verts,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.setIndex(ids);geo.computeVertexNormals();const quilt=new T.Mesh(geo,cloth);quilt.castShadow=quilt.receiveShadow=true;cover.add(quilt);
+ const stitch=new T.MeshStandardMaterial({color:0xe6e6ce,roughness:1});for(let i=0;i<8;i++){const x=-.76+i*.217;const pts=[];for(let j=0;j<=30;j++){const z=-.93+j/30*1.53;pts.push(new T.Vector3(-1.2+x,quiltY(x,z)+.005,z))}cover.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts),32,.003,5,false),stitch));}
+ const fold=[];for(let i=0;i<=40;i++){const x=-.84+i/40*1.68;fold.push(new T.Vector3(-1.2+x,quiltY(x,-.93)+.012,-.93))}cover.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(fold),48,.025,10,false),stitch));
+
  const nightstand=group(upper,.1,0,-1.25);box(nightstand,0xbd9e74,0,.29,0,.57,.55,.53);box(nightstand,0xe1cfa9,0,.31,.28,.45,.32,.02);ball(nightstand,0x8e7554,0,.32,.31,.035);
  cylinder(nightstand,0xb89963,0,.7,0,.025,.025,.28);cylinder(nightstand,0xf3db9b,0,.91,0,.14,.24,.24);tag(nightstand,'bed');
  const lamp=new T.PointLight(0xffd6a0,.7,4);lamp.position.set(.1,1,-1.25);upper.add(lamp);
@@ -36,5 +42,5 @@ export function createLoft({indoor,box,ball,cylinder,group,tag}){
  box(stairs,0xb49369,2.85,2.6,-1.7,1.05,.2,.55);tag(stairs,'stairs');
  for(const x of [-2.6,-1.9,-1.2,-.5,.2,.9,1.6,2.3])box(upper,0xb6946a,x,.4,2.15,.045,.75,.045);
  box(upper,0xb6946a,-.15,.8,2.15,5.35,.055,.07);
- return {upper,cover,wardrobe(v){opened=v},wash(){washLeft=3},tick(dt){doors.forEach((g,i)=>g.rotation.y+=((opened?(i?1:-1)*1.3:0)-g.rotation.y)*.12);washLeft=Math.max(0,washLeft-dt);stream.visible=washLeft>0},show(floor){upper.visible=floor===1},sleep(v){cover.visible=v}};
+ return {upper,cover,wardrobe(v){opened=v},wash(){washLeft=3},tick(dt){doors.forEach((g,i)=>g.rotation.y+=((opened?(i?1:-1)*1.3:0)-g.rotation.y)*.12);washLeft=Math.max(0,washLeft-dt);stream.visible=washLeft>0},show(floor){upper.visible=floor===1},sleep(v){cover.visible=v;sleepPillow.visible=v;bed.children.forEach(o=>{if(o.position.y===.58||o.position.y===.647||o.position.y===.63)o.visible=!v})}};
 }

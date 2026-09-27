@@ -13,3 +13,13 @@
 #world-clock,#world-clock.sky-compact,#world-clock:hover{background:transparent;border:0;border-radius:0;box-shadow:none;backdrop-filter:none;padding:0;min-width:0;gap:3px;pointer-events:auto;overflow:visible;text-shadow:0 1px 5px #ffffffb0}
 #world-clock .sky-place{font-size:14px}#world-clock .sky-time{font-size:15px;letter-spacing:.05em}#world-clock .sky-weather{display:flex;align-items:center;gap:10px;line-height:1.1;margin-top:4px}#world-clock .sky-symbol{font-size:36px}#world-clock .sky-temperature{font-size:36px;font-weight:500}#world-clock .sky-condition{font-size:12px;white-space:normal;max-width:170px}
 #reset-scene{position:absolute;right:20px;top:calc(125px + env(safe-area-inset-top,0px));z-index:3;color:#355648;background:#fafbf5bc;border:1px solid #ffffff80;border-radius:50%;width:40px;height:40px;font-size:23px}#reset-scene[hidden]{display:none}
+
+/* Edge-to-edge sticky glass: no top padding gap for rotating artwork to leak through. */
+#panel{padding:0;overflow:auto;isolation:isolate;overscroll-behavior:contain;scroll-padding-top:94px}
+#panel .modal-head{position:sticky;top:0;z-index:10;margin:0;padding:20px 22px 16px;min-height:80px;align-items:center;background:rgba(252,251,244,.82);-webkit-backdrop-filter:blur(20px) saturate(125%);backdrop-filter:blur(20px) saturate(125%);border-bottom:1px solid #e1e5da66}
+#panel .modal-head h2{margin:0;line-height:1.35}#panel-body{padding:20px 22px 24px;position:relative;z-index:0}
+#panel #close-panel{position:relative;flex:0 0 40px;width:40px;height:40px;min-height:40px;padding:0;align-self:center;line-height:1}
+#panel[data-page=radio] #close-panel{display:flex;align-items:center;justify-content:center;font-size:0}
+#panel[data-page=radio] #close-panel::after{content:'';position:absolute;left:50%;top:46%;width:10px;height:10px;border-right:2px solid currentColor;border-bottom:2px solid currentColor;transform:translate(-50%,-50%) rotate(45deg);font-size:0}
+.fm-controls .fm-icon{display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;line-height:1}.fm-controls .fm-icon svg{display:block;flex-shrink:0}.fm-controls .fm-play{flex:0 0 58px;width:58px;height:58px}
+@media(max-width:359px){#panel .modal-head{padding:16px;min-height:72px}#panel-body{padding:16px}.fm-controls{gap:14px}}

@@ -51,3 +51,11 @@
 .stock-foods button span:first-child{font-size:25px}.stock-foods button span:last-child{margin-left:auto;color:#6c8468}
 @media(max-width:600px){#panel[data-page="fridge"] #model-stage{height:390px}#panel[data-page="fridge"] .modal-head{min-height:66px;padding-top:12px;padding-bottom:12px}#panel[data-page="fridge"] #panel-body{padding:0 10px 16px}}
 #panel[data-page="fridge"] .selected-food>div:last-child{display:flex;justify-content:center;gap:8px;width:100%}
+#app #activity-dock.hammock-dock{width:auto;left:50%;transform:translateX(-50%);padding:0;border:0;background:transparent;box-shadow:none;backdrop-filter:none}
+.hammock-dock>button{border:1px solid #ffffff80;background:#faf9efdf;backdrop-filter:blur(12px);border-radius:24px;padding:12px 26px;font-size:14px;color:#395b49}
+#panel[data-page="fridge"] .selected-food>div:last-child{flex-wrap:wrap}
+.recipe-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;max-height:160px;overflow:auto;padding:3px}
+.recipe-grid button{padding:10px 5px;font-size:12px;border:1px solid #dfe4d7;border-radius:14px;background:#f1f3e8}.recipe-grid button.active{background:#dce6d6;border-color:#6c8974}.recipe-grid span{display:block;font-size:24px;margin-bottom:4px}.recipe-ingredients{font-size:12px;color:#7c8b76;margin:10px 0}.recipe-ingredients p{font-size:12px!important}
+#panel[data-page="cook"] #model-stage{height:330px;min-height:0;background:radial-gradient(ellipse,#e7ede0,#fbf9ee);border-radius:22px;margin-top:12px}
+#panel[data-page="cook"] #cook-controls{text-align:center}#panel[data-page="cook"] .chips{justify-content:center}
+#panel[data-page="cook"] .form-actions{justify-content:center}

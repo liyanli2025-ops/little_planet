@@ -1,3 +1,4 @@
+import {recipes} from '../dist/recipe-catalog.js';
 import {foodCatalog} from '../dist/food-catalog.js';
 import {freshLife,applyLife} from '../dist/life-state.js';
 
@@ -106,7 +107,7 @@ export function openStore(filename){
   fail(Array.isArray(w.fridge)&&w.fridge.every(isObj)&&w.fridge.length<=500&&new Set(w.fridge.map(i=>i.id)).size===w.fridge.length,'冰箱最多存放 500 组食物');
   fail(w.fridge.every(i=>keys(i,['id','food','qty','event'])&&id(i.id)&&foods.includes(i.food)&&integer(i.qty,1,999)&&(!i.event||id(i.event))));
   fail(Array.isArray(w.meals)&&w.meals.every(isObj)&&w.meals.length<=500&&new Set(w.meals.map(i=>i.id)).size===w.meals.length,'餐桌最多存放 500 份饭菜');
-  fail(w.meals.every(i=>keys(i,['id','recipe','owner','event','together'])&&id(i.id)&&['omelet','toast','milk'].includes(i.recipe)&&[0,1].includes(i.owner)&&id(i.event)&&i.together===false));
+  fail(w.meals.every(i=>keys(i,['id','recipe','owner','event','together'])&&id(i.id)&&Object.hasOwn(recipes,i.recipe)&&[0,1].includes(i.owner)&&id(i.event)&&i.together===false));
  }
  function validateWorldChange(prev,next,slot,owner,events,priorEvents){
   validateWorld(next);

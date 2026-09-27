@@ -8,7 +8,7 @@ export function makeFood(id){const f=foodCatalog[id];if(!f)throw Error('Unknown 
  switch(f.shape){
  case 'carton':box(0xf3edde,0,.2,0,.22,.37,.18);box(c,0,.19,.093,.204,.20,.009);const roof=cyl(0xf1ead6,0,.416,0,.06,.155,.085);roof.rotation.y=Math.PI/4;box(c,0,.45,0,.22,.02,.035);cyl(0xe7d1b4,.065,.41,.027,.025,.025,.035);break;
  case 'bottle':cyl(c,0,.16,0,.09,.085,.29);ball(c,0,.30,0,.09,.08,.09);cyl(c,0,.365,0,.038,.038,.09);cyl(0xe9d9b8,0,.419,0,.046,.046,.025);cyl(0xf4ead1,0,.16,0,.092,.092,.11);break;
- case 'can':cyl(c,0,.17,0,.086,.086,.31);cyl(0xd9dcd2,0,.33,0,.083,.083,.018);mesh(new T.TorusGeometry(.022,.005,6,14),0x718378,0,.342,0).rotation.x=Math.PI/2;break;
+ case 'can':if(id==='cola'){box(0xf2ead4,0,.16,.087,.12,.035,.007);box(0xf2ead4,.018,.205,.087,.09,.018,.007)}cyl(c,0,.17,0,.086,.086,.31);cyl(0xd9dcd2,0,.33,0,.083,.083,.018);mesh(new T.TorusGeometry(.022,.005,6,14),0x718378,0,.342,0).rotation.x=Math.PI/2;break;
  case 'cup':cyl(c,0,.15,0,.105,.08,.28);cyl(0xf0e8d8,0,.3,0,.114,.114,.025);box(0xe8b796,.03,.41,0,.013,.2,.013);break;
  case 'jar':cyl(c,0,.14,0,.106,.098,.25);cyl(0xc5ac7b,0,.275,0,.11,.11,.032);box(0xf0e3c7,0,.145,.103,.14,.09,.01);break;
  case 'egg':tray();for(let i=0;i<4;i++)ball(c,(i%2-.5)*.14,.11,(Math.floor(i/2)-.5)*.12,.056,.08,.056);break;

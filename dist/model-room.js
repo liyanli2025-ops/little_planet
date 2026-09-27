@@ -1,6 +1,9 @@
+import {createCookingView} from './cooking-view.js';
+import {makeDish} from './dish-models.js';
 import {createFridgeView} from './fridge-view.js';
 import * as T from './vendor/three.module.js';
 export function createModelView(host,options){
+if(options.mode==='cook')return createCookingView(host,options);
 if(options.mode==='fridge')return createFridgeView(host,options);
 const renderer=new T.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.7));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.12;host.appendChild(renderer.domElement);
 const scene=new T.Scene(),camera=new T.PerspectiveCamera(36,1,.1,70),root=new T.Group();scene.add(root);scene.add(new T.HemisphereLight(0xfffbea,0x799280,2.5));let light=new T.DirectionalLight(0xffe8c5,3);light.position.set(-3,7,5);light.castShadow=true;light.shadow.mapSize.set(1024,1024);scene.add(light);
@@ -34,7 +37,7 @@ const boardTarget=box(root,0xb89864,-.76,.259,.34,1.47,.008,.8);boardTarget.user
 label(root,'MADE WITH CARE',0,.04,1.05,1.8,.1);
 }else{
 box(root,0xbca074,0,.02,0,3.7,.14,1.9);box(root,0xe2d6b8,0,.102,0,2.8,.012,1.3);
-(options.items||[]).slice(0,6).forEach((item,i)=>{let g=food(item.recipe||'omelet',root);g.position.set((i%3-1)*.92,.15,(Math.floor(i/3)-.5)*.72);g.scale.setScalar(1.3);if(item.locked){g.clear();box(g,0xb3c5a2,0,.16,0,.55,.28,.42);box(g,0xd4dfbb,0,.32,0,.59,.04,.45)}selectable(g,item)});
+(options.items||[]).slice(0,6).forEach((item,i)=>{let g=['omelet','toast','milk'].includes(item.recipe)?food(item.recipe,root):makeDish(item.recipe);if(!g.parent)root.add(g);g.position.set((i%3-1)*.92,.15,(Math.floor(i/3)-.5)*.72);g.scale.setScalar(1.3);if(item.locked){g.clear();box(g,0xb3c5a2,0,.16,0,.55,.28,.42);box(g,0xd4dfbb,0,.32,0,.59,.04,.45)}selectable(g,item)});
 }
 function resize(){let w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}let observer=new ResizeObserver(resize);observer.observe(host);resize();
 let ray=new T.Raycaster(),down=null;renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,yaw};renderer.domElement.setPointerCapture(e.pointerId)});renderer.domElement.addEventListener('pointermove',e=>{if(down)yaw=T.MathUtils.clamp(down.yaw+(e.clientX-down.x)*.004,-.45,.6)});renderer.domElement.addEventListener('pointerup',e=>{if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<7){let rect=host.getBoundingClientRect();ray.setFromCamera(new T.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);let hit=ray.intersectObjects(pickables).find(h=>h.object.visible&&h.object.parent.visible);if(hit){if(mode==='cook')options.onStep?.();else{api.select(hit.object.userData.item.id);options.onSelect?.(hit.object.userData.item)}}}down=null});renderer.domElement.addEventListener('pointercancel',()=>down=null);

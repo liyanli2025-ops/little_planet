@@ -128,3 +128,5 @@ test('expanded fridge stock and bag survive restart without changing old food',(
  s.db.close();const reopened=openStore(file);assert.equal(reopened.get(0).state.bags[0].noodles,1);assert.equal(reopened.get(0).state.worlds[0].fridge.find(i=>i.food==='salad').qty,1);reopened.db.close();
 });
 
+
+test('new cooked dishes persist with recipient ownership and reject unknown recipes',()=>{const s=setup();pair(s);const e=event(0,1,0),meal={id:randomUUID(),recipe:'porkdumplings',owner:1,event:e.id,together:false};commit(s,0,x=>{x.events.push(e);x.worlds[0].meals.push(meal)});assert.equal(s.get(1).state.worlds[0].meals[0].recipe,'porkdumplings');assert.throws(()=>commit(s,0,x=>x.worlds[0].meals=[]),/只能吃/);assert.throws(()=>commit(s,0,x=>x.worlds[0].meals.push({...meal,id:randomUUID(),recipe:'not-a-recipe'})),/数据格式/);s.db.close()});

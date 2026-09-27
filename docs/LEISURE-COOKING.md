@@ -1,0 +1,9 @@
+# Leisure drinks and automatic cooking
+
+- Cola and flour extend the shared food catalogue to 54 entries without changing existing saves.
+- Drink selection offers sunbathing for cola, milk, juice, soy milk, water, tea, sparkling water and coffee. The resident routes outside to a two-tree hammock. Cancelling the route retains the serving; arrival consumes exactly one and records a diary entry. The bear wears sunglasses, sways and raises the held drink periodically. Standing restores ordinary posture and removes the prop/glasses. Weather and global audio are not changed.
+- Kitchen recipes are shared by frontend models and backend validation (`recipe-catalog.js`). 26 dishes cover rice meals, noodles, dumplings, buns, grilled meat, sandwiches, salad, soup and dessert. Flour is available in the ingredient catalogue.
+- Select a recipe and start. One 8-second scene shows a chef-hat bear preparing, stirring and serving. Noodles stretch between both hands; dumpling wrappers fold around filling. Ingredients are deducted and the meal saved only after completion. Closing/cancelling beforehand produces no meal and uses no ingredients.
+- Ingredient names are collapsed; missing ingredients can be filled for the selected recipe on the resident's own planet. Recipient permissions, asynchronous gifts and old recipe IDs are preserved. The table selects the freshly served meal and paginates beyond six dishes.
+
+QA: Browser plugin not available, so local headless Playwright used a fresh temporary database. Mobile/desktop screenshots and live UI assertions cover cancellation, arrival, stocking cola, inventory persistence, pulling noodles, folding dumplings, stirring, serving once and partner meal ownership. Unit coverage checks every recipe's ingredients/model and backend validation/ownership.

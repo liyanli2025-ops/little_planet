@@ -11,11 +11,12 @@ export function createTeddy(parent,identity=0){
  const torso=new T.Mesh(new T.LatheGeometry(pts,64),fur);torso.scale.z=.81;torso.castShadow=torso.receiveShadow=true;body.add(torso);
  const legs=[],arms=[];
  for(let i=0;i<2;i++){let s=i?1:-1,g=new T.Group();body.add(g);g.position.set(s*.145,.25,0);g.name='leg-'+i;ell(g,fur,0,-.078,.022,.128,.167,.144);legs.push(g)}
- for(let i=0;i<2;i++){let s=i?1:-1,g=new T.Group();body.add(g);g.position.set(s*.27,.61,0);g.name='arm-'+i;let arm=ell(g,fur,s*.027,-.16,0,.102,.222,.115);arm.rotation.z=s*.13;arms.push(g)}
+ for(let i=0;i<2;i++){let s=i?1:-1,g=new T.Group();body.add(g);g.position.set(s*.27,.61,0);g.name='arm-'+i;ell(body,fur,s*.245,.61,0,.102,.10,.113).name='shoulder-root-'+i;const joint=ell(g,fur,0,0,0,.092,.092,.102);joint.name='shoulder-joint';let arm=ell(g,fur,s*.027,-.16,0,.102,.222,.115);arm.rotation.z=s*.13;arms.push(g)}
  for(let s of [-1,1]){ell(head,fur,s*.218,.215,-.005,.089,.093,.061);ell(head,earMat,s*.218,.216,.047,.052,.058,.012)}
  const muzzle=ell(head,muzzleMat,0,-.009,.228,.095,.092,.065);
  const nose=ell(head,black,0,.023,.288,.032,.026,.023);
  let mouth=new T.Mesh(new T.CapsuleGeometry(.004,.032,6,10),black);mouth.position.set(0,-.010,.294);head.add(mouth);
+ const smile=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([new T.Vector3(-.025,-.017,.293),new T.Vector3(0,-.035,.297),new T.Vector3(.025,-.017,.293)]),20,.0034,8,false),black);head.add(smile);smile.visible=false;
  const openEyes=new T.Group(),closedEyes=new T.Group();head.add(openEyes,closedEyes);closedEyes.visible=false;for(const side of [-1,1]){const points=[];for(let j=0;j<=12;j++){const x=(j/12-.5)*.041;points.push(new T.Vector3(side*.094+x,.06-.012*Math.sin(j/12*Math.PI),.232))}closedEyes.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(points),16,.0035,8,false),black));}
  for(let s of [-1,1]){ell(openEyes,black,s*.094,.060,.218,.018,.022,.014);let glint=ell(openEyes,new T.MeshBasicMaterial({color:0xf5f4ed}),s*.094-.004,.067,.229,.004,.005,.003)}
 
@@ -40,5 +41,5 @@ export function createTeddy(parent,identity=0){
  function setIdentity(i){currentIdentity=i;const white=i===0;fur.color.set(white?0xf3f2ed:0x70432f);earMat.color.set(white?0xe0ddd6:0x753c28);muzzleMat.color.set(white?0xf3f2ed:0xf3e9d9);nose.scale.set(white?.041:.032,white?.032:.026,white?.028:.023);torso.scale.x=white?1.02:1;avatar.userData.identity=i}
  const scarf=new T.Group();body.add(scarf);scarf.visible=false;const cloth=new T.MeshStandardMaterial({color:0x82b3a0,roughness:1});const collar=new T.Mesh(new T.TorusGeometry(.282,.037,12,40),cloth);collar.rotation.x=Math.PI/2;collar.scale.y=.81;collar.position.y=.69;scarf.add(collar);for(const x of [.07,.14]){const tail=new T.Mesh(new T.BoxGeometry(.055,.19,.027),cloth);tail.position.set(x,.60,.245);tail.rotation.z=x===.07?-.12:.15;scarf.add(tail)}
  setIdentity(identity);
- return {avatar,body,legs,arms,setIdentity,sunglasses(v){sunglasses.visible=!!v},get sleeping(){return closedEyes.visible},sleep(v){openEyes.visible=!v;closedEyes.visible=!!v;arms.forEach((g,i)=>g.position.x=(i?1:-1)*(v?.20:.27))},mask(v){mask.visible=!!v},headphones(v){headphones.visible=!!v},get listening(){return headphones.visible},outfit(v){scarf.visible=v!=="plain"&&!!v;cloth.color.set(v==="amber"?0xd4a15c:0x82b3a0)},rain(v){if(rainy!==v){rainy=v;rainGear.set(v)}},rainTick(t,hold=true,shared=false){rainGear.tick(t,hold,shared)},rainState:rainGear.state};
+ return {avatar,body,legs,arms,setIdentity,relax(v){smile.visible=!!v;mouth.visible=!v},sunglasses(v){sunglasses.visible=!!v},get sleeping(){return closedEyes.visible},sleep(v){openEyes.visible=!v;closedEyes.visible=!!v;arms.forEach((g,i)=>g.position.x=(i?1:-1)*(v?.20:.27))},mask(v){mask.visible=!!v},headphones(v){headphones.visible=!!v},get listening(){return headphones.visible},outfit(v){scarf.visible=v!=="plain"&&!!v;cloth.color.set(v==="amber"?0xd4a15c:0x82b3a0)},rain(v){if(rainy!==v){rainy=v;rainGear.set(v)}},rainTick(t,hold=true,shared=false){rainGear.tick(t,hold,shared)},rainState:rainGear.state};
 }

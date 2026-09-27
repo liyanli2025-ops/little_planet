@@ -18,7 +18,7 @@ test('location validation rounds GPS coordinates and rejects invalid inputs',()=
 test('cached weather persists, respects visibility, retains stale data and avoids duplicate requests',async()=>{
  const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT NOT NULL)');
  let calls=0,now=Date.now(),offline=false;
- const request=async()=>{calls++;if(offline)throw Error('offline');await new Promise(r=>setTimeout(r,5));return {ok:true,json:async()=>sample}};
+ const request=async(url)=>{if(String(url).includes("air-quality"))return {ok:true,json:async()=>({})};calls++;if(offline)throw Error('offline');await new Promise(r=>setTimeout(r,5));return {ok:true,json:async()=>sample}};
  let service=createWeatherService(db,request,()=>now);
  service.configure(0,{mode:'auto',location:{label:'上海',latitude:31.23,longitude:121.47}});
  service.configure(1,{mode:'auto',location:{label:'杭州',latitude:30.3,longitude:120.2}});
@@ -34,7 +34,7 @@ test('cached weather persists, respects visibility, retains stale data and avoid
 });
 test('in-flight weather for an old city cannot overwrite the new city',async()=>{
  const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT NOT NULL)');
- let resolve;const service=createWeatherService(db,()=>new Promise(r=>resolve=r));
+ let resolve;const service=createWeatherService(db,url=>String(url).includes("air-quality")?Promise.resolve({ok:true,json:async()=>({})}):new Promise(r=>resolve=r));
  service.configure(0,{mode:'auto',location:{label:'上海',latitude:31.2,longitude:121.5}});
  const old=service.get(0,false);
  service.configure(0,{mode:'auto',location:{label:'北京',latitude:39.9,longitude:116.4}});
@@ -44,3 +44,15 @@ test('in-flight weather for an old city cannot overwrite the new city',async()=>
 import {nearestPlace} from '../backend/place.mjs';
 test('approximate place names resolve offline without inventing remote cities',()=>{assert.equal(nearestPlace(30.3,120.2),'杭州');assert.match(nearestPlace(31.2,121.5),/上海/);assert.equal(nearestPlace(39.9,116.4),'北京');assert.equal(nearestPlace(0,-140),null);assert.equal(nearestPlace(NaN,1),null)});
 test('legacy device label is replaced with a place name while preserving weather',async()=>{const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT)');const weather=createWeatherService(db,async()=>new Response(JSON.stringify(sample)));weather.configure(0,{mode:'auto',location:{label:'定位中',latitude:30.3,longitude:120.2}});let r=await weather.get(0,false);assert.equal(r.worlds[0].location.label,'杭州');assert.equal(r.worlds[1],null);const old=JSON.parse(db.prepare('SELECT value FROM settings').get().value);old.location.label='设备所在地';db.prepare('UPDATE settings SET value=?').run(JSON.stringify(old));r=await weather.get(0,false);assert.equal(r.worlds[0].location.label,'杭州');assert.equal(r.worlds[0].snapshot.temperature,26.6);db.close()});
+
+import {environmentKind} from '../dist/sky-state.js';
+test('weather distinguishes clouds, fog and particulate haze without losing rain',()=>{assert.equal(weatherKind(2).mode,'cloudy');assert.equal(weatherKind(3).mode,'overcast');assert.equal(weatherKind(45).mode,'fog');const airQuality={pm25:90,pm10:100,observedAt:Date.now()};assert.equal(environmentKind({code:0,airQuality}).mode,'haze');assert.equal(environmentKind({code:61,airQuality}).mode,'rain');assert.equal(environmentKind({code:61,airQuality}).mask,true);assert.equal(environmentKind({code:45}).mask,false);assert.equal(environmentKind({code:0,airQuality:{...airQuality,observedAt:0}}).mask,false)});
+
+// Air-quality errors are independent of weather; fresh particle data survives caching.
+test('air-quality is optional, cached with weather and never substitutes a failed forecast',async()=>{
+ const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT)');let now=Date.now(),airDown=false,calls=0;
+ const service=createWeatherService(db,async url=>{if(String(url).includes('air-quality')){calls++;if(airDown)throw Error('offline');return {ok:true,json:async()=>({current:{time:now/1000,pm2_5:88,pm10:110}})}}return {ok:true,json:async()=>sample}},()=>now);
+ service.configure(0,{mode:'auto',location:{label:'北京',latitude:39.9,longitude:116.4}});
+ let r=await service.get(0,false);assert.equal(r.worlds[0].snapshot.airQuality.pm25,88);await service.get(0,false);assert.equal(calls,1);
+ airDown=true;now+=16*60000;r=await service.get(0,false);assert.equal(r.worlds[0].snapshot.temperature,26.6);assert.equal(r.worlds[0].snapshot.airQuality,undefined);db.close();
+});

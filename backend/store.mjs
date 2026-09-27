@@ -100,7 +100,7 @@ export function openStore(filename){
   return [...current.filter(e=>!allowed.has(e.id)),...proposed];
  }
  function validateWorld(w){
-  fail(keys(w,['weather','deco','camp','pet','fridge','meals','life'])&&['sun','rain','snow','night'].includes(w.weather)&&typeof w.deco==='boolean'&&typeof w.camp==='boolean');
+  fail(keys(w,['weather','deco','camp','pet','fridge','meals','life'])&&['sun','cloudy','overcast','fog','haze','rain','snow','night'].includes(w.weather)&&typeof w.deco==='boolean'&&typeof w.camp==='boolean');
   fail(keys(w.pet,['feeds','games','walks'])&&['feeds','games','walks'].every(k=>integer(w.pet[k])));
   fail(Array.isArray(w.fridge)&&w.fridge.every(isObj)&&w.fridge.length<=500&&new Set(w.fridge.map(i=>i.id)).size===w.fridge.length,'冰箱最多存放 500 组食物');
   fail(w.fridge.every(i=>keys(i,['id','food','qty','event'])&&id(i.id)&&foods.includes(i.food)&&integer(i.qty,1,999)&&(!i.event||id(i.event))));

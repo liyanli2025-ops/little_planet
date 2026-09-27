@@ -43,7 +43,9 @@ export function createWeatherService(db,request=fetch,clock=Date.now){
   const job=(async()=>{
    try{
     const u=new URL('https://api.open-meteo.com/v1/forecast');u.search=new URLSearchParams({latitude:String(c.location.latitude),longitude:String(c.location.longitude),current:'temperature_2m,weather_code,is_day',daily:'sunrise,sunset',timezone:'auto',forecast_days:'2',timeformat:'unixtime'});
-    const snapshot=normalizeWeather(await remote(u),clock()),latest=read(slot);
+    const snapshot=normalizeWeather(await remote(u),clock());
+    try{const a=new URL('https://air-quality-api.open-meteo.com/v1/air-quality');a.search=new URLSearchParams({latitude:String(c.location.latitude),longitude:String(c.location.longitude),current:'pm2_5,pm10',timeformat:'unixtime'});const v=(await remote(a)).current;if(Number.isFinite(v?.time)&&Number.isFinite(v.pm2_5)&&v.pm2_5>=0&&Number.isFinite(v.pm10)&&v.pm10>=0)snapshot.airQuality={pm25:v.pm2_5,pm10:v.pm10,observedAt:v.time*1000};}catch{/* Missing air quality must not discard valid weather. */}
+    const latest=read(slot);
     if(JSON.stringify(latest.location)===JSON.stringify(c.location)){write(slot,{...latest,snapshot});retry.delete(slot)}
    }catch{retry.set(slot,clock()+60000)}
   })();busy.set(slot,job);try{await job}finally{busy.delete(slot)}

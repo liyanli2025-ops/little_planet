@@ -6,13 +6,13 @@ import {createEnvironment} from './environment.js';
 import {closeDaybook} from './immersive.js';
 import {connectCloud,newId} from './cloud.js';
 const cloud=await connectCloud();
-import {createScene} from './scene.js?v=12';
+import {createScene} from './scene.js?v=13';
 import {createModelView} from './model-room.js?v=4';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const names=['小禾','阿远'],planets=['慢慢星','晚风星'],cities=['未设置所在地','未设置所在地'];
 const foods={milk:['草莓牛奶','🥛'],pudding:['焦糖布丁','🍮'],cookie:['黄油曲奇','🍪'],rice:['米饭','🍚'],egg:['鸡蛋','🥚'],tomato:['番茄','🍅'],carrot:['胡萝卜','🥕'],strawberry:['草莓','🍓'],rose:['玫瑰','🌹'],tulip:['郁金香','🌷'],sunflower:['向日葵','🌻']};
 const recipes={omelet:{name:'番茄蛋包饭',icon:'🍛',needs:{rice:1,egg:1,tomato:1}},toast:{name:'暖心蒸蛋',icon:'🍲',needs:{egg:1}},milk:{name:'热草莓牛奶',icon:'🥛',needs:{milk:1}}};
-const weatherData={sun:['☀','24°','晴朗，有一点微风','晴'],rain:['☂','21°','小雨，适合窝在家里','雨'],snow:['❄','−1°','雪花轻轻落下','雪'],night:['☾','18°','夜色温柔，灯为你留着','夜']};
+const weatherData={cloudy:['🌤','—','多云','云'],overcast:['☁','—','阴天','阴'],fog:['≋','—','有雾','雾'],haze:['≋','—','霾','霾'],sun:['☀','24°','晴朗，有一点微风','晴'],rain:['☂','21°','小雨，适合窝在家里','雨'],snow:['❄','−1°','雪花轻轻落下','雪'],night:['☾','18°','夜色温柔，灯为你留着','夜']};
 const uid=newId,key='our-little-skies-v1';
 function today(){let d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 function initial(){return {version:1,actor:0,worlds:[0,1].map(i=>({weather:i?'rain':'sun',deco:false,fridge:['milk','pudding','rice','egg','tomato'].map(food=>({id:uid(),food,qty:3})),meals:[]})),bags:[{cookie:3,pudding:2,milk:2},{cookie:3,pudding:2,milk:2}],events:[],notes:[],favorites:[[],[]]}}

@@ -3,12 +3,12 @@ export function createRainGear({body,head,arms}){
  const yellow=new T.MeshStandardMaterial({color:0xe8ba47,roughness:.46}),seam=new T.MeshStandardMaterial({color:0xb89032,roughness:.7}),green=new T.MeshStandardMaterial({color:0x376e5e,roughness:.5,side:T.DoubleSide}),greenAlt=green.clone();greenAlt.color.set(0x447e6a);
  const gear=new T.Group(),hood=new T.Group(),umbrella=new T.Group();body.add(gear,umbrella);head.add(hood);gear.visible=hood.visible=umbrella.visible=false;
  function mesh(g,m,p,x=0,y=0,z=0){let o=new T.Mesh(g,m);o.position.set(x,y,z);o.castShadow=true;o.receiveShadow=true;p.add(o);return o}
- let coat=mesh(new T.CylinderGeometry(.33,.38,.60,40),yellow,gear,0,.43,0);coat.scale.z=.84;
+ let coat=mesh(new T.LatheGeometry([[.29,.19],[.337,.27],[.36,.4],[.36,.49],[.337,.59],[.302,.70]].map(([r,y])=>new T.Vector2(r,y)),48),yellow,gear,0,0,0);coat.scale.z=.84;
  mesh(new T.BoxGeometry(.009,.34,.01),seam,gear,0,.42,.295);
  for(let y of [.27,.37,.47])mesh(new T.SphereGeometry(.013,10,8),seam,gear,.024,y+.05,.30);
  for(let x of [-.12,.12])mesh(new T.BoxGeometry(.071,.045,.018),yellow,gear,x,.36,.30);
  // The hood is open toward the face (+Z); the rim follows the opening.
- let shell=mesh(new T.SphereGeometry(.315,40,24,0,Math.PI*2,1.0,Math.PI-1.0),yellow,hood,0,.015,-.012);shell.rotation.x=Math.PI/2;shell.scale.y=1.02;
+ let shell=mesh(new T.SphereGeometry(.31,40,24,0,Math.PI*2,1.0,Math.PI-1.0),yellow,hood,0,.015,-.012);shell.rotation.x=Math.PI/2;shell.scale.y=.98;
  let rim=mesh(new T.TorusGeometry(.268,.015,10,48),yellow,hood,0,.015,.17);rim.scale.y=1.05;
  const canopy=new T.Group();umbrella.add(canopy);canopy.position.y=.79;
  for(let sector=0;sector<8;sector++){let positions=[],indices=[];for(let j=0;j<=8;j++){let r=j/8*.55;for(let k=0;k<=6;k++){let a=(sector+k/6)*Math.PI/4;positions.push(Math.cos(a)*r,.23*(1-(r/.55)**2),Math.sin(a)*r)}}for(let j=0;j<8;j++)for(let k=0;k<6;k++){let i=j*7+k;indices.push(i,i+7,i+1,i+1,i+7,i+8)}let g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(positions,3));g.setIndex(indices);g.computeVertexNormals();mesh(g,sector%2?green:greenAlt,canopy);

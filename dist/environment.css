@@ -5,3 +5,5 @@
 @media(max-height:500px) and (orientation:landscape){#world-clock{top:78px}}
 
 #city-fallback{margin-top:18px}#city-fallback summary{cursor:pointer;font-size:13px;padding:12px 0}#city-fallback[open] summary{margin-bottom:8px}
+
+#daybook-drawer .weather-switch{flex-wrap:wrap;gap:4px;width:100%}#daybook-drawer .weather-switch button{flex:0 0 40px}

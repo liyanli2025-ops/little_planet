@@ -1,4 +1,4 @@
-import {weatherKind,skyTime} from './sky-state.js';
+import {weatherKind,skyTime,weatherLabels,environmentKind} from './sky-state.js';
 const $=s=>document.querySelector(s);
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createEnvironment({cloud,context,modal,toast,cities,planets}){
@@ -6,7 +6,7 @@ export function createEnvironment({cloud,context,modal,toast,cities,planets}){
  let locationNotice='',locating=false,locationAttempted=false,locationToken=0;
  const clock=document.createElement('button');clock.type='button';clock.id='world-clock';clock.setAttribute('aria-label','所在地时间');$('.scene-wrap').append(clock);
  const controls=document.createElement('div');controls.className='live-weather-controls';
- controls.innerHTML='<div class="weather-live-actions"><button id="location-settings" class="pill">设置所在地</button><button id="sync-weather" class="pill">刷新天气</button></div><p id="weather-status" class="subtle" role="status"></p><small>天气数据：<a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a><br>地名：<a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> · 附近城市（CC BY 4.0）</small>';
+ controls.innerHTML='<div class="weather-live-actions"><button id="location-settings" class="pill">设置所在地</button><button id="sync-weather" class="pill">刷新天气</button></div><p id="weather-status" class="subtle" role="status"></p><small>天气与空气质量模型：<a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> / CAMS · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a><br>地名：<a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> · 附近城市（CC BY 4.0）</small>';
  $('.weather-switch').before(controls);
  async function api(route,data){
   const r=await fetch(route,{method:data===undefined?'GET':'POST',headers:data===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':cloud.session.csrf},body:data===undefined?undefined:JSON.stringify(data),signal:AbortSignal.timeout(20000)});
@@ -15,9 +15,9 @@ export function createEnvironment({cloud,context,modal,toast,cities,planets}){
  function paint(){
   const {world,actor,state,visual}=context(),w=worlds[world],s=w?.snapshot,t=skyTime(s),manual=w?.mode==='manual'||!cloud;
   const fallback=state.worlds[world].weather;
-  const k=manual?{mode:fallback,icon:({sun:'☀',rain:'☂',snow:'❄',night:'☾'})[fallback],label:'手动天气'}:s?weatherKind(s.code):{mode:'sun',icon:'◌',label:'等待天气'};
+  const k=manual?{mode:fallback,icon:weatherLabels[fallback][0],label:weatherLabels[fallback][1],mask:fallback==='haze'}:s?environmentKind(s):{mode:'sun',icon:'◌',label:'等待天气'};
   const night=manual&&fallback==='night'||t.night;
-  const city=w?.location?.label?.split(' · ')[0];const label=city&&city!=='设备所在地'?city:(locating?'定位中…':'定位未开启');const weatherText=manual?'手动天气':s?k.label+(w.stale?' · 上次更新':''):'天气待同步';clock.innerHTML='<span class="sky-place">'+escape(label)+'</span><strong>'+t.text+'</strong><span class="sky-weather">'+escape(k.mode==='sun'&&night&&!k.cloudy?'☾':k.icon)+' '+(!manual&&s?Math.round(s.temperature)+'° · ':'')+escape(weatherText)+'</span>';clock.hidden=!!context().inside;clock.setAttribute('aria-label',label+'，'+t.text+'，'+weatherText+'，查看天气');clock.classList.toggle('sky-compact',visual?.readState?.().view==='follow');
+  const city=w?.location?.label?.split(' · ')[0];const label=city&&city!=='设备所在地'?city:(locating?'定位中…':'定位未开启');const weatherText=manual?k.label+' · 手动':s?k.label+(w.stale?' · 上次更新':''):'天气待同步';clock.innerHTML='<span class="sky-place">'+escape(label)+'</span><strong>'+t.text+'</strong><span class="sky-weather">'+escape(k.mode==='sun'&&night&&!k.cloudy?'☾':k.icon)+' '+(!manual&&s?Math.round(s.temperature)+'° · ':'')+escape(weatherText)+'</span>';clock.hidden=!!context().inside;clock.setAttribute('aria-label',label+'，'+t.text+'，'+weatherText+'，查看天气');clock.classList.toggle('sky-compact',visual?.readState?.().view==='follow');
   $('#date-stamp').textContent=t.date.slice(5).replace('-',' / ');
   $('#place').textContent=planets[world]+' · '+(w?.location?.label||'尚未设置所在地');
   $('#weather-icon').textContent=k.mode==='sun'&&night&&!k.cloudy?'☾':k.icon;
@@ -28,7 +28,7 @@ export function createEnvironment({cloud,context,modal,toast,cities,planets}){
   let status=!cloud?'单机演示：真实天气请在服务器版本中使用。':w?.mode==='manual'?'当前为手动天气，可在所在地设置中恢复自动同步。':!w?.location?'尚未同步所在地天气。':!s?'天气暂时没有获取成功，请稍后刷新。':(w.stale?'更新暂时失败，显示上次数据 · ':'自动同步 · ')+new Date(s.observedAt).toLocaleString('zh-CN',{timeZone:s.timezone,month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'})+' · '+s.timezone;
   $('#weather-status').textContent=(world===actor&&locationNotice?locationNotice+' ':'')+status;
   document.querySelectorAll('[data-weather]').forEach(b=>b.classList.toggle('active',manual&&b.dataset.weather===fallback));
-  const signature=[world,k.mode,night,!!k.cloudy].join(':');if(visual&&signature!==lastScene){visual.weather(k.mode,night,!!k.cloudy);lastScene=signature}
+  const signature=[world,k.mode,night,!!k.cloudy,!!k.mask].join(':');if(visual&&signature!==lastScene){visual.weather(k.mode,night,!!k.cloudy,!!k.mask);lastScene=signature}
  }
  async function locateDevice(){
   if(!cloud||locating)return false;
@@ -101,7 +101,7 @@ export function createEnvironment({cloud,context,modal,toast,cities,planets}){
   return worlds.map((w,i)=>{
    if(cloud&&!cloud.paired&&i!==actor)return null;
    const city=w?.location?.label.split(' · ')[0]||'未设置所在地';
-   if(!cloud||w?.mode==='manual')return city+' · 手动'+({sun:'晴天',rain:'下雨',snow:'下雪',night:'夜晚'})[state.worlds[i].weather];
+   if(!cloud||w?.mode==='manual')return city+' · 手动'+weatherLabels[state.worlds[i].weather][1];
    return city+' · '+(w?.snapshot?weatherKind(w.snapshot.code).label+(w.stale?'（上次天气）':''):'天气未同步');
   }).filter(Boolean).join(' / ');
  }};

@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {createRainGear} from './rain-gear.js?v=7';
+import {createRainGear} from './rain-gear.js?v=8';
 export function createTeddy(parent,identity=0){
  const avatar=new T.Group(),body=new T.Group(),head=new T.Group();parent.add(avatar);avatar.add(body);body.name='body';body.add(head);head.position.y=.8;
  const fur=new T.MeshStandardMaterial({color:0xf3f2ed,roughness:.97}),muzzleMat=new T.MeshStandardMaterial({color:0xf5eee2,roughness:1}),earMat=new T.MeshStandardMaterial({color:0xe0ddd6,roughness:1}),black=new T.MeshStandardMaterial({color:0x292323,roughness:.36});
@@ -29,9 +29,14 @@ export function createTeddy(parent,identity=0){
   const seam=new T.Mesh(new T.TorusGeometry(.066,.002,8,40),metalMat);seam.position.z=.043;seam.scale.y=1.27;cup.add(seam);
   const hinge=new T.Mesh(new T.CapsuleGeometry(.009,.038,8,12),metalMat);hinge.position.set(0,.078,.022);cup.add(hinge);
  }
+ const mask=new T.Group();head.add(mask);mask.visible=false;
+ const maskMat=new T.MeshStandardMaterial({color:0xb9cfc8,roughness:1});
+ ell(mask,maskMat,0,-.003,.288,.121,.077,.052);
+ for(const y of [-.025,0,.025]){const curve=new T.CatmullRomCurve3([new T.Vector3(-.095,y,.312),new T.Vector3(0,y,.342),new T.Vector3(.095,y,.312)]);mask.add(new T.Mesh(new T.TubeGeometry(curve,20,.002,6,false),padMat));}
+ for(const side of [-1,1]){const curve=new T.CatmullRomCurve3([new T.Vector3(side*.1,.035,.30),new T.Vector3(side*.245,.012,.10),new T.Vector3(side*.1,-.05,.30)]);mask.add(new T.Mesh(new T.TubeGeometry(curve,24,.004,8,false),padMat));}
  const rainGear=createRainGear({body,head,arms});let rainy=false,currentIdentity=identity;
  function setIdentity(i){currentIdentity=i;const white=i===0;fur.color.set(white?0xf3f2ed:0x70432f);earMat.color.set(white?0xe0ddd6:0x753c28);muzzleMat.color.set(white?0xf3f2ed:0xf3e9d9);nose.scale.set(white?.041:.032,white?.032:.026,white?.028:.023);torso.scale.x=white?1.02:1;avatar.userData.identity=i}
  const scarf=new T.Group();body.add(scarf);scarf.visible=false;const cloth=new T.MeshStandardMaterial({color:0x82b3a0,roughness:1});const collar=new T.Mesh(new T.TorusGeometry(.282,.037,12,40),cloth);collar.rotation.x=Math.PI/2;collar.scale.y=.81;collar.position.y=.69;scarf.add(collar);for(const x of [.07,.14]){const tail=new T.Mesh(new T.BoxGeometry(.055,.19,.027),cloth);tail.position.set(x,.60,.245);tail.rotation.z=x===.07?-.12:.15;scarf.add(tail)}
  setIdentity(identity);
- return {avatar,body,legs,arms,setIdentity,headphones(v){headphones.visible=!!v},get listening(){return headphones.visible},outfit(v){scarf.visible=v!=="plain"&&!!v;cloth.color.set(v==="amber"?0xd4a15c:0x82b3a0)},rain(v){if(rainy!==v){rainy=v;rainGear.set(v)}},rainTick(t,hold=true,shared=false){rainGear.tick(t,hold,shared)},rainState:rainGear.state};
+ return {avatar,body,legs,arms,setIdentity,mask(v){mask.visible=!!v},headphones(v){headphones.visible=!!v},get listening(){return headphones.visible},outfit(v){scarf.visible=v!=="plain"&&!!v;cloth.color.set(v==="amber"?0xd4a15c:0x82b3a0)},rain(v){if(rainy!==v){rainy=v;rainGear.set(v)}},rainTick(t,hold=true,shared=false){rainGear.tick(t,hold,shared)},rainState:rainGear.state};
 }

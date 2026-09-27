@@ -9,7 +9,7 @@ import {closeDaybook} from './immersive.js';
 import {connectCloud,newId} from './cloud.js';
 const cloud=await connectCloud();
 import {createScene} from './scene.js?v=18';
-import {createModelView} from './model-room.js?v=7';
+import {createModelView} from './model-room.js?v=8';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const names=['小禾','阿远'],planets=['慢慢星','晚风星'],cities=['未设置所在地','未设置所在地'];
 const foods={...foodLabels,rose:['玫瑰','🌹'],tulip:['郁金香','🌷'],sunflower:['向日葵','🌻']};

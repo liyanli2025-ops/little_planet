@@ -1,7 +1,8 @@
+import {makeImportedFood} from './imported-food.js';
 import * as T from './vendor/three.module.js';
 import {makeBeverage} from './beverage-models.js';
 import {foodCatalog} from './food-catalog.js';
-export function makeFood(id){const f=foodCatalog[id];if(!f)throw Error('Unknown food '+id);if(['can','bottle','carton','cup'].includes(f.shape))return makeBeverage(id);const g=new T.Group(),materials=new Map();const mat=c=>{if(!materials.has(c))materials.set(c,new T.MeshStandardMaterial({color:c,roughness:.8}));return materials.get(c)};
+export function makeFood(id){const f=foodCatalog[id];if(!f)throw Error('Unknown food '+id);const imported=makeImportedFood(id);if(imported)return imported;if(['can','bottle','carton','cup'].includes(f.shape))return makeBeverage(id);const g=new T.Group(),materials=new Map();const mat=c=>{if(!materials.has(c))materials.set(c,new T.MeshStandardMaterial({color:c,roughness:.8}));return materials.get(c)};
  function mesh(geo,c,x=0,y=0,z=0){const m=new T.Mesh(geo,mat(c));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;g.add(m);return m}
  const box=(c,x,y,z,w,h,d)=>mesh(new T.BoxGeometry(w,h,d),c,x,y,z),ball=(c,x,y,z,a,b=a,d=a)=>{const m=mesh(new T.SphereGeometry(1,20,14),c,x,y,z);m.scale.set(a,b,d);return m},cyl=(c,x,y,z,a,b,h)=>mesh(new T.CylinderGeometry(a,b,h,28),c,x,y,z);
  function tube(c,pts,r=.012){return mesh(new T.TubeGeometry(new T.CatmullRomCurve3(pts.map(p=>new T.Vector3(...p))),24,r,6,false),c)}

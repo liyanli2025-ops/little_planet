@@ -1,29 +1,29 @@
-# Food asset sources
+# Imported food assets
 
-Research date: 2026-09-28. No external model from this list has been imported yet.
+The user supplied `3dFoodStyloo.zip` on 2026-09-28.
+SHA-256: `430431AA5D3F35EDCED17F2DEA1AC95F8954C3A3FEF333066DD0F296DB603645`.
 
-## Preferred coherent collection
+Author: **styloo / stylo0**. Source: https://styloo.itch.io/3dfood
+License: **CC0**, expressly stated in the archive's `read me .txt`, preserved as `dist/assets/styloo/AUTHOR-README.txt`.
 
-- Author: styloo / stylo0
-- Author distribution: https://styloo.itch.io/3dfood
-- Sketchfab sample: https://sketchfab.com/3d-models/food-pack-1-06270d2d89ff40debb0df520b2403c3b
-- Archive: 3dFoodStyloo.zip, 19 MB, free tier. Do not request the paid HD package.
-- Author distribution explicitly lists CC0 (https://creativecommons.org/publicdomain/zero/1.0/), 125+ models, FBX/GLTF, 512px textures. Sketchfab sample separately lists CC Attribution; preserve the license supplied with the actual downloaded archive.
-- Relevant pieces: ramen bowl/noodles/egg/pork/greens, sushi, salad, bread, flour, meat, butter, cake, cookie, strawberry, tomato, lemon, ice cream.
-- Download blocked by the site's browser security verification in this environment. User can download through their own browser. Do not extract protected viewer resources as a replacement for the official archive.
-- Before importing: inspect archive license, inspect rendered quality and dimensions, normalize per-item pivots, preserve texture maps, load only selected assets, record exact files and attribution. Do not replace all foods with unrelated shapes just because an asset exists.
+## Included assets
 
-## Other candidates (metadata verified through search, downloads not verified)
+26 source models/components, listed in `scripts/import-styloo.mjs`, and 20 shared base-color textures are shipped locally. No remote model viewer, login, or API is required at runtime. Other source FBX/GLTF files and the ZIP are not deployed.
 
-- Pollypipe, Stylized fastfood set, CC Attribution, 4.6k triangles (whole set): https://sketchfab.com/3d-models/stylized-fastfood-set-a7f9bf6d97ce4ff88168fbc54d7e7004
-  Burger, fries, drink with straw, sauces. Direct page fetch returned HTTP 403.
-- loafbrr, Food Pack, CC Attribution, 22.2k displayed triangles: https://sketchfab.com/3d-models/food-pack-df3e943292bb412eb5238038e51a49ea
-  Fruits, vegetables, bread, meat. Direct page fetch returned HTTP 403.
-- AntijnvanderGun, Dumplings, CC Attribution, 10.7k displayed triangles: https://sketchfab.com/3d-models/dumplings-3e1a010fca414a599b53affa93cf088c
-  Supplement only if consistent with selected collection; direct page fetch returned HTTP 403.
+Adaptations: bake scene transforms, normalize pivot to bottom center, merge primitives per material, round attributes to five decimals, omit the source static steam billboard, convert PNG to WebP quality 86, retain UVs and normals. Geometry is about 511 KB and textures about 311 KB uncompressed on disk. Textures load when used and are reference-counted until the last material is disposed.
 
-Do not ship search previews as if they were downloaded models. Do not use NoDerivatives assets for adaptation, or paid assets without acquisition.
+Rebuild with Node 24 and Python/Pillow:
 
-## Current drink implementation
+```sh
+node scripts/import-styloo.mjs /path/to/extracted/3dFoodStyloo/GLTF
+```
 
-`beverage-models.js` is original procedural geometry, not a Sketchfab import. It shares the shelf and held drink model, with a cap-free drinking variant and a mouth-aligned rigid straw. Other foods remain the existing procedural models until the external archive is available and inspected.
+## User-facing mapping
+
+Direct replacements: butter, cheese, cookie, cake, bread, strawberry, tomato, lemon, beef, flour, noodles, sushi, ice cream.
+Composed from imported pieces: cucumber slices and vegetable salad.
+Cooked dishes: four distinct noodle toppings and shrimp sushi; beef toppings use cooked meat instead of the raw inventory model. Existing inventory IDs, quantities, recipes and ownership are unchanged.
+
+The archive has no matching dumpling or roujiamo asset; those keep their original models. The refined drink models remain original procedural geometry. Not every food in the app has been replaced.
+
+The single-dish table centers the meal and uses a closer camera so the new detail is visible on phones.

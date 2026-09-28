@@ -37,13 +37,13 @@ export function createPlant(parent,type,cut=false){const g=new T.Group();parent.
  leaves.finish(green);const blossom=flowers.finish(bloom);blossom.geometry.computeBoundingBox();const center=blossom.geometry.boundingBox.getCenter(new T.Vector3());g.userData.grow=f=>{g.scale.setScalar(.35+.65*f);const size=Math.max(.035,Math.min(1,(f-.35)/.65));bloom.scale.setScalar(size);bloom.position.copy(center).multiplyScalar(1-size);bloom.visible=f>.28};return g;
 }
 export function createGardenBeds(garden){const b=builder(),beds=[];
- const spots=[[-.51,-.27],[-.04,-.42],[.49,-.25],[-.58,.26],[-.04,.17],[.48,.32]];
+ const spots=[[-.68,-.43],[.66,-.49],[-.72,.18],[.70,.12],[-.65,.77],[.67,.73]];
  spots.forEach(([x,z],i)=>{const g=new T.Group();g.position.set(x,.09,z);garden.add(g);beds.push(g);b.oval(0x80664a,x,.035,z,.23,.047,.22);
  for(let j=0;j<11;j++){const a=j/11*Math.PI*2,r=.222+Math.sin(j*4+i)*.013;b.oval(j%3?0xb7b39a:0xd0c8af,x+Math.cos(a)*r,.045,z+Math.sin(a)*r,.043,.032,.035,[0,a,0])}
  for(let j=0;j<16;j++){const a=j*2.4,r=.18*Math.sqrt(j/16);b.oval(0x997e59,x+Math.sin(a)*r,.078,z+Math.cos(a)*r,.009,.003,.006)}
  const hit=new T.Mesh(new T.CylinderGeometry(.25,.25,.06,20),new T.MeshBasicMaterial({transparent:true,opacity:0,depthWrite:false}));hit.position.y=.02;hit.userData.plot=i;g.add(hit);
  const ring=new T.Mesh(new T.TorusGeometry(.255,.009,5,40),new T.MeshBasicMaterial({color:0xf3d892}));ring.rotation.x=-Math.PI/2;ring.position.y=.025;ring.visible=false;g.add(ring);g.userData.selection=ring;
  });
- for(let i=0;i<5;i++)b.oval(i%2?0xb6b29a:0xcac1a4,-.72+i*.35,.012,.66+Math.sin(i)*.03,.105,.023,.07,[0,i*.7,0]);
+ for(let i=0;i<6;i++)b.oval(i%2?0xb6b29a:0xcac1a4,Math.sin(i*2)*.035,.012,-.51+i*.32,.105,.018,.071,[0,i*.7,0]);
  b.finish(garden);return beds;
 }

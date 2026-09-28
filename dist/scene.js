@@ -58,7 +58,7 @@ const porch=box(house,0xb1c09b,-.35,1.31,.83,.8,.065,.51);porch.rotation.x=.12;f
 interactive('home',houseT,houseL,.95,houseT,.22);
 for(const [t,l,s]of [[-.64,-.05,.9],[-.65,-.4,.88],[.34,-.18,1],[.67,-.4,.8],[.32,.6,.72],[-.9,.65,.8],[1.25,.02,.9],[1.65,.58,.75],[2.1,-.19,.95],[2.5,.64,.88],[3.1,-.3,.82],[3.5,.73,1.03],[4.0,.03,.95],[4.8,-.28,1],[5.3,.78,.8],[.4,-1.13,.8],[2,-1.15,.9],[3.3,-1.2,.72],[4.8,-1.14,.95]])tree(t,l,s);
 function fence(t,l,count=5){let g=place(scenery,t,l);for(let i=0;i<count;i++){let x=(i-(count-1)/2)*.27;cylinder(g,0xc5aa78,x,.2,0,.028,.036,.42,8);ball(g,0xe1c99d,x,.42,0,.04,8)}for(let y of [.16,.32])box(g,0xcab084,0,y,0,(count-1)*.27,.048,.035)}
-fence(.65,-.06,6);fence(-.52,.11,4);fence(2.22,.44,6);
+fence(.65,-.14,6);fence(-.52,.11,4);fence(2.22,.44,6);
 function bench(t,l){let g=place(scenery,t,l);for(let i=0;i<6;i++)box(g,0xc6a77b,0,.3,-.14+i*.085,1.68,.035,.073);for(let i=0;i<3;i++)box(g,0xbb9763,0,.44+i*.08,-.24,1.70,.055,.033);for(let x of [-.68,.68]){box(g,0x716b4c,x,.15,0,.045,.3,.27);box(g,0x716b4c,x,.43,-.24,.043,.48,.04)}return g}bench(.92,.52);interactive('sit',.92,.52,.45,.92,.63);
 const mailbox=place(scenery,-.47,.22);box(mailbox,0x9b835c,0,.24,0,.045,.48,.045);box(mailbox,0xb77b59,0,.52,0,.2,.19,.24);box(mailbox,0xf0deb6,0,.52,.124,.13,.02,.01);interactive('journal',-.47,.22,.22,-.47,.36);
 const potGroup=place(outdoor,-.4,.02);cylinder(potGroup,0xb9835b,0,.08,0,.13,.09,.16);for(let i=0;i<5;i++)flower(potGroup,(rand()-.5)*.17,(rand()-.5)*.17,0xf3c56e,.8);

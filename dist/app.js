@@ -15,7 +15,7 @@ import {createEnvironment} from './environment.js';
 import {closeDaybook} from './immersive.js';
 import {connectCloud,newId} from './cloud.js?v=4';
 const cloud=await connectCloud();
-import {createScene} from './scene.js?v=22';
+import {createScene} from './scene.js?v=23';
 import {createModelView} from './model-room.js?v=8';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const names=['小禾','阿远'],planets=['慢慢星','晚风星'],cities=['未设置所在地','未设置所在地'];

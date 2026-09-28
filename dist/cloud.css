@@ -5,3 +5,5 @@
 @media(max-width:600px){.cloud-status{top:3px;font-size:11px;padding:4px 10px}.cloud-gate{padding:24px 14px}.cloud-card{padding:22px}}
 
 .account-name{color:#82907f;font-size:14px}.account-pair{background:#eef1e5;border-radius:22px;padding:22px}.account-pair h3{font-size:21px;margin:0 0 18px}.account-tabs{display:flex;gap:8px;margin-bottom:20px}.account-tabs button{flex:1;border:0;border-radius:22px;padding:12px;background:transparent;color:inherit;font:inherit}.account-tabs button[aria-pressed=true]{background:#fffdf4}.account-unpair{display:block;border:0;background:none;text-decoration:underline;color:#8e7163;margin:20px 0 0;padding:8px 0;cursor:pointer}.account-details{border-top:1px solid #82907f26;margin-top:18px;padding-top:18px}.account-details summary{cursor:pointer}.account-pair input,.account-details input{width:100%;box-sizing:border-box;margin:10px 0;padding:12px;font:inherit;border:1px solid #cad3c1;border-radius:12px;background:#fffef7}#account-result{font-size:14px;color:#896443}.account-pair small{display:block;margin-bottom:10px;color:#82907f}
+
+.cloud-gate[hidden]{display:none!important}

@@ -7,7 +7,7 @@ export const newId=()=>typeof crypto.randomUUID==='function'?crypto.randomUUID()
 function download(value,name){const url=URL.createObjectURL(new Blob([JSON.stringify(value,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 export async function connectCloud(){
  if(window.PLANET_RUNTIME?.mode!=='cloud')return null;
- const gate=document.createElement('section');gate.className='cloud-gate';gate.setAttribute('aria-label','账号登录');document.body.append(gate);
+ const gate=document.createElement('section');gate.className='cloud-gate';gate.hidden=true;gate.setAttribute('aria-label','账号登录');document.body.append(gate);
  const status=document.createElement('button');status.className='cloud-status';status.textContent='正在连接云端…';status.setAttribute('aria-live','polite');document.body.append(status);
  let session;
  async function api(url,data,csrf){
@@ -18,13 +18,13 @@ export async function connectCloud(){
   }finally{clearTimeout(timeout)}
  }
  try{session=await api('/api/session')}catch{
-  gate.innerHTML='<div class="cloud-card"><h1>暂时连接不到阿球</h1><p>请检查网络或服务器，然后重新载入。云端模式不会切换为本地存档。</p><button class="pill primary" id="cloud-reload">重新载入</button></div>';
+  gate.hidden=false;gate.innerHTML='<div class="cloud-card"><h1>暂时连接不到阿球</h1><p>请检查网络或服务器，然后重新载入。云端模式不会切换为本地存档。</p><button class="pill primary" id="cloud-reload">重新载入</button></div>';
   gate.querySelector('button').onclick=()=>location.reload();await new Promise(()=>{});
  }
- if(!session.authenticated)session=await authenticate(gate,session,api);
+ if(!session.authenticated){gate.hidden=false;session=await authenticate(gate,session,api);window.planetArrival?.start();gate.hidden=true;}
  let current;
  try{current=session.state?session:await api('/api/state')}catch{
-  gate.innerHTML='<div class="cloud-card"><h1>存档暂时没有载入成功</h1><button class="pill primary">重新载入</button></div>';gate.querySelector('button').onclick=()=>location.reload();await new Promise(()=>{});
+  gate.hidden=false;gate.innerHTML='<div class="cloud-card"><h1>存档暂时没有载入成功</h1><button class="pill primary">重新载入</button></div>';gate.querySelector('button').onclick=()=>location.reload();await new Promise(()=>{});
  }
  // Preserve browser-local word progress for the two migrated residents without
  // letting new accounts share the old positional keys.
@@ -34,7 +34,7 @@ export async function connectCloud(){
  let base=JSON.stringify(current.state);
  status.textContent='☁ 已载入云端存档';
  function showFailure(error){
-  blocked=true;document.querySelectorAll('dialog[open]').forEach(d=>d.close());status.textContent=error.status===409?'⚠ 存档有更新':'⚠ 尚未保存';document.body.append(gate);
+  blocked=true;document.querySelectorAll('dialog[open]').forEach(d=>d.close());status.textContent=error.status===409?'⚠ 存档有更新':'⚠ 尚未保存';document.body.append(gate);gate.hidden=false;
   gate.innerHTML='<div class="cloud-card"><h1>这次修改尚未确认保存</h1><p>'+escapeHTML(error.status?error.message:'网络连接中断。服务器可能已收到修改，重试不会重复赠送物品。')+'</p><p class="subtle">请先导出未提交副本。重新载入会放弃当前页面尚未提交的修改。</p><div class="cloud-buttons"><button id="cloud-draft" class="pill">导出未提交副本</button>'+(!error.status||error.status>=500?'<button id="cloud-retry" class="pill primary">重试保存</button>':'')+'<button id="cloud-reload" class="pill">放弃未提交修改，重新载入</button></div></div>';
   gate.querySelector('#cloud-draft').onclick=()=>download(hooks.getState(),'echoo-unsaved.json');
   gate.querySelector('#cloud-reload').onclick=()=>location.reload();

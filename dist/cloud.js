@@ -82,6 +82,7 @@ export async function connectCloud(){
    // Do not replace changes made while the request was travelling.
    if(lifeBusy||blocked||flight||pending||!hooks.canRefresh()||JSON.stringify(hooks.getState())!==base)return;
    if(next.revision!==revision){revision=next.revision;paired=next.paired;base=JSON.stringify(next.state);hooks.apply(next.state,true);status.textContent='☁ 已同步最新存档'}
+   return true;
   }catch(e){if(e.status===401)showFailure(e);else status.textContent='☁ 暂时离线 · 等待连接'}finally{polling=false}
  }
  async function action(url,data={}){

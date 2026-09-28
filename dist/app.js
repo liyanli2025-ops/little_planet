@@ -1,3 +1,4 @@
+import {createRecap} from './recap.js';
 import {createWordCards} from './word-cards.js?v=2';
 import {createSleepSound} from './sleep-sound.js?v=2';
 import {migrateStorage,recipesForFood} from './kitchen-state.js';
@@ -184,3 +185,5 @@ compactUI();
 const panelBack=document.createElement('button');panelBack.id='panel-back';panelBack.type='button';panelBack.className='round';panelBack.textContent='‹';panelBack.setAttribute('aria-label','返回上一级');$('.modal-head').prepend(panelBack);panelBack.hidden=true;
 panelBack.onclick=()=>{if(currentPanel==='fridge-stock')fridge();else if(['book','media-add','weread','record','media-remove'].includes(currentPanel))mediaUI.back();else if(['write','reply','delete'].includes(currentPanel))journal();else if(currentPanel.startsWith('radio')||currentPanel==='records')mediaUI.show('music');else if(currentPanel==='unpair')settings();else if(currentPanel==='location'){close();$('#open-daybook').click();$('.weather').scrollIntoView({block:'center'})}else if(inside)roomMenu();else close()};
 $('#open-daybook').addEventListener('click',e=>{if(inside){e.stopImmediatePropagation();closeDaybook();roomMenu()}},true);
+
+const recap=createRecap({context:()=>({state,actor}),refresh:cloud?()=>cloud.refresh():null,ready:()=>!currentPanel&&!outdoorMode&&!document.querySelector("dialog[open]"),toast});

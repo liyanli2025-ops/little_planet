@@ -82,3 +82,17 @@ test('legacy first account can replace the old environment code without losing a
   const db=new DatabaseSync(file);assert.equal(db.prepare('PRAGMA user_version').get().user_version,2);db.close();
  }finally{await server.close();fs.rmSync(dir,{recursive:true,force:true})}
 });
+
+test('registration and pairing accept pasted padding without conflating their credentials',async()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'echoo-code-paste-')),server=await start(path.join(dir,'state.sqlite'));
+ try{
+ const a=await server.request('/api/register',signup('alice',0,'  OurHome8  ',true));assert.equal(a.status,201);
+ assert.equal((await server.request('/api/register',signup('bobby',1,'ourhome8',false))).status,403);
+ const b=await server.request('/api/register',signup('bobby',1,'  OurHome8\n',false));assert.equal(b.status,201);
+ const wrong=await server.request('/api/pair',{code:'OurHome8'},b);assert.equal(wrong.status,400);assert.match(wrong.body.error,/36 位/);
+ const invite=await server.request('/api/invite',{},a);assert.equal(invite.status,200);
+ assert.equal((await server.request('/api/pair',{code:invite.body.code},a)).status,400);
+ const joined=await server.request('/api/pair',{code:'  '+invite.body.code.toUpperCase()+'\n'},b);assert.equal(joined.status,200);assert.equal(joined.body.paired,true);
+ assert.equal((await server.request('/api/login',{username:'bobby',password:'test-password-123'})).status,200);
+ }finally{await server.close();fs.rmSync(dir,{recursive:true,force:true})}
+});

@@ -199,10 +199,13 @@ export function openStore(filename){
   });
  }
  function accept(slot,code){
-  fail(typeof code==='string'&&/^[a-f0-9]{36}$/.test(code),'邀请码格式不正确');
+  if(typeof code==='string')code=code.trim().toLowerCase();
+  fail(typeof code==='string'&&/^[a-f0-9]{36}$/.test(code),'连接星球需要对方生成的 36 位邀请码，不是注册时的加入口令');
   return transaction(()=>{
    const i=db.prepare('SELECT * FROM invitations WHERE token=?').get(hash(code));
-   fail(i&&i.expires>Date.now()&&i.slot!==slot,'邀请码无效、已使用或已过期');
+   fail(i,'邀请码无效、已使用或已被新码替换，请让对方重新生成');
+   fail(i.expires>Date.now(),'邀请码无效：已过期，请让对方重新生成');
+   fail(i.slot!==slot,'邀请码无效：这是你自己的邀请码，请交给对方登录后输入');
    fail(!read().paired,'已经配对',409);
    db.prepare('UPDATE saves SET paired=1,revision=revision+1 WHERE id=1').run();
    db.exec('DELETE FROM invitations');

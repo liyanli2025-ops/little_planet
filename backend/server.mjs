@@ -74,16 +74,17 @@ function registrationInfo(user){
   legacy:users.length>0&&!db.prepare("SELECT value FROM settings WHERE key='join_code'").get()};
 }
 function chosenCode(code){
- fail(typeof code==='string'&&/^[a-zA-Z0-9]{6,24}$/.test(code),'加入口令请使用 6–24 位字母或数字');
+ if(typeof code==='string')code=code.trim();
+ fail(typeof code==='string'&&/^[a-zA-Z0-9]{6,24}$/.test(code),'加入口令请使用 6–24 位字母或数字');return code;
 }
 function readJoinCode(){return db.prepare("SELECT value FROM settings WHERE key='join_code'").get()?.value||null}
 async function encodedCode(code){
- chosenCode(code);
+ code=chosenCode(code);
  const salt=randomBytes(24).toString('hex'),digest=(await passwordHash(code,salt)).toString('hex');
  return JSON.stringify({salt,digest});
 }
 async function matchesCode(code,encoded){
- if(typeof code!=='string'||code.length>128)return false;
+ if(typeof code!=='string'||code.length>128)return false;code=code.trim();
  if(!encoded)return !!REGISTRATION_CODE&&timingSafeEqual(Buffer.from(hash(code)),Buffer.from(hash(REGISTRATION_CODE)));
  const stored=JSON.parse(encoded),computed=await passwordHash(code,stored.salt);
  return timingSafeEqual(computed,Buffer.from(stored.digest,'hex'));
@@ -116,8 +117,8 @@ async function api(req,res,p){
    const info=registrationInfo(),first=info.first,joinCode=readJoinCode();
    fail(!info.full,'两位住户都已注册，请直接登录',409);
    fail(b.setup===first,first?'第一位住户请直接设置加入口令，刷新页面后再试。':'第一位住户已经注册，请刷新页面并输入对方设置的加入口令。',409);
-   if(first)chosenCode(b.code);
-   else fail(await matchesCode(b.code,joinCode),'加入口令不正确，请向第一位住户确认',403);
+   if(first)b.code=chosenCode(b.code);
+   else fail(await matchesCode(b.code,joinCode),'加入口令不正确。这里需要第一位住户设置的注册口令，注意大小写；不是连接星球的 36 位邀请码。',403);
    fail(b.actor===0||b.actor===1,'请选择自己的熊');
    fail(!db.prepare('SELECT slot FROM users WHERE slot=? OR username=?').get(b.actor,username),'这个账号名或角色已被使用',409);
    const encoded=first?await encodedCode(b.code):null;

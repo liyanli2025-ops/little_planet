@@ -11,9 +11,9 @@ import {createLifeUI} from './life-ui.js';
 import {freshLife,crops} from './life-state.js';
 import {createEnvironment} from './environment.js';
 import {closeDaybook} from './immersive.js';
-import {connectCloud,newId} from './cloud.js';
+import {connectCloud,newId} from './cloud.js?v=2';
 const cloud=await connectCloud();
-import {createScene} from './scene.js?v=19';
+import {createScene} from './scene.js?v=20';
 import {createModelView} from './model-room.js?v=8';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const names=['小禾','阿远'],planets=['慢慢星','晚风星'],cities=['未设置所在地','未设置所在地'];
@@ -143,16 +143,16 @@ function cloudSettings(){
  '<details class="help-details"><summary>存档与互访说明</summary><div class="cloud-account-note">账号身份固定，存档保存在服务器。私人手账仅本人可读；配对后可访问彼此的院子、冰箱、餐桌和共同回忆。<br>当前为异步互访，每隔约 5 秒在空闲时同步。双人同时走动、并坐与共同做饭尚未开放。</div></details>'+
  (!cloud.session.secure?'<p class="cloud-warning">HTTP 试玩连接：请仅使用临时测试密码和测试记录。正式记录前请配置 HTTPS。</p>':'')+
  (cloud.paired?'<p>♡ 已配对：'+names[1-actor]+' · '+planets[1-actor]+'</p><div class="form-actions">'+btn('go-partner','去对方的星球',true)+btn('unpair','解除配对')+'</div>':
- '<p>尚未配对。两个人先各自注册账号，一人生成邀请码，另一人输入。</p><div class="form-actions">'+btn('make-invite','生成邀请码',true)+'</div><div id="cloud-invite"></div><form id="pair-form" class="cloud-account-form"><label for="pair-code">对方的邀请码</label><input id="pair-code" name="code" required maxlength="36" autocomplete="off" placeholder="粘贴 36 位邀请码"><button type="submit" class="pill primary">接受邀请，连接星球</button></form>')+
+ '<p>尚未配对。先各自注册，再由一人生成邀请码，另一人粘贴连接。注册口令不能在这里使用。</p><div class="form-actions">'+btn('make-invite','生成邀请码',true)+'</div><div id="cloud-invite"></div><form id="pair-form" class="cloud-account-form"><label for="pair-code">对方的邀请码</label><input id="pair-code" name="code" required maxlength="128" autocapitalize="none" autocorrect="off" spellcheck="false" autocomplete="off" placeholder="粘贴对方生成的 36 位邀请码"><button type="submit" class="pill primary">接受邀请，连接星球</button></form>')+
 
- (cloud.session.registration?.canManage&&!cloud.session.registration.full?'<form id="join-code-form" class="cloud-account-form"><label for="join-code">设置新的加入口令</label><input id="join-code" name="code" required pattern="[a-zA-Z0-9]{6,24}" minlength="6" maxlength="24" autocomplete="off" placeholder="自己设置，6–24 位字母或数字"><p class="subtle">把口令告诉对方，用来注册第二个账号。保存后旧口令就失效。</p><button type="submit" class="pill">保存加入口令</button><p id="join-code-result" role="status"></p></form>':'')+
+ (cloud.session.registration?.canManage&&!cloud.session.registration.full?'<form id="join-code-form" class="cloud-account-form"><label for="join-code">设置新的加入口令</label><input id="join-code" name="code" autocapitalize="none" autocorrect="off" spellcheck="false" required pattern="[a-zA-Z0-9]{6,24}" minlength="6" maxlength="24" autocomplete="off" placeholder="自己设置，6–24 位字母或数字"><p class="subtle">把口令告诉对方，用来注册第二个账号。保存后旧口令就失效。</p><button type="submit" class="pill">保存加入口令</button><p id="join-code-result" role="status"></p></form>':'')+
  '<div class="form-actions">'+btn('weread-settings','微信读书绑定')+btn('export-all','导出手账')+btn('logout','退出登录')+'</div>');
- const join=$('#join-code-form');if(join)join.onsubmit=async e=>{e.preventDefault();const b=join.querySelector('button');b.disabled=true;const result=await cloud.setJoinCode(join.elements.code.value);b.disabled=false;if(result){$('#join-code-result').textContent='已保存。把刚设置的口令告诉对方，就可以注册了。';join.reset()}};
+ const join=$('#join-code-form');if(join)join.elements.code.oninput=()=>{join.elements.code.value=join.elements.code.value.trim()};if(join)join.onsubmit=async e=>{e.preventDefault();const b=join.querySelector('button');b.disabled=true;const result=await cloud.setJoinCode(join.elements.code.value);b.disabled=false;if(result){$('#join-code-result').textContent='已保存。把刚设置的口令告诉对方，就可以注册了。';join.reset()}};
  const form=$('#pair-form');if(form)form.onsubmit=e=>{e.preventDefault();const b=form.querySelector('button');b.disabled=true;cloud.pair(form.elements.code.value.trim()).finally(()=>b.disabled=false)};
 }
 if(cloud){
  $('.identity small').textContent='账号与配对';
- handlers['make-invite']=async b=>{b.disabled=true;const result=await cloud.invite();b.disabled=false;if(!result||!$('#cloud-invite'))return;$('#cloud-invite').innerHTML='<div class="cloud-code">'+esc(result.code)+'</div><p class="subtle">24 小时内有效，只能使用一次。生成新码会让旧码失效。请私下发给对方。</p>'};
+ handlers['make-invite']=async b=>{b.disabled=true;const result=await cloud.invite();b.disabled=false;if(!result||!$('#cloud-invite'))return;$('#cloud-invite').innerHTML='<div class="cloud-code">'+esc(result.code)+'</div><button type="button" id="copy-pair-code" class="pill">复制邀请码</button><p class="subtle">发给对方，在登录后的「账号与配对」里粘贴。24 小时有效；重新生成会使旧码失效。</p>';$('#copy-pair-code').onclick=async()=>{try{await navigator.clipboard.writeText(result.code);toast('已复制邀请码')}catch{toast('请长按上方邀请码复制')}}};
  handlers['go-partner']=()=>go(1-actor);
  handlers.unpair=()=>modal('unpair','YOUR OWN SPACE','解除配对？','<p>双方将无法继续互访，也看不到对方的记录。各自的存档仍保留；重新配对后，共同内容会再次显示。</p><div class="form-actions">'+btn('account','保留配对')+btn('confirm-unpair','解除配对')+'</div>');
  handlers.account=cloudSettings;

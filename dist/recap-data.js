@@ -11,5 +11,5 @@ export function recapKind(title=''){
 }
 export function recapEvents(events,actor,since,until=Date.now()){
  if(!Number.isFinite(since)||since<=0)return [];
- const seen=new Set();return events.filter(e=>e&&e.world===actor&&[0,1].includes(e.actor)&&!e.pending&&(e.actor===actor||e.shared||e.target===actor)&&Number.isFinite(e.created)&&e.created>since&&e.created<=until&&typeof e.id==='string'&&!seen.has(e.id)&&seen.add(e.id)).sort((a,b)=>a.created-b.created||a.id.localeCompare(b.id)).map(e=>({id:e.id,actor:e.actor,world:e.world,created:e.created,title:e.title,kind:recapKind(e.title)}));
+ const seen=new Set();return events.filter(e=>e&&e.world===actor&&[0,1].includes(e.actor)&&e.actor!==actor&&!e.pending&&(e.shared||e.target===actor)&&Number.isFinite(e.created)&&e.created>since&&e.created<=until&&typeof e.id==='string'&&!seen.has(e.id)&&seen.add(e.id)).sort((a,b)=>a.created-b.created||a.id.localeCompare(b.id)).map(e=>({id:e.id,actor:e.actor,world:e.world,created:e.created,title:e.title,kind:recapKind(e.title)}));
 }

@@ -6,7 +6,9 @@ export function applyLife(state,actor,paired,b,now=Date.now(),id=()=>crypto.rand
  check(b&&[0,1].includes(b.world),'请选择星球');const world=b.world;
  check(world===actor||paired,'请先配对再访问对方',403);
  state.worlds.forEach(w=>w.life??=freshLife());const life=state.worlds[world].life,bag=state.bags[actor];let title='',body='';
- if(b.type==='shared-meal-eat'){
+ if(b.type==='visit'){
+  check(world!==actor&&paired,'只能记录到对方星球的来访',403);title='来到了你的星球';
+ }else if(b.type==='shared-meal-eat'){
   check(typeof b.item==='string','请选择餐点');const meal=state.worlds[world].meals.find(m=>m.id===b.item);check(meal,'这份饭已经吃完了',409);const gift=state.events.find(e=>e.id===meal.event);check(!gift?.pending||gift.target===actor,'这份礼物还在等收件人',403);state.worlds[world].meals=state.worlds[world].meals.filter(m=>m.id!==b.item);title='吃了一份桌上的饭';body='在小屋里，好好吃饭。';
  }else if(b.type?.startsWith('kitchen-')){title=applyKitchen(state,actor,b,id);body='在小屋里，给自己做了一顿饭。';
  }else if(['plant','water','harvest'].includes(b.type)){

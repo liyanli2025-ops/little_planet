@@ -1,4 +1,4 @@
-import {recapEvents} from './recap-data.js';
+import {recapEvents} from './recap-data.js?v=2';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createRecap({context,refresh,ready,toast}){
  const key='echoo-away-v1-'+(context().accountId?'account-'+context().accountId:context().actor),el=document.createElement('dialog');el.className='recap-dialog';el.setAttribute('aria-label','离开时光');document.body.append(el);let since=0,batch=[],stage=null,index=0,timer=null,paused=false,loading=false,token=0,checking=false;
@@ -9,7 +9,7 @@ export function createRecap({context,refresh,ready,toast}){
  if(!pending)stamp();
  function stop(){token++;clearInterval(timer);timer=null;stage?.dispose();stage=null;el.close();loading=false;stamp()}
  function skip(){pending=0;stop()}
- function prompt(){el.innerHTML='<button class="recap-close" data-recap="close" aria-label="关闭回顾">×</button><span class="recap-eyebrow">离开时光</span><h2>你不在的这段时间</h2><p>星球留下了 '+batch.length+' 个小片段</p><div class="recap-actions"><button data-recap="play">播放回顾</button><button data-recap="close">先不看</button></div>';el.showModal()}
+ function prompt(){el.innerHTML='<button class="recap-close" data-recap="close" aria-label="关闭回顾">×</button><span class="recap-eyebrow">离开时光</span><h2>你不在的这段时间</h2><p>对方留下了 '+batch.length+' 个小片段</p><div class="recap-actions"><button data-recap="play">播放回顾</button><button data-recap="close">先不看</button></div>';el.showModal()}
  function currentBatch(){const {state,actor}=context();const ids=new Set(batch.map(e=>e.id));return recapEvents(state.events,actor,1).filter(e=>ids.has(e.id))}
  function paint(){const e=batch[index];stage.show(e);el.querySelector('.recap-caption').textContent=e.title;el.querySelector('.recap-time').textContent=new Date(e.created).toLocaleString('zh-CN',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})+' · '+(e.actor===context().actor?'你':'对方');el.querySelector('progress').value=index+1;el.querySelector('.recap-count').textContent=(index+1)+' / '+batch.length}
  function next(){index++;if(index>=batch.length){clearInterval(timer);timer=null;stage?.dispose();stage=null;el.innerHTML='<span class="recap-eyebrow">离开时光</span><h2>欢迎回来</h2><p>接着过今天的小日子吧。</p><div class="recap-actions"><button data-recap="close">回到星球</button><button data-recap="play">再看一次</button></div>';return}paint()}
@@ -19,6 +19,6 @@ export function createRecap({context,refresh,ready,toast}){
  async function check(){if(!pending||checking||document.hidden||!ready()||el.open)return;checking=true;try{if(refresh&&await refresh()!==true)return;if(!ready()||document.hidden)return;batch=recapEvents(context().state.events,context().actor,pending);pending=0;stamp();if(batch.length){try{localStorage.setItem(key+'-batch',JSON.stringify(batch.map(e=>e.id)))}catch{}prompt()}}finally{checking=false}}
  document.addEventListener('visibilitychange',()=>{if(document.hidden){if(!pending)stamp();stage?.pause(true)}else{if(stage){stage.pause(paused||matchMedia('(prefers-reduced-motion: reduce)').matches);return}try{const last=Number(localStorage.getItem(key));if(!pending&&last&&Date.now()-last>60000)pending=last}catch{}check()}});
  window.addEventListener('pagehide',()=>{if(!pending)stamp()});setInterval(()=>{if(document.hidden)return;if(pending)check();else if(!el.open)stamp()},15000);setTimeout(check,1200);
- const button=document.createElement('button');button.type='button';button.className='recap-history';button.textContent='离开时光';button.onclick=()=>{document.querySelector('#daybook-drawer[open]')?.close();if(!ready())return;if(batch.length){batch=currentBatch();if(batch.length)prompt();else toast('暂无可回顾的片段')}else toast('下次回来时，有新活动就会提醒你')};document.querySelector('.drawer-tools')?.append(button);
+ const button=document.createElement('button');button.type='button';button.className='recap-history';button.textContent='离开时光';button.onclick=()=>{document.querySelector('#daybook-drawer[open]')?.close();if(!ready())return;if(batch.length){batch=currentBatch();if(batch.length)prompt();else toast('暂无可回顾的片段')}else toast('对方来访后，这里会留下回顾')};document.querySelector('.drawer-tools')?.append(button);
  return {check,get open(){return el.open}};
 }

@@ -92,7 +92,7 @@ export function createMediaService(store,{fetcher=fetch}={}){
     let journalAdded=false;
     if(changed){
      fail(row.state.events.length<5000,'手账已满，请先整理后再同步',409);
-     const name=slot===0?'小禾':'阿远';
+     const name=store.displayName?.(slot)||(slot===0?'小禾':'阿远');
      let title,body;
      if(!previous){title=name+'为《'+current.title+'》留下阅读起点';body='首次记录微信读书进度：已读 '+reading.percent+'%。这是同步时的已有进度。';}
      else if(reading.percent===100&&previous.percent<100){title=name+'读完了《'+current.title+'》';body='微信读书进度从 '+previous.percent+'% 更新到 100%，为这本书留下一枚读完的书签。';}

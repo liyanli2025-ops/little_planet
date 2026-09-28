@@ -31,7 +31,7 @@ setInterval(()=>{try{hub.expireMeals()}catch(e){console.error('Table cleanup fai
 setInterval(()=>{for(const [k,r]of rates)if(r.until<Date.now())rates.delete(k);db.prepare('DELETE FROM account_sessions WHERE expires<?').run(Date.now());},60000).unref();
 function session(req){
  const m=(req.headers.cookie||'').match(/(?:^|;\s*)planet_session=([a-f0-9]{64})(?:;|$)/);
- return m?db.prepare('SELECT s.*,u.id,u.username,u.space,u.slot,u.avatar FROM account_sessions s JOIN accounts u ON u.id=s.account WHERE s.token=? AND s.expires>?').get(hash(m[1]),Date.now()):null;
+ return m?db.prepare('SELECT s.*,u.id,u.username,u.nickname,u.space,u.slot,u.avatar FROM account_sessions s JOIN accounts u ON u.id=s.account WHERE s.token=? AND s.expires>?').get(hash(m[1]),Date.now()):null;
 }
 function issue(account,res){
  const token=randomBytes(32).toString('hex'),csrf=randomBytes(24).toString('hex');
@@ -61,7 +61,7 @@ async function passwordHash(password,salt){
 }
 
 function registrationInfo(){return {first:db.prepare('SELECT COUNT(*) AS n FROM accounts').get().n===0,full:false,availableActors:[0,1],canManage:false}}
-function identity(u){const p=hub.partner(u),avatars=[0,1];avatars[u.slot]=u.avatar;if(p)avatars[1-u.slot]=p.avatar;return {authenticated:true,secure,accountId:u.id,legacyActor:db.prepare('SELECT slot FROM users WHERE username=?').get(u.username)?.slot,space:u.space,actor:u.slot,username:u.username,csrf:u.csrf,partner:p?.username||null,paired:!!p,avatars,invitationExpires:db.prepare('SELECT expires FROM account_invites WHERE account=?').get(u.id)?.expires||null,registration:registrationInfo()}}
+function identity(u){const p=hub.partner(u),avatars=[0,1];avatars[u.slot]=u.avatar;if(p)avatars[1-u.slot]=p.avatar;return {authenticated:true,secure,accountId:u.id,legacyActor:db.prepare('SELECT slot FROM users WHERE username=?').get(u.username)?.slot,space:u.space,actor:u.slot,username:u.username,nickname:u.nickname||u.username,displayNames:hub.displayNames(u),partnerNickname:p?.nickname||p?.username||null,csrf:u.csrf,partner:p?.username||null,paired:!!p,avatars,invitationExpires:db.prepare('SELECT expires FROM account_invites WHERE account=?').get(u.id)?.expires||null,registration:registrationInfo()}}
 async function api(req,res,p){
  const current=session(req),services=current?hub.space(current.space):null,store=services?.store,mediaService=services?.mediaService,musicService=services?.musicService,weatherService=services?.weatherService;
  store?.expireMeals();
@@ -80,7 +80,7 @@ async function api(req,res,p){
  if(req.method==='GET'&&p==='/api/fm/track'){const u=requireUser(req);rate(req,'fm-track',200);return json(res,200,await musicService.track(u.slot,new URL(req.url,'http://local').searchParams.get('id')||''));}
  if(req.method==='GET'&&p==='/api/media')return json(res,200,mediaService.view(requireUser(req).slot));
  if(req.method==='GET'&&p==='/api/account/history'){const u=requireUser(req);return json(res,200,{archives:hub.archives(u.id)})}
- if(req.method==='GET'&&p==='/api/state')return json(res,200,{...store.get(requireUser(req).slot),space:current.space});
+ if(req.method==='GET'&&p==='/api/state')return json(res,200,{...store.get(requireUser(req).slot),space:current.space,displayNames:hub.displayNames(current)});
  fail(req.method==='POST','接口不存在',404);
  fail(req.headers.origin===ORIGIN,'请求来源不匹配，请检查 PUBLIC_ORIGIN',403);
  const b=await body(req);
@@ -91,7 +91,7 @@ async function api(req,res,p){
 
    fail(b.actor===0||b.actor===1,'请选择自己的熊');
    const salt=randomBytes(24).toString('hex'),password=(await passwordHash(b.password,salt)).toString('hex');
-   const u=hub.register(username,salt,password,b.actor),auth=issue(u.id,res);
+   const u=hub.register(username,salt,password,b.actor,b.nickname),auth=issue(u.id,res);
    return json(res,201,{...identity(u),...auth,...hub.space(u.space).store.get(u.slot)});
   }
   const user=db.prepare('SELECT * FROM accounts WHERE username=?').get(username);
@@ -105,6 +105,7 @@ async function api(req,res,p){
  fail(req.headers['x-csrf-token']===u.csrf,'会话验证失败，请刷新页面',403);
  fail(String(u.space)===req.headers['x-planet-space'],'账号或配对状态已更新，请刷新页面后重试',409);
 
+ if(p==='/api/account/profile'){rate(req,'profile',30);hub.profile(u.id,b.nickname);return json(res,200,identity({...u,...hub.account(u.id)}))}
  if(p==='/api/environment'){
   rate(req,'location',30);weatherService.configure(u.slot,b);return json(res,200,await environmentFor(u));
  }
@@ -118,7 +119,7 @@ async function api(req,res,p){
   fail(['bind','sync'].includes(b.action),'操作不存在');
   return json(res,200,await mediaService.sync(u.slot,b.action==='bind'?b.key:undefined,b.action==='sync'&&b.automatic===true));
  }
- if(p==='/api/life'){rate(req,'life',200);return json(res,200,store.life(u.slot,b))}
+ if(p==='/api/life'){rate(req,'life',200);return json(res,200,store.life(u.slot,b,hub.displayNames(u)))}
  if(p==='/api/state'){rate(req,'save',400);return json(res,200,store.save(u.slot,b))}
  if(p==='/api/invite'){rate(req,'invite',30);return json(res,200,hub.invite(u.id))}
  if(p==='/api/pair/preview'){rate(req,'pair-preview',30);return json(res,200,hub.preview(u.id,b.code))}

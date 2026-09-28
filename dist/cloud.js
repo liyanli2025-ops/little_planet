@@ -67,6 +67,7 @@ export async function connectCloud(){
    const next=await api('/api/state');if(next.space!==session.space){location.reload();return false}
    // Do not replace changes made while the request was travelling.
    if(lifeBusy||blocked||flight||pending||!hooks.canRefresh()||JSON.stringify(hooks.getState())!==base)return;
+   if(next.displayNames&&JSON.stringify(next.displayNames)!==JSON.stringify(session.displayNames)){session.displayNames=next.displayNames;hooks.identity?.()}
    if(next.revision!==revision){revision=next.revision;paired=next.paired;base=JSON.stringify(next.state);hooks.apply(next.state,true);status.textContent='☁ 已同步最新存档'}
    return true;
   }catch(e){if(e.status===401)showFailure(e);else status.textContent='☁ 暂时离线 · 等待连接'}finally{polling=false}
@@ -100,7 +101,8 @@ export async function connectCloud(){
     revision=r.revision;paired=r.paired;base=JSON.stringify(r.state);hooks.apply(merged.state,true);status.textContent='☁ 生活互动已保存';return r;
     }catch(e){lastActionError=e.status?e.message:'连接中断，请刷新确认本次互动是否已保存。';if(e.status===409&&!blocked&&!flight&&!pending&&JSON.stringify(hooks.getState())===base){try{const next=await api('/api/state');if(next.space!==session.space){location.reload();return false}if(!flight&&!pending&&JSON.stringify(hooks.getState())===base){revision=next.revision;paired=next.paired;base=JSON.stringify(next.state);hooks.apply(next.state,true)}}catch{}}if(!data.automatic)hooks.toast(e.message||'连接中断，请刷新确认本次互动是否已保存');return null}finally{lifeRequest=false;lifeBusy=false;if(!blocked&&JSON.stringify(hooks.getState())!==base)schedule()}
   },
-  async accountInfo(){const next=await api('/api/session');if(!next.authenticated)throw Error('登录已过期，请刷新后重新登录');if(next.space!==session.space||next.paired!==paired){location.reload();return null}Object.assign(session,next);return next},
+  async updateProfile(nickname){const r=await action('/api/account/profile',{nickname});if(r){Object.assign(session,r);hooks.identity?.()}return r},
+  async accountInfo(){const next=await api('/api/session');if(!next.authenticated)throw Error('登录已过期，请刷新后重新登录');if(next.space!==session.space||next.paired!==paired){location.reload();return null}Object.assign(session,next);hooks.identity?.();return next},
   async invite(){return action('/api/invite')},
   async previewPair(code){return action('/api/pair/preview',{code})},
   async history(){return api('/api/account/history')},

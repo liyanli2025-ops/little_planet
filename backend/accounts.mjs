@@ -14,6 +14,7 @@ export function openAccounts(filename){
  CREATE TABLE IF NOT EXISTS account_sessions(token TEXT PRIMARY KEY,account INTEGER NOT NULL REFERENCES accounts(id),csrf TEXT NOT NULL,expires INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS account_invites(token TEXT PRIMARY KEY,account INTEGER NOT NULL UNIQUE REFERENCES accounts(id),expires INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS account_archives(account INTEGER NOT NULL REFERENCES accounts(id),space INTEGER NOT NULL,created INTEGER NOT NULL,value TEXT NOT NULL,PRIMARY KEY(account,space));`);
+ if(!db.prepare('PRAGMA table_info(accounts)').all().some(c=>c.name==='nickname'))db.exec("ALTER TABLE accounts ADD COLUMN nickname TEXT NOT NULL DEFAULT ''");
  function transaction(fn){db.exec('BEGIN IMMEDIATE');try{let v=fn();db.exec('COMMIT');return v}catch(e){db.exec('ROLLBACK');for(const k of cache.keys())if(k!==0)cache.delete(k);throw e}}
  function space(id){
   if(cache.has(id))return cache.get(id);
@@ -29,6 +30,7 @@ export function openAccounts(filename){
   const store=id===0?legacy:openStore(filename,adapter);
   // Guard mutations from upstream requests which finish after unlink/re-pair.
   const original=store.transaction;store.transaction=fn=>{fail(db.prepare('SELECT active FROM account_spaces WHERE id=?').get(id)?.active,'配对状态已更新，请刷新后重试',409);return original(fn)};
+  store.displayName=slot=>{const u=db.prepare('SELECT nickname,username FROM accounts WHERE space=? AND slot=?').get(id,slot);return u?.nickname||u?.username||['小禾','阿远'][slot]};
   const value={store,mediaService:createMediaService(store),musicService:createMusicService(store),weatherService:createWeatherService(store.db)};cache.set(id,value);return value;
  }
  transaction(()=>{
@@ -41,13 +43,16 @@ export function openAccounts(filename){
   }
  });space(0);
  const account=id=>db.prepare('SELECT * FROM accounts WHERE id=?').get(id);
- const partner=u=>db.prepare('SELECT id,username,avatar FROM accounts WHERE space=? AND id<>?').get(u.space,u.id)||null;
+ const partner=u=>db.prepare('SELECT id,username,nickname,avatar FROM accounts WHERE space=? AND id<>?').get(u.space,u.id)||null;
  function makeSpace(){const id=Number(db.prepare('INSERT INTO account_spaces DEFAULT VALUES').run().lastInsertRowid);return {id,...space(id)}}
  function localUser(dest,u,slot){dest.store.db.prepare('INSERT INTO users(slot,username,salt,password,created) VALUES(?,?,?,?,?)').run(slot,u.username,u.salt,u.password,u.created)}
- function register(username,salt,password,avatar){return transaction(()=>{
+ function nickname(value){fail(typeof value==='string','请输入昵称');const name=value.normalize('NFC').trim();fail([...name].length>=1&&[...name].length<=16&&/^[\p{L}\p{N}\p{M} _·-]+$/u.test(name),'昵称为 1–16 个字，可用中文、字母、数字、空格或间隔点');return name}
+ function profile(id,value){const name=nickname(value);db.prepare('UPDATE accounts SET nickname=? WHERE id=?').run(name,id);return account(id)}
+ function displayNames(u){const names=['小禾','阿远'];for(const r of db.prepare('SELECT slot,nickname,username FROM accounts WHERE space=?').all(u.space))names[r.slot]=r.nickname||r.username;return names}
+ function register(username,salt,password,avatar,displayName){return transaction(()=>{
   fail(!db.prepare('SELECT id FROM accounts WHERE username=?').get(username),'这个账号名已被使用',409);
   const dest=makeSpace(),created=Date.now();const id=Number(db.prepare('INSERT INTO accounts(username,salt,password,created,avatar,space,slot) VALUES(?,?,?,?,?,?,?)').run(username,salt,password,created,avatar,dest.id,avatar).lastInsertRowid);
-  localUser(dest,{username,salt,password,created},avatar);return account(id);
+  localUser(dest,{username,salt,password,created},avatar);if(displayName!==undefined&&displayName!=='')profile(id,displayName);return account(id);
  })}
  function snapshot(u){const src=space(u.space),v=src.store.get(u.slot);return {state:v.state,media:src.mediaService.view(u.slot).items,music:src.musicService.view(u.slot),username:u.username,slot:u.slot}}
  // Keep relationship history readable/exportable by its original owner. It is
@@ -82,7 +87,7 @@ export function openAccounts(filename){
   const inv=db.prepare('SELECT * FROM account_invites WHERE token=?').get(hash(code));fail(inv,'配对码无效、已使用或已被新码替换');fail(inv.expires>Date.now(),'配对码已过期，请让对方重新生成');fail(inv.account!==id,'这是你自己的配对码，请交给对方输入');
   const a=account(id),b=account(inv.account);fail(!partner(a),'你已经绑定了另一位住户，请先解绑',409);fail(!partner(b),'对方已经绑定了另一位住户',409);return {a,b};
  }
- function preview(id,code){const {b}=invitation(id,code);return {id:b.id,username:b.username,avatar:b.avatar}}
+ function preview(id,code){const {b}=invitation(id,code);return {id:b.id,username:b.username,nickname:b.nickname||b.username,avatar:b.avatar}}
  function accept(id,code,expected){return transaction(()=>{const {a,b}=invitation(id,code);fail(b.id===expected,'请先确认要连接的账号',409);archive(a);archive(b);const dest=makeSpace();copyPersonal(a,dest,a.avatar);copyPersonal(b,dest,1-a.avatar);dest.store.db.exec('UPDATE saves SET paired=1,revision=revision+1 WHERE id=1');for(const u of [a,b]){db.prepare('DELETE FROM account_invites WHERE account=?').run(u.id);retire(u.space)}return account(id)})}
  function retire(id){if(!db.prepare('SELECT id FROM accounts WHERE space=?').get(id))db.prepare('UPDATE account_spaces SET active=0 WHERE id=?').run(id)}
  function unlink(id){return transaction(()=>{const a=account(id),p=partner(a);fail(p,'当前没有绑定',409);const b=account(p.id);archive(a);archive(b);for(const u of [a,b]){const dest=makeSpace();copyPersonal(u,dest,u.avatar);db.prepare('DELETE FROM account_invites WHERE account=?').run(u.id)}retire(a.space);return account(id)})}
@@ -91,5 +96,5 @@ export function openAccounts(filename){
  // Split legacy unpaired residents before serving requests; no implicit binding.
  if(!legacy.read().paired){const old=db.prepare('SELECT * FROM accounts WHERE space=0').all();if(old.length>1)transaction(()=>{for(const u of old){archive(u);const dest=makeSpace();copyPersonal(u,dest,u.avatar)}retire(0)})}
  db.exec('PRAGMA user_version=3');
- return {db,account,partner,space,register,invite,preview,accept,unlink,archives,expireMeals};
+ return {db,account,partner,space,register,profile,displayNames,invite,preview,accept,unlink,archives,expireMeals};
 }

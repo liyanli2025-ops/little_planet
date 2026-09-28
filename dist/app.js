@@ -13,13 +13,13 @@ import {createLifeUI} from './life-ui.js';
 import {freshLife,crops} from './life-state.js';
 import {createEnvironment} from './environment.js';
 import {closeDaybook} from './immersive.js';
-import {connectCloud,newId} from './cloud.js?v=3';
+import {connectCloud,newId} from './cloud.js?v=4';
 const cloud=await connectCloud();
 import {createScene} from './scene.js?v=22';
 import {createModelView} from './model-room.js?v=8';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const names=['小禾','阿远'],planets=['慢慢星','晚风星'],cities=['未设置所在地','未设置所在地'];
-if(cloud){names[cloud.session.actor]=cloud.session.username;if(cloud.session.partner)names[1-cloud.session.actor]=cloud.session.partner;names.forEach((n,i)=>planets[i]=n+'的星球')}
+function syncNames(){if(!cloud)return;const current=cloud.session.displayNames;names[cloud.session.actor]=current?.[cloud.session.actor]||cloud.session.nickname||cloud.session.username;names[1-cloud.session.actor]=current?.[1-cloud.session.actor]||cloud.session.partnerNickname||cloud.session.partner||'另一位住户';names.forEach((n,i)=>planets[i]=n+'的星球')}syncNames();
 const foods={...foodLabels,rose:['玫瑰','🌹'],tulip:['郁金香','🌷'],sunflower:['向日葵','🌻']};
 const weatherData={cloudy:['🌤','—','多云','云'],overcast:['☁','—','阴天','阴'],fog:['≋','—','有雾','雾'],haze:['≋','—','霾','霾'],sun:['☀','24°','晴朗，有一点微风','晴'],rain:['☂','21°','小雨，适合窝在家里','雨'],snow:['❄','−1°','雪花轻轻落下','雪'],night:['☾','18°','夜色温柔，灯为你留着','夜']};
 const wordCards=createWordCards({identity:()=>cloud?'account-'+cloud.session.accountId:actor,onStart:()=>{close();visual?.sofaStudy(true)},onEnd:()=>visual?.sofaStudy(false),onComplete:(known,again)=>record('在沙发上练习了 '+(known+again)+' 个单词','标记记住了 '+known+' 个词，'+again+' 个还想再看看。')});
@@ -144,7 +144,7 @@ if(cloud){
  $('.identity small').textContent='账号与配对';
  handlers.account=cloudSettings;
  handlers.logout=()=>cloud.logout();
- cloud.attach({
+ cloud.attach({identity(){syncNames();refresh()},
   getState:()=>state,
   apply:(next,remote)=>{if(remote){state=next;if(!cloud.paired&&world!==actor)go(actor);else refresh()}},
   canRefresh:()=>!currentPanel&&!outdoorMode,
@@ -164,7 +164,7 @@ handlers['sleep-now']=()=>{
 const lifeUI=createLifeUI({context:()=>({state,world,actor,visual,panel:currentPanel}),replace:next=>state=next,save,refresh,cloud,modal,close,toast,handlers,request:requestAction,dock,endOutdoor,setMode:m=>outdoorMode=m});
 $('#go-garden').onclick=()=>requestAction((state.worlds[world].theme??world)===0?'garden':'basketball');
 
-const mediaUI=createMediaUI({context:()=>({state,actor,world,visual,panel:currentPanel}),cloud,modal,close,toast,handlers,request:requestAction,enter,bench:()=>{if(inside){inside=false;visual?.enter(false);refresh()}visual?.request('sit')},journal,record,save,returnOwnShelf:()=>{go(actor);enter()}});
+const mediaUI=createMediaUI({names,context:()=>({state,actor,world,visual,panel:currentPanel}),cloud,modal,close,toast,handlers,request:requestAction,enter,bench:()=>{if(inside){inside=false;visual?.enter(false);refresh()}visual?.request('sit')},journal,record,save,returnOwnShelf:()=>{go(actor);enter()}});
 
 const accountUI=cloud?createAccountUI({cloud,context:()=>({accountId:cloud?.session.accountId,actor,panel:currentPanel}),modal,handlers,go,toast}):null;
 compactUI();

@@ -2,7 +2,7 @@ import {applyKitchen} from './kitchen-state.js';
 export const crops={rose:{name:'玫瑰',flower:true,color:0xd88896,seconds:120},tulip:{name:'郁金香',flower:true,color:0xe8b65d,seconds:120},sunflower:{name:'向日葵',flower:true,color:0xe5bc44,seconds:120},daisy:{name:'雏菊',flower:true,color:0xf3eace,seconds:120},lavender:{name:'薰衣草',flower:true,color:0x9c8ec4,seconds:120},hydrangea:{name:'绣球',flower:true,color:0x8faaca,seconds:120},lily:{name:'百合',flower:true,color:0xf2e4c5,seconds:120},tomato:{name:'番茄',color:0xd6674b,seconds:180},carrot:{name:'胡萝卜',color:0xe7a14b,seconds:180},strawberry:{name:'草莓',color:0xda6873,seconds:180}};
 export const freshLife=()=>({plots:Array(6).fill(null),vase:[],outfit:'plain',wash:0,basket:{shots:0,made:0}});
 const check=(ok,message,status=400)=>{if(!ok){const e=new Error(message);e.status=status;throw e}};
-export function applyLife(state,actor,paired,b,now=Date.now(),id=()=>crypto.randomUUID()){
+export function applyLife(state,actor,paired,b,now=Date.now(),id=()=>crypto.randomUUID(),names=['小禾','阿远']){
  check(b&&[0,1].includes(b.world),'请选择星球');const world=b.world;
  check(world===actor||paired,'请先配对再访问对方',403);
  state.worlds.forEach(w=>w.life??=freshLife());const life=state.worlds[world].life,bag=state.bags[actor];let title='',body='';
@@ -23,5 +23,5 @@ export function applyLife(state,actor,paired,b,now=Date.now(),id=()=>crypto.rand
  }else check(false,'互动不存在');
  check(state.events.length<5000,'手账已满，请先整理');
  const eventId=id();if(b.type==='kitchen-serve'){const meal=state.worlds[world].meals.find(i=>i.id===b.item);meal.event=eventId;meal.servedAt=now;}
- state.events.unshift({id:eventId,actor,world,target:world,title:(actor===0?'小禾':'阿远')+title,body,shared:!!paired,pending:false,kind:'life',created:now,weather:'',steps:[],comments:[]});
+ state.events.unshift({id:eventId,actor,world,target:world,title:names[actor]+title,body,shared:!!paired,pending:false,kind:'life',created:now,weather:'',steps:[],comments:[]});
 }

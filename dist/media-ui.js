@@ -3,8 +3,7 @@ import {applyMedia,visibleMedia,mediaLink,coverLink} from './media-state.js';
 import {createReadingSync} from './reading-sync.js';
 import {newId} from './cloud.js';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const names=['小禾','阿远'];
-export function createMediaUI({context,cloud,modal,close,toast,handlers,request,enter,bench,journal,record,save,returnOwnShelf}){
+export function createMediaUI({names=["小禾","阿远"],context,cloud,modal,close,toast,handlers,request,enter,bench,journal,record,save,returnOwnShelf}){
  const radio=createRadio({cloud,context,modal,records:()=>records()});
  const c=context;let items=[],binding={},busy=false,selected=null,loadError='',actionError='',page=0;
  let autoMessage='';

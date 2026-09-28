@@ -9,3 +9,37 @@
 .cloud-gate[hidden]{display:none!important}
 
 .account-profile{display:grid;gap:8px;margin:4px 0 24px}.account-profile>button{display:flex;align-items:center;gap:16px;text-align:left;background:none;border:0;padding:8px 0;color:inherit;cursor:pointer}.account-profile strong{font-size:22px;font-weight:500;overflow-wrap:anywhere}.account-profile small{font-size:12px;color:#81917b}.account-profile form{padding:16px 0 0}.account-profile form[hidden]{display:none}.account-profile input{width:100%;box-sizing:border-box;margin:10px 0;padding:12px;border:1px solid #ccd4c4;border-radius:12px;background:#fffdf5;color:inherit;font:inherit}.account-profile label{display:block;font-size:14px}
+
+/* Account: one quiet surface, with space between identity and connection. */
+#panel[data-page=settings]{width:460px;background:#fcfbf5}
+#panel[data-page=settings] .modal-head{padding:24px 28px 12px;border:0;min-height:76px}
+#panel[data-page=settings] .modal-head h2{font-size:20px;font-weight:400}
+#panel[data-page=settings] #panel-body{padding:12px 28px 28px}
+#panel[data-page=settings] .account-profile{gap:6px;margin:12px 0 36px}
+#panel[data-page=settings] .account-profile>button{justify-content:space-between;min-height:48px;gap:20px}
+#panel[data-page=settings] .account-profile strong{font-size:26px;line-height:1.5;font-weight:500}
+#panel[data-page=settings] .account-profile>span{font-size:12px;color:#7c897e;line-height:1.6}
+#panel[data-page=settings] .account-profile small{font-size:13px;white-space:nowrap}
+#panel[data-page=settings] .account-pair{background:none;border-radius:0;padding:0}
+#panel[data-page=settings] .account-tabs{gap:28px;margin:0 0 26px;border-bottom:1px solid #dfe4da}
+#panel[data-page=settings] .account-tabs button{flex:none;padding:0 0 13px;min-height:44px;border-radius:0;font-size:15px;color:#7e897c;position:relative}
+#panel[data-page=settings] .account-tabs button[aria-pressed=true]{background:none;color:#345a49}
+#panel[data-page=settings] .account-tabs button[aria-pressed=true]::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:#4b705b}
+#panel[data-page=settings] .account-pair .subtle{font-size:13px;line-height:1.8;margin:0 0 20px;color:#7c897e}
+#panel[data-page=settings] .account-pair>.pill.primary,#panel[data-page=settings] #account-pair-form>.primary{width:100%;min-height:48px;border-radius:16px;font-size:15px}
+#panel[data-page=settings] .account-pair input{margin:10px 0 20px;padding:14px;font-size:15px;border-radius:12px}
+#panel[data-page=settings] .account-pair label{font-size:13px;color:#748271}
+#panel[data-page=settings] .account-details{margin-top:32px;padding-top:18px}
+#panel[data-page=settings] .account-details summary{list-style:none;display:flex;justify-content:space-between;align-items:center;min-height:44px;font-size:14px;color:#677b69}
+#panel[data-page=settings] .account-details summary::-webkit-details-marker{display:none}
+#panel[data-page=settings] .account-details summary::after{content:'＋';font-size:18px;font-weight:300}
+#panel[data-page=settings] .account-details[open] summary::after{content:'−'}
+#panel[data-page=settings] .account-details .form-actions{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:20px 0}
+#panel[data-page=settings] .account-details .pill{font-size:13px;padding:12px 8px;min-height:44px}
+#panel[data-page=settings] .account-details>a{font-size:11px;color:#8b9587}
+#panel[data-page=settings] #account-result:empty{display:none}
+#panel[data-page=settings] #account-result{margin:16px 0 0;line-height:1.7}
+#panel[data-page=settings] .cloud-code{padding:18px;margin:0 0 14px;line-height:1.8;font-size:16px;letter-spacing:1px;background:#f0f2e9;border-radius:12px}
+#panel[data-page=settings] .account-pair .form-actions{gap:12px;margin-top:20px}
+#panel[data-page=settings] .account-pair .form-actions .pill{font-size:14px;min-height:44px}
+@media(max-width:359px){#panel[data-page=settings] .modal-head{padding:20px 22px 12px}#panel[data-page=settings] #panel-body{padding:8px 22px 22px}#panel[data-page=settings] .account-profile strong{font-size:23px}#panel[data-page=settings] .account-tabs{gap:24px}}

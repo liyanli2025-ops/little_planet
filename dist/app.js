@@ -1,4 +1,4 @@
-import {createAccountUI} from './account-ui.js';
+import {createAccountUI} from './account-ui.js?v=4';
 import {expireTableMeals} from './meal-expiry.js';
 import {createRecap} from './recap.js';
 import {createWordCards} from './word-cards.js?v=4';

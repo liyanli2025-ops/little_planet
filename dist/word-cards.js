@@ -1,4 +1,4 @@
-import {createWordAudio} from './word-audio.js';
+import {createWordAudio} from './word-audio.js?v=2';
 import {nextWord,answerWord,readProgress} from './word-progress.js';
 const examples=[
  ['gentle','/ˈdʒentl/','温柔的；轻柔的','A gentle breeze comes through the window.','微风从窗户吹进来。'],
@@ -10,7 +10,7 @@ const decks={ky:'考研进阶',ielts:'雅思进阶',toefl:'托福进阶',everyda
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function createWordCards({onStart,onEnd,onComplete,identity=()=>0}){
  const el=document.createElement('dialog');el.className='word-cards';el.setAttribute('aria-label','沙发单词卡');document.body.append(el);
- const voice=createWordAudio({onStatus:(message,credit)=>{const status=el.querySelector('.word-feedback');if(status){status.textContent=message;if(credit){const a=document.createElement('a');a.href=credit;a.target='_blank';a.rel='noopener noreferrer';a.textContent='读音来源';a.style.fontSize='11px';status.append(a)}}}});
+ const voice=createWordAudio({onStatus:message=>{const status=el.querySelector('.word-feedback');if(status)status.textContent=message}});
  let words=null,failed=false,current=null,progress=null,storageKey='',storageFailed=false,session=new Map(),deck='ky',loadToken=0;const cache=new Map();
  function persist(){try{localStorage.setItem(storageKey,JSON.stringify(progress));storageFailed=false}catch{storageFailed=true}}
  function choose(){current=nextWord(progress,words.length);}

@@ -3,7 +3,7 @@ import {createSleepRoutine} from './sleep-routine.js';
 import {createAccountUI} from './account-ui.js?v=4';
 import {expireTableMeals} from './meal-expiry.js';
 import {createRecap} from './recap.js?v=2';
-import {createWordCards} from './word-cards.js?v=5';
+import {createWordCards} from './word-cards.js?v=6';
 import {createSleepSound} from './sleep-sound.js?v=3';
 import {migrateStorage,recipesForFood} from './kitchen-state.js';
 import {applyLife} from './life-state.js';

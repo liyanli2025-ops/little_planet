@@ -1,3 +1,4 @@
+import {expireTableMeals} from './meal-expiry.js';
 import {createRecap} from './recap.js';
 import {createWordCards} from './word-cards.js?v=3';
 import {createSleepSound} from './sleep-sound.js?v=2';
@@ -187,3 +188,5 @@ panelBack.onclick=()=>{if(currentPanel==='fridge-stock')fridge();else if(['book'
 $('#open-daybook').addEventListener('click',e=>{if(inside){e.stopImmediatePropagation();closeDaybook();roomMenu()}},true);
 
 const recap=createRecap({context:()=>({state,actor}),refresh:cloud?()=>cloud.refresh():null,ready:()=>!currentPanel&&!outdoorMode&&!document.querySelector("dialog[open]"),toast});
+
+if(!cloud){const cleanTable=()=>{if(expireTableMeals(state)){save();refresh()}};cleanTable();setInterval(cleanTable,60000)}

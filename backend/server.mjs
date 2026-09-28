@@ -36,6 +36,8 @@ function rate(req,kind,max=20){
  let r=rates.get(key);if(!r||r.until<now){r={until:now+600000,n:0};rates.set(key,r)}
  fail(++r.n<=max,'尝试次数较多，请十分钟后再试',429);
 }
+store.expireMeals();
+setInterval(()=>{try{store.expireMeals()}catch(e){console.error('Table cleanup failed:',e.message)}},60000).unref();
 setInterval(()=>{for(const [k,r]of rates)if(r.until<Date.now())rates.delete(k);db.prepare('DELETE FROM sessions WHERE expires<?').run(Date.now());},60000).unref();
 function session(req){
  const m=(req.headers.cookie||'').match(/(?:^|;\s*)planet_session=([a-f0-9]{64})(?:;|$)/);
@@ -91,6 +93,7 @@ async function matchesCode(code,encoded){
 }
 
 async function api(req,res,p){
+ store.expireMeals();
  if(req.method==='GET'&&p==='/api/health')return json(res,200,{ok:true});
  if(req.method==='GET'&&p==='/api/session'){
   const u=session(req);

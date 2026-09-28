@@ -1,3 +1,4 @@
+import {expireTableMeals} from '../dist/meal-expiry.js';
 import {migrateStorage} from '../dist/kitchen-state.js';
 import {recipes} from '../dist/recipe-catalog.js';
 import {foodCatalog} from '../dist/food-catalog.js';
@@ -109,7 +110,7 @@ export function openStore(filename){
   fail(Array.isArray(w.fridge)&&w.fridge.every(isObj)&&w.fridge.length<=500&&new Set(w.fridge.map(i=>i.id)).size===w.fridge.length,'冰箱最多存放 500 组食物');
   fail(w.fridge.every(i=>keys(i,['id','food','qty','event'])&&id(i.id)&&foods.includes(i.food)&&integer(i.qty,1,999)&&(!i.event||id(i.event))));
   fail(Array.isArray(w.meals)&&w.meals.every(isObj)&&w.meals.length<=500&&new Set(w.meals.map(i=>i.id)).size===w.meals.length,'餐桌最多存放 500 份饭菜');
-  fail(w.meals.every(i=>keys(i,['id','recipe','owner','event','together'])&&id(i.id)&&Object.hasOwn(recipes,i.recipe)&&[0,1].includes(i.owner)&&id(i.event)&&i.together===false));
+  fail(w.meals.every(i=>keys(i,['id','recipe','owner','event','together','servedAt'])&&id(i.id)&&Object.hasOwn(recipes,i.recipe)&&[0,1].includes(i.owner)&&id(i.event)&&i.together===false&&(i.servedAt===undefined||integer(i.servedAt,0,9000000000000000))));
  }
  function validateWorldChange(prev,next,slot,owner,events,priorEvents){
   validateWorld(next);
@@ -140,7 +141,7 @@ export function openStore(filename){
   const oldMeals=new Map(prev.meals.map(i=>[i.id,i]));
   for(const m of next.meals){
    if(oldMeals.has(m.id))fail(same(m,oldMeals.get(m.id)),'不能更改已做好饭菜的归属',403);
-   else {const e=events.find(e=>e.id===m.event);fail(e?.actor===slot&&e.target===m.owner,'饭菜必须对应自己的做饭记录',403)}
+   else {const e=events.find(e=>e.id===m.event);fail(e?.actor===slot&&e.target===m.owner,'饭菜必须对应自己的做饭记录',403);m.servedAt=Date.now()}
   }
   for(const old of prev.meals)if(!next.meals.some(m=>m.id===old.id))fail(old.owner===slot,'只能吃留给自己的饭',403);
  }
@@ -189,6 +190,7 @@ export function openStore(filename){
    return get(slot);
   });
  }
+ function expireMeals(now=Date.now()){return transaction(()=>{const row=read();if(!expireTableMeals(row.state,now))return false;db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state));return true})}
  function invite(slot){
   return transaction(()=>{
    fail(!read().paired,'已经配对，无需再次邀请',409);
@@ -213,5 +215,5 @@ export function openStore(filename){
   });
  }
  function unlink(){return transaction(()=>{db.exec('UPDATE saves SET paired=0,revision=revision+1 WHERE id=1; DELETE FROM invitations;');});}
- return {db,read,get,save,life,invite,accept,unlink,transaction};
+ return {db,read,get,save,life,invite,accept,unlink,transaction,expireMeals};
 }

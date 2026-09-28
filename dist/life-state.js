@@ -22,6 +22,6 @@ export function applyLife(state,actor,paired,b,now=Date.now(),id=()=>crypto.rand
  }else if(b.type==='basket'){check(world===1,'篮球场在阿远的晚风星');check(typeof b.made==='boolean','投篮结果不正确');life.basket.shots++;if(b.made)life.basket.made++;title=b.made?'投进了一颗篮球':'在篮球场练习投篮';body='球弹了几下，又回到手边。';
  }else check(false,'互动不存在');
  check(state.events.length<5000,'手账已满，请先整理');
- const eventId=id();if(b.type==='kitchen-serve')state.worlds[world].meals.find(i=>i.id===b.item).event=eventId;
+ const eventId=id();if(b.type==='kitchen-serve'){const meal=state.worlds[world].meals.find(i=>i.id===b.item);meal.event=eventId;meal.servedAt=now;}
  state.events.unshift({id:eventId,actor,world,target:world,title:(actor===0?'小禾':'阿远')+title,body,shared:!!paired,pending:false,kind:'life',created:now,weather:'',steps:[],comments:[]});
 }

@@ -1,4 +1,4 @@
-import {createSleepSound} from './sleep-sound.js';
+import {createSleepSound} from './sleep-sound.js?v=2';
 import {migrateStorage,recipesForFood} from './kitchen-state.js';
 import {applyLife} from './life-state.js';
 import {recipes} from './recipe-catalog.js';

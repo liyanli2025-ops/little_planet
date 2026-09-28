@@ -4,3 +4,15 @@ dialog.word-cards[open]{max-height:340px;overflow:auto;padding:16px 22px;box-siz
 dialog.word-cards .word-flip strong{white-space:pre-line;font-size:15px;line-height:1.6;max-height:115px;overflow:auto;width:100%;font-weight:400}dialog.word-cards .word-heading h2{overflow-wrap:anywhere;font-size:clamp(23px,7vw,34px)}
 
 dialog.word-cards header select{display:inline-block;width:auto;max-width:155px;min-height:36px;margin:0;padding:4px 22px 4px 0;border:0;border-radius:0;background-color:transparent;color:inherit;font:inherit;letter-spacing:0;cursor:pointer}dialog.word-cards header>span{display:flex;align-items:center}dialog.word-cards header small{white-space:nowrap;margin-left:6px}
+
+dialog.word-cards .word-study{touch-action:pan-y;user-select:none;cursor:grab;outline-offset:4px;will-change:transform}
+dialog.word-cards .word-study:active{cursor:grabbing}
+dialog.word-cards .word-study:focus-visible{outline:1px solid #a5b59a;border-radius:12px}
+dialog.word-cards .word-meaning{display:flex;flex-direction:column;gap:7px;padding:12px 0;min-height:80px;border-top:1px solid #71816a18;line-height:1.6}
+dialog.word-cards .word-meaning strong{white-space:pre-line;font-size:15px;font-weight:400;max-height:115px;overflow:auto}
+dialog.word-cards .word-meaning span{font:15px/1.5 Georgia,serif}dialog.word-cards .word-meaning small{font-size:12px;color:#8c9688}
+dialog.word-cards .word-swipe-hints{display:flex;justify-content:space-between;font-size:12px;color:#8c9688;padding-top:10px}
+.word-swipe-hints[data-direction=left] span:first-child{color:#a96d50}.word-swipe-hints[data-direction=right] span:last-child{color:#355a44}
+.word-feedback{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+
+.word-meaning strong{touch-action:pan-y}

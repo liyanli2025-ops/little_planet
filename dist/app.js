@@ -1,4 +1,4 @@
-import {createWordCards} from './word-cards.js';
+import {createWordCards} from './word-cards.js?v=2';
 import {createSleepSound} from './sleep-sound.js?v=2';
 import {migrateStorage,recipesForFood} from './kitchen-state.js';
 import {applyLife} from './life-state.js';
@@ -18,7 +18,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const names=['小禾','阿远'],planets=['慢慢星','晚风星'],cities=['未设置所在地','未设置所在地'];
 const foods={...foodLabels,rose:['玫瑰','🌹'],tulip:['郁金香','🌷'],sunflower:['向日葵','🌻']};
 const weatherData={cloudy:['🌤','—','多云','云'],overcast:['☁','—','阴天','阴'],fog:['≋','—','有雾','雾'],haze:['≋','—','霾','霾'],sun:['☀','24°','晴朗，有一点微风','晴'],rain:['☂','21°','小雨，适合窝在家里','雨'],snow:['❄','−1°','雪花轻轻落下','雪'],night:['☾','18°','夜色温柔，灯为你留着','夜']};
-const wordCards=createWordCards({onStart:()=>{close();visual?.sofaStudy(true)},onEnd:()=>visual?.sofaStudy(false),onComplete:(known,again)=>record('在沙发上记了 5 个单词','认识了 '+known+' 个词，'+again+' 个还想再看看。')});
+const wordCards=createWordCards({identity:()=>actor,onStart:()=>{close();visual?.sofaStudy(true)},onEnd:()=>visual?.sofaStudy(false),onComplete:(known,again)=>record('在沙发上练习了 '+(known+again)+' 个单词','标记记住了 '+known+' 个词，'+again+' 个还想再看看。')});
 const sleepSound=createSleepSound({onWake:()=>endOutdoor()});
 const uid=newId,key='our-little-skies-v1';
 function today(){let d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}

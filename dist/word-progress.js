@@ -1,0 +1,3 @@
+export function readProgress(raw){try{const p=JSON.parse(raw);if(p?.version===1&&Number.isSafeInteger(p.cursor)&&p.cursor>=0&&Number.isSafeInteger(p.turn)&&p.turn>=0&&Array.isArray(p.again)&&p.again.every(x=>Number.isInteger(x.id)&&x.id>=0&&Number.isSafeInteger(x.due)&&x.due>=0))return p}catch{}return {version:1,cursor:0,turn:0,again:[]}}
+export function nextWord(p,length){const due=p.again.find(x=>x.id<length&&x.due<=p.turn);return due?due.id:p.cursor%length}
+export function answerWord(p,id,known,length){const review=p.again.some(x=>x.id===id&&x.due<=p.turn);p.again=p.again.filter(x=>x.id!==id);p.turn++;if(!review)p.cursor=(p.cursor+1)%length;if(!known)p.again.push({id,due:p.turn+7})}

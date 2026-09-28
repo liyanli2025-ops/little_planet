@@ -30,7 +30,7 @@ test('cached weather persists, respects visibility, retains stale data and avoid
  await service.get(0,false);assert.equal(calls,3);
  service.configure(0,{mode:'auto',location:{label:'北京',latitude:39.9,longitude:116.4}});
  const unavailable=await service.get(0,false);assert.equal(unavailable.worlds[0].snapshot,null);assert.equal(unavailable.worlds[0].unavailable,true);
- service.configure(0,{mode:'manual'});await service.get(0,false);assert.equal(calls,4);db.close();
+ service.configure(0,{mode:'manual'});await service.get(0,false);assert.equal(calls,5);db.close();
 });
 test('in-flight weather for an old city cannot overwrite the new city',async()=>{
  const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT NOT NULL)');
@@ -55,4 +55,13 @@ test('air-quality is optional, cached with weather and never substitutes a faile
  service.configure(0,{mode:'auto',location:{label:'北京',latitude:39.9,longitude:116.4}});
  let r=await service.get(0,false);assert.equal(r.worlds[0].snapshot.airQuality.pm25,88);await service.get(0,false);assert.equal(calls,1);
  airDown=true;now+=16*60000;r=await service.get(0,false);assert.equal(r.worlds[0].snapshot.temperature,26.6);assert.equal(r.worlds[0].snapshot.airQuality,undefined);db.close();
+});
+
+test('owner timezones persist without weather, and manual skies still fetch temperature',async()=>{
+ const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT)');let offline=true;
+ const service=createWeatherService(db,async()=>{if(offline)throw Error('offline');return {ok:true,json:async()=>sample}});
+ service.configure(0,{mode:'manual',timezone:'Asia/Shanghai',location:{label:'上海',latitude:31.2,longitude:121.5}});
+ service.configure(1,{mode:'auto',timezone:'America/New_York'});
+ let result=await service.get(1,true);assert.equal(result.worlds[0].timezone,'Asia/Shanghai');assert.equal(result.worlds[1].timezone,'America/New_York');
+ offline=false;service.configure(0,{mode:'manual'});result=await service.get(1,true);assert.equal(result.worlds[0].snapshot.temperature,26.6);assert.equal(result.worlds[0].mode,'manual');assert.equal(result.worlds[1].timezone,'America/New_York');db.close();
 });

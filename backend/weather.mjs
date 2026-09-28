@@ -34,11 +34,12 @@ export function createWeatherService(db,request=fetch,clock=Date.now){
   const old=read(slot),location=b.location===undefined?old.location:validLocation(b.location);
   if(location&&['设备所在地','定位中','地名待识别'].includes(location.label))location.label=nearestPlace(location.latitude,location.longitude)||'地名待识别';
   const same=JSON.stringify(location)===JSON.stringify(old.location);
-  const next={mode:b.mode,location,snapshot:same?old.snapshot:null};write(slot,next);retry.delete(slot);return next;
+  const timezone=b.timezone??old.timezone??old.snapshot?.timezone??'UTC';try{new Intl.DateTimeFormat('en',{timeZone:timezone}).format()}catch{fail(false,'时区无效')}
+  const next={mode:b.mode,location,timezone,snapshot:same?old.snapshot:null};write(slot,next);retry.delete(slot);return next;
  }
  async function refresh(slot){
   const c=read(slot),now=clock();
-  if(c.mode!=='auto'||!c.location||now-(c.snapshot?.fetchedAt||0)<TTL||(retry.get(slot)||0)>now)return;
+  if(!c.location||now-(c.snapshot?.fetchedAt||0)<TTL||(retry.get(slot)||0)>now)return;
   if(busy.has(slot))return busy.get(slot);
   const job=(async()=>{
    try{
@@ -53,7 +54,7 @@ export function createWeatherService(db,request=fetch,clock=Date.now){
  async function get(slot,paired){
   const slots=paired?[0,1]:[slot];await Promise.all(slots.map(refresh));
   const worlds=[null,null];
-  for(const i of slots){const c=read(i);if(c.location?.label==='设备所在地'){c.location.label=nearestPlace(c.location.latitude,c.location.longitude)||'地名待识别';write(i,c)}worlds[i]={mode:c.mode,location:c.location?{label:c.location.label}:null,snapshot:c.snapshot,stale:!!c.snapshot&&clock()-c.snapshot.fetchedAt>=TTL,unavailable:c.mode==='auto'&&!!c.location&&!c.snapshot}}
+  for(const i of slots){const c=read(i);if(c.location?.label==='设备所在地'){c.location.label=nearestPlace(c.location.latitude,c.location.longitude)||'地名待识别';write(i,c)}worlds[i]={timezone:c.snapshot?.timezone||c.timezone||'UTC',mode:c.mode,location:c.location?{label:c.location.label}:null,snapshot:c.snapshot,stale:!!c.snapshot&&clock()-c.snapshot.fetchedAt>=TTL,unavailable:c.mode==='auto'&&!!c.location&&!c.snapshot}}
   return {worlds,source:'Open-Meteo'};
  }
  return {search,configure,get};

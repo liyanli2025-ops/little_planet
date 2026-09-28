@@ -1,0 +1,6 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import * as T from '../dist/vendor/three.module.js';
+import {createTableFood} from '../dist/table-food.js';
+test('table uses recipe models, remains grounded and removes eaten meals',()=>{const table=new T.Group(),view=createTableFood(table);view.update([{id:'a',recipe:'omelet'},{id:'b',recipe:'milk'}]);assert.deepEqual(view.state().map(x=>x.recipe),['omelet','milk']);const root=table.children[0],first=root.children[0];for(const dish of root.children){const b=new T.Box3().setFromObject(dish);assert(Math.abs(b.min.y-.654)<1e-6);assert(b.max.x<.73&&b.min.x>-.73)}view.update([{id:'a',recipe:'omelet'},{id:'b',recipe:'milk'}]);assert.equal(root.children[0],first);let disposed=false;first.traverse(o=>o.geometry?.addEventListener('dispose',()=>disposed=true));view.update([{id:'b',recipe:'milk'}]);assert(disposed);assert.equal(view.state().length,1);view.update([]);assert.equal(root.children.length,0);view.dispose();assert.equal(table.children.length,0)});
+test('reserved meals are covered and changing households replaces the visible meals',()=>{const table=new T.Group(),view=createTableFood(table);view.update([{id:'a',recipe:'omelet',locked:true}]);assert.equal(view.state()[0].locked,true);view.update([{id:'z',recipe:'milk'}]);assert.equal(view.state()[0].id,'z');view.dispose()});

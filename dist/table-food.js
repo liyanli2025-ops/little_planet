@@ -1,0 +1,9 @@
+import * as T from './vendor/three.module.js';
+import {makeDish} from './dish-models.js';
+import {recipes} from './recipe-catalog.js';
+export function createTableFood(table){
+ const root=new T.Group();root.name='actual-table-meals';table.add(root);let signature='';
+ function clear(){const geometries=new Set(),materials=new Set();root.traverse(o=>{if(o.geometry)geometries.add(o.geometry);for(const m of o.material?[].concat(o.material):[])materials.add(m)});geometries.forEach(g=>g.dispose());materials.forEach(m=>m.dispose());root.clear()}
+ function covered(){const g=new T.Group(),m=new T.MeshStandardMaterial({color:0xb8cbb4,roughness:.75});const box=new T.Mesh(new T.BoxGeometry(.4,.20,.30),m);box.position.y=.1;g.add(box);const lid=new T.Mesh(new T.BoxGeometry(.43,.025,.33),m);lid.position.y=.21;g.add(lid);return g}
+ return {update(items=[]){const visible=items.filter(i=>recipes[i.recipe]).slice(-6);const key=JSON.stringify(visible.map(i=>[i.id,i.recipe,!!i.locked]));if(key===signature)return;signature=key;clear();visible.forEach((item,i)=>{const mesh=item.locked?covered():makeDish(item.recipe);const b=new T.Box3().setFromObject(mesh),size=b.getSize(new T.Vector3()),center=b.getCenter(new T.Vector3());const n=visible.length,limit=n===1?.61:n===2?.48:.36,scale=Math.min(1.5,limit/Math.max(size.x,.001),.35/Math.max(size.y,.001),(n<=2?.49:.29)/Math.max(size.z,.001));mesh.scale.setScalar(scale);mesh.position.set(-center.x*scale,-b.min.y*scale,-center.z*scale);const slot=new T.Group();slot.userData={id:item.id,recipe:item.recipe,locked:!!item.locked};slot.position.set(n===1?.14:n===2?(i-.5)*.55:(i%3-1)*.46,.654,n<=2?.16:Math.floor(i/3)*.32);slot.add(mesh);slot.traverse(o=>{if(o.isMesh){o.castShadow=true;o.receiveShadow=true}});root.add(slot)})},state(){return root.children.map(g=>({...g.userData,position:g.position.toArray()}))},dispose(){clear();root.removeFromParent()}};
+}

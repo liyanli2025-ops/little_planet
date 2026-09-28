@@ -1,8 +1,9 @@
+import {createSleepRoutine} from './sleep-routine.js';
 import {createAccountUI} from './account-ui.js?v=4';
 import {expireTableMeals} from './meal-expiry.js';
 import {createRecap} from './recap.js?v=2';
 import {createWordCards} from './word-cards.js?v=4';
-import {createSleepSound} from './sleep-sound.js?v=2';
+import {createSleepSound} from './sleep-sound.js?v=3';
 import {migrateStorage,recipesForFood} from './kitchen-state.js';
 import {applyLife} from './life-state.js';
 import {recipes} from './recipe-catalog.js';
@@ -11,11 +12,11 @@ import {compactUI} from './compact-ui.js';
 import {createMediaUI} from './media-ui.js';
 import {createLifeUI} from './life-ui.js';
 import {freshLife,crops} from './life-state.js';
-import {createEnvironment} from './environment.js?v=3';
+import {createEnvironment} from './environment.js?v=4';
 import {closeDaybook} from './immersive.js';
 import {connectCloud,newId} from './cloud.js?v=4';
 const cloud=await connectCloud();
-import {createScene} from './scene.js?v=24';
+import {createScene} from './scene.js?v=25';
 import {createModelView} from './model-room.js?v=8';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const names=['小禾','阿远'],planets=['慢慢星','晚风星'],cities=['未设置所在地','未设置所在地'];
@@ -188,3 +189,20 @@ const recap=createRecap({context:()=>({state,actor,accountId:cloud?.session.acco
 if(!cloud){const cleanTable=()=>{if(expireTableMeals(state)){save();refresh()}};cleanTable();setInterval(cleanTable,60000)}
 
 window.planetArrival.finish();
+
+const sleepRoutine=createSleepRoutine();
+function checkSleepRoutine(){
+ if(document.hidden||!visual||!environment)return;
+ const time=environment.ownerTime(),sceneState=visual.readState();
+ const busy=!!document.querySelector('dialog[open]')||sceneState.moving||sceneState.stairs||sceneState.kitchen?.active||sceneState.leisure?.gardenBusy||document.querySelector('#planet-arrival:not([hidden])')?.getAttribute('aria-busy')==='true';
+ const decision=sleepRoutine.decide({now:Date.now(),hour:Number(time.text.split(':')[0]),date:time.date,sleeping:sceneState.sleeping,busy});
+ if(decision==='wake'){endOutdoor();return}
+ if(decision==='sleep'){
+  endOutdoor();closeDaybook();world=actor;inside=true;refresh();
+  if(visual.autoSleep()){outdoorMode='sleep';$('#activity-dock').hidden=true;sleepSound.open({silent:true})}
+ }
+}
+for(const event of ['pointerdown','keydown','wheel','input'])document.addEventListener(event,()=>sleepRoutine.activity(Date.now()),{passive:true,capture:true});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)sleepRoutine.leave();else checkSleepRoutine()});
+window.addEventListener('pagehide',()=>sleepRoutine.leave());
+setInterval(checkSleepRoutine,15000);setTimeout(checkSleepRoutine,1800);

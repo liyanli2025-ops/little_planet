@@ -96,7 +96,7 @@ export function createEnvironment({cloud,context,modal,toast,cities,planets}){
  document.addEventListener('visibilitychange',()=>{if(!document.hidden){paint();load()}});
  window.addEventListener('online',load);
  load();
- return {paint,async manual(){++locationToken;locationNotice='';return !cloud||await configure({mode:'manual'})},stamp(){
+ return {ownerTime(){const w=worlds[context().actor];return skyTime(w?.snapshot||{timezone:w?.timezone||Intl.DateTimeFormat().resolvedOptions().timeZone})},paint,async manual(){++locationToken;locationNotice='';return !cloud||await configure({mode:'manual'})},stamp(){
   const {actor,state}=context();
   return worlds.map((w,i)=>{
    if(cloud&&!cloud.paired&&i!==actor)return null;

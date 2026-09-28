@@ -23,5 +23,5 @@ export function createSleepSound({onWake=()=>{}}={}){
  popup.querySelector('[data-sleep-timer]').onclick=()=>{const values=[30,60,0,15];minutes=values[(values.indexOf(minutes)+1)%values.length];deadline=selected&&minutes?Date.now()+minutes*60000:0;paint()};
  function checkTimer(){if(deadline&&Date.now()>=deadline){stop();hide()}}
  setInterval(checkTimer,1000);document.addEventListener('visibilitychange',checkTimer);window.addEventListener('echoo-music-play',()=>{stop()});
- return {open(){sleeping=true;stop();picker()},reopen(){if(!sleeping)return;armed=false;clearTimeout(scrollTimer);popup.querySelector('[data-sleep-picker]').hidden=true;popup.querySelector('[data-sleep-menu]').hidden=false;popup.querySelector('h2').textContent='睡个好觉';paint();if(!popup.open)popup.show()},end(){sleeping=false;stop();hide()},state:()=>({selected:selected?.id||null,sleeping,open:popup.open,minutes,deadline})};
+ return {open({silent=false}={}){sleeping=true;stop();if(silent)hide();else picker()},reopen(){if(!sleeping)return;armed=false;clearTimeout(scrollTimer);popup.querySelector('[data-sleep-picker]').hidden=true;popup.querySelector('[data-sleep-menu]').hidden=false;popup.querySelector('h2').textContent='睡个好觉';paint();if(!popup.open)popup.show()},end(){sleeping=false;stop();hide()},state:()=>({selected:selected?.id||null,sleeping,open:popup.open,minutes,deadline})};
 }

@@ -1,5 +1,5 @@
 import {createRecap} from './recap.js';
-import {createWordCards} from './word-cards.js?v=2';
+import {createWordCards} from './word-cards.js?v=3';
 import {createSleepSound} from './sleep-sound.js?v=2';
 import {migrateStorage,recipesForFood} from './kitchen-state.js';
 import {applyLife} from './life-state.js';

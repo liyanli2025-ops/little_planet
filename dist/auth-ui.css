@@ -4,3 +4,11 @@
 .auth-gate header{display:block;position:static;padding:0;margin:0;border:0;background:none;width:auto;min-height:0}.auth-gate header h1{padding:0;width:auto;text-align:left;line-height:1.35}.auth-gate .tabs{padding:0;justify-content:flex-start;background:none;position:static;box-shadow:none;border-radius:0}.auth-gate .tab{border-radius:0}.auth-gate .brand{padding:0;background:none;border-radius:0;width:auto}.auth-gate .eye{font-size:20px}
 
 .auth-gate .auth-page>header{height:auto;flex:none}.auth-gate .auth-page>header p{margin:0 0 28px;line-height:1.7}.auth-gate .tabs{height:auto;min-height:0;flex:none}
+
+/* Keep the welcome copy and account tabs in separate, non-shrinking rows. */
+.auth-gate .auth-page > header{display:flex;flex-direction:column;align-items:flex-start;gap:12px;height:auto;flex:0 0 auto}
+.auth-gate .auth-page > header h1{margin:12px 0 0}
+.auth-gate .auth-page > header p{margin:0;line-height:1.7}
+.auth-gate .auth-page > .tabs{margin:30px 0 28px;gap:32px;flex:0 0 auto}
+.auth-gate .auth-page > .tabs .tab{min-height:44px;padding:10px 0 12px;line-height:22px}
+.auth-gate #cloud-auth{flex:0 0 auto}

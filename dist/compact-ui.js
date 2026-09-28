@@ -2,7 +2,8 @@ export function compactUI(){
  const $=s=>document.querySelector(s),brand=$('.brand');
  const menu=document.createElement('dialog');menu.id='world-menu';menu.setAttribute('aria-label','星球菜单');menu.innerHTML='<div class="menu-heading"><strong>阿球</strong><button type="button" aria-label="关闭菜单" data-menu-close>×</button></div><div class="menu-worlds"></div><div class="menu-items"></div><details><summary>探索工具</summary><label><input type="checkbox" id="show-walk-tools">显示方向与缩放按钮</label><div class="menu-tools"></div></details>';document.body.append(menu);
  const worlds=$('#world-tabs');menu.querySelector('.menu-worlds').append(worlds);
- for(const key of ['planet','decorate','bag'])menu.querySelector('.menu-items').append($('[data-nav='+key+']'));
+ for(const key of ['planet','decorate'])menu.querySelector('.menu-items').append($('[data-nav='+key+']'));
+ $('[data-nav=bag]')?.remove();
  const settings=$('#settings');settings.textContent='账号与设置';menu.querySelector('.menu-items').append(settings);
  for(const id of ['view-mode','tour-world']){const item=$('#'+id);if(item)menu.querySelector('.menu-tools').append(item)}
  brand.setAttribute('aria-haspopup','dialog');brand.setAttribute('aria-expanded','false');brand.setAttribute('aria-label','打开星球菜单');brand.onclick=e=>{e.preventDefault();if(!menu.open){menu.showModal();brand.setAttribute('aria-expanded','true')}};

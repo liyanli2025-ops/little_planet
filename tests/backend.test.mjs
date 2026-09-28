@@ -45,7 +45,7 @@ test('private notes stay private; shared comments cannot impersonate the other p
 });
 test('real asynchronous gifts can be discovered and eaten by the recipient',()=>{
  const s=setup();pair(s);const e=event(0,1),gift={id:randomUUID(),food:'cookie',qty:1,event:e.id};
- commit(s,0,x=>{x.bags[0].cookie--;x.events.unshift(e);x.worlds[1].fridge.push(gift)});
+ commit(s,0,x=>{x.worlds[0].fridge.find(i=>i.food==='cookie').qty--;x.events.unshift(e);x.worlds[1].fridge.push(gift)});
  assert.equal(s.get(1).state.events[0].pending,true);
  assert.throws(()=>commit(s,0,x=>x.worlds[1].fridge=x.worlds[1].fridge.filter(i=>i.id!==gift.id)),/等待收件人/);
  assert.throws(()=>commit(s,0,x=>{x.events=[];x.worlds[1].fridge=x.worlds[1].fridge.filter(i=>i.id!==gift.id)}),/等待收件人/);
@@ -67,9 +67,9 @@ test('meal ownership and role, decoration, bag permissions are enforced',()=>{
  commit(s,1,x=>{x.events[0].pending=false;x.worlds[0].meals=[]});assert.equal(s.get(0).state.worlds[0].meals.length,0);s.db.close();
 });
 test('stale writes rejected, retries idempotent, failed transactions atomic',()=>{
- const s=setup();pair(s);const v=s.get(0);v.state.bags[0].cookie--;
+ const s=setup();pair(s);const v=s.get(0);v.state.worlds[0].fridge.find(i=>i.food==='cookie').qty--;
  const cmd={state:v.state,revision:v.revision,command:randomUUID()},ack=s.save(0,cmd);
- assert.equal(ack.state.bags[0].cookie,2);assert.equal(s.save(0,cmd).revision,ack.revision);
+ assert.equal(ack.state.worlds[0].fridge.find(i=>i.food==='cookie').qty,2);assert.equal(s.save(0,cmd).revision,ack.revision);
  assert.throws(()=>s.save(0,{...cmd,command:randomUUID()}),/更新了存档/);
  const before=JSON.stringify(s.read());assert.throws(()=>commit(s,1,x=>{x.notes.push(note(1));x.worlds[0].deco=true}),/只有主人/);
  assert.equal(JSON.stringify(s.read()),before);s.db.close();

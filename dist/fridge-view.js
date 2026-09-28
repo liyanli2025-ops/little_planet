@@ -41,7 +41,7 @@ export function createFridgeView(host,options){
    for(const z of [-.20,.20])for(const y of [.07,.12])box(g,0xd1c19f,0,y,z,.51,.027,.018);
    for(const x of [-.25,.25]){box(g,0xc1ad84,x,.085,0,.025,.14,.41);for(const z of [-.20,.20])box(g,0xbfae8d,x,.09,z,.025,.16,.025)}
    const count=Math.min(3,item.qty||1);for(let k=0;k<count;k++)food(k===1?.12:-.10,.052,k===0?.07:-.11,.21,.23,.19,(k-1)*.27);
-  }else if(['熟食便当','甜点点心'].includes(f.category)||['cheese','butter','tofu'].includes(item.food)){
+  }else if(['熟食便当','甜点点心','做好的饭菜'].includes(f.category)||['cheese','butter','tofu'].includes(item.food)){
    food(0,.045,0,.42,.19,.32);tub(f.category==='甜点点心'?0xd5b38d:0x8eafa4,.24);
    // A clear inset in the lid lets the actual dish remain visible.
    const lid=g.children[g.children.length-3];lid.material=new T.MeshPhysicalMaterial({color:0xdce9df,transparent:true,opacity:.26,roughness:.22,depthWrite:false});

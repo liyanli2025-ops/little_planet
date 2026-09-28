@@ -1,3 +1,4 @@
+import {recipes} from './recipe-catalog.js';
 // Shared by inventory validation, stocking UI and the 3D food models.
 const rows=[
  ['cola','可乐','🥤','乳品饮料','can',0xc75042],
@@ -11,6 +12,7 @@ const rows=[
  ['icecream','冰淇淋','🍨','冷冻食品','icecream',0xe6c5c0],['dumplings','速冻饺子','🥟','冷冻食品','dumplings',0xe8dfca,false],['bao','速冻包子','🥟','冷冻食品','bao',0xece0c8,false],['shrimp','虾仁','🦐','冷冻食品','shrimp',0xe5ac94,false],['fish','鱼排','🐟','冷冻食品','fish',0xd3b9a0,false],['beef','牛肉','🥩','冷冻食品','meat',0xb77973,false],['chicken','鸡胸肉','🍗','冷冻食品','meat',0xe4b3a1,false],['pork','猪肉','🥩','冷冻食品','meat',0xd39b92,false],['peas','豌豆玉米粒','🌽','冷冻食品','peas',0x9fb366,false]
 ];
 export const foodCatalog=Object.fromEntries(rows.map(([id,name,emoji,category,shape,color,ready=true])=>[id,{id,name,emoji,category,shape,color,ready,zone:category==='冷冻食品'?'freezer':'chill'}]));
+for(const r of Object.values(recipes))foodCatalog['cooked_'+r.id]={id:'cooked_'+r.id,name:r.name,emoji:r.icon,category:'做好的饭菜',shape:r.model,ready:true,zone:'chill',recipe:r.id};
 export const foodCategories=[...new Set(rows.map(r=>r[3]))];
 export const foodLabels=Object.fromEntries(Object.values(foodCatalog).map(f=>[f.id,[f.name,f.emoji]]));
 

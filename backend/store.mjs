@@ -1,3 +1,4 @@
+import {migrateStorage} from '../dist/kitchen-state.js';
 import {recipes} from '../dist/recipe-catalog.js';
 import {foodCatalog} from '../dist/food-catalog.js';
 import {freshLife,applyLife} from '../dist/life-state.js';
@@ -37,6 +38,7 @@ export function openStore(filename){
  PRAGMA user_version=2;`);
  db.prepare('INSERT OR IGNORE INTO saves(id,revision,paired,state) VALUES(1,0,0,?)').run(JSON.stringify(initial()));
  const read=()=>{const r=db.prepare('SELECT * FROM saves WHERE id=1').get();const state=JSON.parse(r.state);state.worlds.forEach(w=>w.life??=freshLife());return {...r,state}};
+ if(!db.prepare('SELECT key FROM settings WHERE key=?').get('unified-storage-v1')){db.exec('BEGIN IMMEDIATE');try{const row=read();migrateStorage(row.state,randomUUID);db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state));db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run('unified-storage-v1','done');db.exec('COMMIT')}catch(e){db.exec('ROLLBACK');throw e}}
  const visible=(e,slot,paired)=>e.actor===slot || (paired && (e.shared || e.target===slot));
  function project(row,slot){
   const s=clone(row.state);

@@ -1,3 +1,4 @@
+import {createSleepSound} from './sleep-sound.js';
 import {migrateStorage,recipesForFood} from './kitchen-state.js';
 import {applyLife} from './life-state.js';
 import {recipes} from './recipe-catalog.js';
@@ -16,6 +17,7 @@ const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const names=['小禾','阿远'],planets=['慢慢星','晚风星'],cities=['未设置所在地','未设置所在地'];
 const foods={...foodLabels,rose:['玫瑰','🌹'],tulip:['郁金香','🌷'],sunflower:['向日葵','🌻']};
 const weatherData={cloudy:['🌤','—','多云','云'],overcast:['☁','—','阴天','阴'],fog:['≋','—','有雾','雾'],haze:['≋','—','霾','霾'],sun:['☀','24°','晴朗，有一点微风','晴'],rain:['☂','21°','小雨，适合窝在家里','雨'],snow:['❄','−1°','雪花轻轻落下','雪'],night:['☾','18°','夜色温柔，灯为你留着','夜']};
+const sleepSound=createSleepSound();
 const uid=newId,key='our-little-skies-v1';
 function today(){let d=new Date();return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')}
 function initial(){return {version:1,actor:0,worlds:[0,1].map(i=>({weather:i?'rain':'sun',deco:false,fridge:['milk','pudding','rice','egg','tomato'].map(food=>({id:uid(),food,qty:3})),meals:[]})),bags:[{cookie:3,pudding:2,milk:2},{cookie:3,pudding:2,milk:2}],events:[],notes:[],favorites:[[],[]]}}
@@ -98,7 +100,7 @@ $('#view-mode').onclick=()=>visual?.toggleView();$('#tour-world').onclick=()=>{i
 const readingPages=['风沿着小路走来，把树叶翻到新的一页。我们不急着赶路，坐在这里，也是在认真生活。','远处的窗户亮起来了。有人在等一锅汤，有人在等一句晚安；长椅替我们留着慢慢说话的时间。','把今天折成一个小小的书角吧。等下一次风吹过，我们还可以回到这里，接着读。'];
 let hammockDrink=null;let outdoorMode='',readingPage=0,paired=false,readingEvent=null,campEvent=null;
 function dock(html){$('#activity-dock').innerHTML=html;$('#activity-dock').hidden=false;$('.scene-wrap').classList.add('engaged')}
-function endOutdoor(){hammockDrink=null;$('#activity-dock').classList.remove('hammock-dock');if(outdoorMode==='pet'){visual?.stopPet();$('.scene-wrap').classList.remove('pet-active')}visual?.stand();$('#activity-dock').hidden=true;$('.scene-wrap').classList.remove('engaged');outdoorMode='';paired=false;readingEvent=null;campEvent=null}
+function endOutdoor(){sleepSound.end();$('#activity-dock').classList.remove('sleep-dock');hammockDrink=null;$('#activity-dock').classList.remove('hammock-dock');if(outdoorMode==='pet'){visual?.stopPet();$('.scene-wrap').classList.remove('pet-active')}visual?.stand();$('#activity-dock').hidden=true;$('.scene-wrap').classList.remove('engaged');outdoorMode='';paired=false;readingEvent=null;campEvent=null}
 function readBench(){close();outdoorMode='read';paired=false;readingPage=0;visual?.sit(false,true);readingEvent=mediaUI.selected()?null:record(names[actor]+'在长椅上读了一会儿书','在长椅上坐着，翻了翻书。');renderReading();mediaUI.openReading()}
 function renderReading(){$('#activity-dock').hidden=true;$('.scene-wrap').classList.add('engaged')}
 
@@ -133,7 +135,7 @@ $('#activity-dock').addEventListener('click',e=>{const b=e.target.closest('[data
 function cloudSettings(){
  modal('settings','Echoo','账号与两颗星球',
  '<p>你好，'+esc(cloud.session.username)+'。这是'+names[actor]+'的'+planets[actor]+'。</p>'+
- '<details class="help-details"><summary>素材鸣谢</summary><div class="cloud-account-note"><a href="/food-credits.html" target="_blank" rel="noopener">食物模型与作者 ↗</a></div></details>'+
+ '<details class="help-details"><summary>素材鸣谢</summary><div class="cloud-account-note"><a href="/food-credits.html" target="_blank" rel="noopener">食物模型与作者 ↗</a><br><a href="/sleep-credits.html" target="_blank" rel="noopener">助眠声音与作者 ↗</a></div></details>'+
  '<details class="help-details"><summary>存档与互访说明</summary><div class="cloud-account-note">账号身份固定，存档保存在服务器。私人手账仅本人可读；配对后可访问彼此的院子、冰箱、餐桌和共同回忆。<br>当前为异步互访，每隔约 5 秒在空闲时同步。双人同时走动、并坐与共同做饭尚未开放。</div></details>'+
  (!cloud.session.secure?'<p class="cloud-warning">HTTP 试玩连接：请仅使用临时测试密码和测试记录。正式记录前请配置 HTTPS。</p>':'')+
  (cloud.paired?'<p>♡ 已配对：'+names[1-actor]+' · '+planets[1-actor]+'</p><div class="form-actions">'+btn('go-partner','去对方的星球',true)+btn('unpair','解除配对')+'</div>':
@@ -160,15 +162,13 @@ if(cloud){
  });
 }
 
-function bedroom(){
- modal('bed','SWEET DREAMS','把疲惫，交给柔软的床','<p class="subtle">枕头蓬松，被子刚刚铺好。在'+(world===actor?'自己的':names[world]+'的')+'小屋休息一会儿吧。</p><div class="form-actions">'+btn('sleep-now','躺下休息')+btn('write','写一页睡前手账')+'</div>');
-}
+function bedroom(){handlers['sleep-now']()}
 handlers.stairs=()=>{endOutdoor();close();visual?.request('stairs')};
 handlers.bed=()=>{endOutdoor();close();visual?.request('bed')};
 handlers['sleep-now']=()=>{
  close();if(!visual?.sleep())return;outdoorMode='sleep';
  record(names[actor]+'在'+(world===actor?'自己的':names[world]+'的')+'小屋休息了一会儿','走上二层，钻进柔软的被子。把今天的疲惫慢慢放下。',{target:world,shared:world!==actor});
- dock('<div class="dock-heading"><span>☾ 在二层卧室休息</span><button data-outdoor="leave" aria-label="起床">×</button></div><p class="subtle">窗外的天气慢慢变化，这里有一床温暖的被子。</p><div class="dock-actions"><button data-outdoor="leave">起床，继续逛逛</button></div>');
+ $('#activity-dock').classList.add('sleep-dock');dock('<button data-outdoor="leave">起床</button>');sleepSound.open();
 };
 
 const lifeUI=createLifeUI({context:()=>({state,world,actor,visual,panel:currentPanel}),replace:next=>state=next,save,refresh,cloud,modal,close,toast,handlers,request:requestAction,dock,endOutdoor,setMode:m=>outdoorMode=m});

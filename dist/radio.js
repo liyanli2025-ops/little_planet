@@ -8,6 +8,8 @@ export function createRadio({cloud,context,modal,records}){
  const displayed=()=>mode===playingMode?current:tracks.find(t=>t.id===sessions.get(mode)?.track.id)||tracks[0]||null;
  const unavailable=new Set();let skips=0,skipTimer=null;
  const audio=createQQAudio();
+ window.addEventListener('echoo-sleep-play',()=>audio.pause());
+ audio.addEventListener('play',()=>window.dispatchEvent(new Event('echoo-music-play')));
  const mini=document.createElement('div');mini.className='fm-mini';mini.hidden=true;document.body.append(mini);
  const launch=document.createElement('button');launch.className='round music-launch';launch.type='button';launch.setAttribute('aria-label','打开音乐播放器');launch.title='听音乐';launch.textContent='♫';document.querySelector('.header-actions')?.prepend(launch);launch.addEventListener('click',()=>open());
  const active=()=>document.querySelector('#panel').open&&context().panel==='radio';

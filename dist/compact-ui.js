@@ -4,7 +4,7 @@ export function compactUI(){
  const worlds=$('#world-tabs');menu.querySelector('.menu-worlds').append(worlds);
  for(const key of ['planet','decorate'])menu.querySelector('.menu-items').append($('[data-nav='+key+']'));
  $('[data-nav=bag]')?.remove();
- const settings=$('#settings');settings.textContent='账号与设置';menu.querySelector('.menu-items').append(settings);
+ const settings=$('#settings');settings.textContent='账号与配对';menu.querySelector('.menu-items').append(settings);
  for(const id of ['view-mode','tour-world']){const item=$('#'+id);if(item)menu.querySelector('.menu-tools').append(item)}
  brand.setAttribute('aria-haspopup','dialog');brand.setAttribute('aria-expanded','false');brand.setAttribute('aria-label','打开星球菜单');brand.onclick=e=>{e.preventDefault();if(!menu.open){menu.showModal();brand.setAttribute('aria-expanded','true')}};
  menu.addEventListener('click',e=>{if(e.target===menu||e.target.closest('[data-menu-close],[data-nav],[data-world],#settings,#view-mode,#tour-world'))menu.close()},true);

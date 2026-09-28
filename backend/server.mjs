@@ -5,10 +5,8 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {randomBytes,scrypt,timingSafeEqual} from 'node:crypto';
 import {promisify} from 'node:util';
-import {openStore,AppError,fail,hash} from './store.mjs';
-import {createMusicService} from './music.mjs';
-import {createMediaService} from './media.mjs';
-import {createWeatherService} from './weather.mjs';
+import {AppError,fail,hash} from './store.mjs';
+import {openAccounts} from './accounts.mjs';
 const derive=promisify(scrypt);
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'..','dist');
 const PORT=Number(process.env.PORT||8080),HOST=process.env.HOST||'127.0.0.1';
@@ -16,19 +14,11 @@ const ORIGIN=process.env.PUBLIC_ORIGIN||'http://127.0.0.1:'+PORT;
 const originURL=new URL(ORIGIN);
 if(!['http:','https:'].includes(originURL.protocol)||originURL.origin!==ORIGIN)throw Error('PUBLIC_ORIGIN 必须为完整来源（不带路径或结尾斜线）');
 const secure=originURL.protocol==='https:';
-const REGISTRATION_CODE=process.env.REGISTRATION_CODE||'';
+
 
 const filename=process.env.DATABASE_PATH||path.resolve('data/planet.sqlite');
-const store=openStore(filename),db=store.db;
-const weatherService=createWeatherService(db);
-const mediaService=createMediaService(store);
-const musicService=createMusicService(store);
-async function environmentFor(slot){
- const result=await weatherService.get(slot,store.get(slot).paired);
- // Pairing can change while an upstream forecast is in flight.
- if(!store.get(slot).paired)result.worlds[1-slot]=null;
- return result;
-}
+const hub=openAccounts(filename),db=hub.db;
+async function environmentFor(u){const result=await hub.space(u.space).weatherService.get(u.slot,!!hub.partner(u));fail(hub.account(u.id).space===u.space,'配对状态已更新，请刷新后重试',409);return result}
 const ttl=7*86400000;
 const rates=new Map();
 function rate(req,kind,max=20){
@@ -36,19 +26,19 @@ function rate(req,kind,max=20){
  let r=rates.get(key);if(!r||r.until<now){r={until:now+600000,n:0};rates.set(key,r)}
  fail(++r.n<=max,'尝试次数较多，请十分钟后再试',429);
 }
-store.expireMeals();
-setInterval(()=>{try{store.expireMeals()}catch(e){console.error('Table cleanup failed:',e.message)}},60000).unref();
-setInterval(()=>{for(const [k,r]of rates)if(r.until<Date.now())rates.delete(k);db.prepare('DELETE FROM sessions WHERE expires<?').run(Date.now());},60000).unref();
+hub.expireMeals();
+setInterval(()=>{try{hub.expireMeals()}catch(e){console.error('Table cleanup failed:',e.message)}},60000).unref();
+setInterval(()=>{for(const [k,r]of rates)if(r.until<Date.now())rates.delete(k);db.prepare('DELETE FROM account_sessions WHERE expires<?').run(Date.now());},60000).unref();
 function session(req){
  const m=(req.headers.cookie||'').match(/(?:^|;\s*)planet_session=([a-f0-9]{64})(?:;|$)/);
- return m?db.prepare('SELECT s.*,u.username FROM sessions s JOIN users u USING(slot) WHERE s.token=? AND s.expires>?').get(hash(m[1]),Date.now()):null;
+ return m?db.prepare('SELECT s.*,u.id,u.username,u.space,u.slot,u.avatar FROM account_sessions s JOIN accounts u ON u.id=s.account WHERE s.token=? AND s.expires>?').get(hash(m[1]),Date.now()):null;
 }
-function issue(slot,res){
+function issue(account,res){
  const token=randomBytes(32).toString('hex'),csrf=randomBytes(24).toString('hex');
- db.prepare('DELETE FROM sessions WHERE expires<?').run(Date.now());
- db.prepare('INSERT INTO sessions(token,slot,csrf,expires) VALUES(?,?,?,?)').run(hash(token),slot,csrf,Date.now()+ttl);
+ db.prepare('DELETE FROM account_sessions WHERE expires<?').run(Date.now());
+ db.prepare('INSERT INTO account_sessions(token,account,csrf,expires) VALUES(?,?,?,?)').run(hash(token),account,csrf,Date.now()+ttl);
  // Bound sessions per account to protect a tiny server.
- db.prepare('DELETE FROM sessions WHERE slot=? AND token NOT IN (SELECT token FROM sessions WHERE slot=? ORDER BY expires DESC LIMIT 10)').run(slot,slot);
+ db.prepare('DELETE FROM account_sessions WHERE account=? AND token NOT IN (SELECT token FROM account_sessions WHERE account=? ORDER BY expires DESC LIMIT 10)').run(account,account);
  res.setHeader('Set-Cookie','planet_session='+token+'; Path=/; HttpOnly; SameSite=Strict; Max-Age=604800'+(secure?'; Secure':''));
  return {csrf};
 }
@@ -70,37 +60,18 @@ async function passwordHash(password,salt){
  try{return await derive(password,salt,64,{N:16384,r:8,p:1,maxmem:32*1024*1024})}finally{hashes--}
 }
 
-function registrationInfo(user){
- const users=db.prepare('SELECT slot FROM users ORDER BY created,slot').all();
- return {first:users.length===0,full:users.length===2,availableActors:[0,1].filter(i=>!users.some(u=>u.slot===i)),canManage:!!user&&users[0]?.slot===user.slot,
-  legacy:users.length>0&&!db.prepare("SELECT value FROM settings WHERE key='join_code'").get()};
-}
-function chosenCode(code){
- if(typeof code==='string')code=code.trim();
- fail(typeof code==='string'&&/^[a-zA-Z0-9]{6,24}$/.test(code),'加入口令请使用 6–24 位字母或数字');return code;
-}
-function readJoinCode(){return db.prepare("SELECT value FROM settings WHERE key='join_code'").get()?.value||null}
-async function encodedCode(code){
- code=chosenCode(code);
- const salt=randomBytes(24).toString('hex'),digest=(await passwordHash(code,salt)).toString('hex');
- return JSON.stringify({salt,digest});
-}
-async function matchesCode(code,encoded){
- if(typeof code!=='string'||code.length>128)return false;code=code.trim();
- if(!encoded)return !!REGISTRATION_CODE&&timingSafeEqual(Buffer.from(hash(code)),Buffer.from(hash(REGISTRATION_CODE)));
- const stored=JSON.parse(encoded),computed=await passwordHash(code,stored.salt);
- return timingSafeEqual(computed,Buffer.from(stored.digest,'hex'));
-}
-
+function registrationInfo(){return {first:db.prepare('SELECT COUNT(*) AS n FROM accounts').get().n===0,full:false,availableActors:[0,1],canManage:false}}
+function identity(u){const p=hub.partner(u),avatars=[0,1];avatars[u.slot]=u.avatar;if(p)avatars[1-u.slot]=p.avatar;return {authenticated:true,secure,accountId:u.id,legacyActor:db.prepare('SELECT slot FROM users WHERE username=?').get(u.username)?.slot,space:u.space,actor:u.slot,username:u.username,csrf:u.csrf,partner:p?.username||null,paired:!!p,avatars,invitationExpires:db.prepare('SELECT expires FROM account_invites WHERE account=?').get(u.id)?.expires||null,registration:registrationInfo()}}
 async function api(req,res,p){
- store.expireMeals();
+ const current=session(req),services=current?hub.space(current.space):null,store=services?.store,mediaService=services?.mediaService,musicService=services?.musicService,weatherService=services?.weatherService;
+ store?.expireMeals();
  if(req.method==='GET'&&p==='/api/health')return json(res,200,{ok:true});
  if(req.method==='GET'&&p==='/api/session'){
-  const u=session(req);
-  return json(res,200,{authenticated:!!u,secure,actor:u?.slot,username:u?.username,csrf:u?.csrf,paired:u?store.get(u.slot).paired:false,registration:registrationInfo(u)});
+  const u=session(req);return json(res,200,u?identity(u):{authenticated:false,secure,registration:registrationInfo()});
  }
+ if(!current&&!['/api/login','/api/register'].includes(p))requireUser(req);
  if(req.method==='GET'&&p==='/api/environment'){
-  const u=requireUser(req);rate(req,'weather',120);return json(res,200,await environmentFor(u.slot));
+  const u=requireUser(req);rate(req,'weather',120);return json(res,200,await environmentFor(u));
  }
  if(req.method==='GET'&&p==='/api/cities'){
   requireUser(req);rate(req,'cities',40);return json(res,200,{cities:await weatherService.search(new URL(req.url,'http://local').searchParams.get('q'))});
@@ -108,7 +79,8 @@ async function api(req,res,p){
  if(req.method==='GET'&&p==='/api/fm'){const u=requireUser(req);rate(req,'fm-read',200);return json(res,200,await musicService.list(u.slot,new URL(req.url,'http://local').searchParams.get('mode')||'discover'));}
  if(req.method==='GET'&&p==='/api/fm/track'){const u=requireUser(req);rate(req,'fm-track',200);return json(res,200,await musicService.track(u.slot,new URL(req.url,'http://local').searchParams.get('id')||''));}
  if(req.method==='GET'&&p==='/api/media')return json(res,200,mediaService.view(requireUser(req).slot));
- if(req.method==='GET'&&p==='/api/state')return json(res,200,store.get(requireUser(req).slot));
+ if(req.method==='GET'&&p==='/api/account/history'){const u=requireUser(req);return json(res,200,{archives:hub.archives(u.id)})}
+ if(req.method==='GET'&&p==='/api/state')return json(res,200,{...store.get(requireUser(req).slot),space:current.space});
  fail(req.method==='POST','接口不存在',404);
  fail(req.headers.origin===ORIGIN,'请求来源不匹配，请检查 PUBLIC_ORIGIN',403);
  const b=await body(req);
@@ -117,48 +89,24 @@ async function api(req,res,p){
   const username=credentials(b);
   if(p==='/api/register'){
 
-   const info=registrationInfo(),first=info.first,joinCode=readJoinCode();
-   fail(!info.full,'两位住户都已注册，请直接登录',409);
-   fail(b.setup===first,first?'第一位住户请直接设置加入口令，刷新页面后再试。':'第一位住户已经注册，请刷新页面并输入对方设置的加入口令。',409);
-   if(first)b.code=chosenCode(b.code);
-   else fail(await matchesCode(b.code,joinCode),'加入口令不正确。这里需要第一位住户设置的注册口令，注意大小写；不是连接星球的 36 位邀请码。',403);
    fail(b.actor===0||b.actor===1,'请选择自己的熊');
-   fail(!db.prepare('SELECT slot FROM users WHERE slot=? OR username=?').get(b.actor,username),'这个账号名或角色已被使用',409);
-   const encoded=first?await encodedCode(b.code):null;
    const salt=randomBytes(24).toString('hex'),password=(await passwordHash(b.password,salt)).toString('hex');
-   store.transaction(()=>{
-    // Both account creation and the first chosen code commit together. Concurrent setup cannot replace either.
-    fail(registrationInfo().first===first,'注册状态已变化，请刷新页面后再试',409);
-    fail(first||readJoinCode()===joinCode,'加入口令刚刚更新，请向第一位住户确认后重试',409);
-    fail(!db.prepare('SELECT slot FROM users WHERE slot=? OR username=?').get(b.actor,username),'这个账号名或角色已被使用',409);
-    db.prepare('INSERT INTO users(slot,username,salt,password,created) VALUES(?,?,?,?,?)').run(b.actor,username,salt,password,Date.now());
-    if(first)db.prepare("INSERT INTO settings(key,value) VALUES('join_code',?)").run(encoded);
-   });
-   const auth=issue(b.actor,res);
-   return json(res,201,{authenticated:true,actor:b.actor,username,secure,registration:registrationInfo({slot:b.actor}),...auth,...store.get(b.actor)});
+   const u=hub.register(username,salt,password,b.actor),auth=issue(u.id,res);
+   return json(res,201,{...identity(u),...auth,...hub.space(u.space).store.get(u.slot)});
   }
-  const user=db.prepare('SELECT * FROM users WHERE username=?').get(username);
+  const user=db.prepare('SELECT * FROM accounts WHERE username=?').get(username);
   const computed=await passwordHash(b.password,user?.salt||'invalid-user-salt');
   fail(user&&timingSafeEqual(computed,Buffer.from(user.password,'hex')),'账号或密码不正确',401);
-  const auth=issue(user.slot,res);
-  return json(res,200,{authenticated:true,actor:user.slot,username,secure,registration:registrationInfo(user),...auth,...store.get(user.slot)});
+  const auth=issue(user.id,res);
+  return json(res,200,{...identity(user),...auth,...hub.space(user.space).store.get(user.slot)});
  }
  const u=requireUser(req);
+ fail(current?.space===u.space,'配对状态已更新，请刷新后重试',409);
  fail(req.headers['x-csrf-token']===u.csrf,'会话验证失败，请刷新页面',403);
+ fail(String(u.space)===req.headers['x-planet-space'],'账号或配对状态已更新，请刷新页面后重试',409);
 
  if(p==='/api/environment'){
-  rate(req,'location',30);weatherService.configure(u.slot,b);return json(res,200,await environmentFor(u.slot));
- }
- if(p==='/api/join-code'){
-  rate(req,'join-code',20);
-  fail(registrationInfo(u).canManage,'只有第一位住户可以修改加入口令',403);
-  fail(!registrationInfo().full,'两位住户都已注册，无需再设置加入口令',409);
-  const encoded=await encodedCode(b?.code);
-  store.transaction(()=>{
-   fail(!registrationInfo().full,'两位住户都已注册，无需再设置加入口令',409);
-   db.prepare("INSERT INTO settings(key,value) VALUES('join_code',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value").run(encoded);
-  });
-  return json(res,200,{ok:true});
+  rate(req,'location',30);weatherService.configure(u.slot,b);return json(res,200,await environmentFor(u));
  }
  if(p==='/api/fm'){rate(req,'fm-write',150);if(b.action==='add'){rate(req,'fm-add',20);return json(res,200,await musicService.add(u.slot,b));}return json(res,200,musicService.mutate(u.slot,b));}
  if(p==='/api/media'){rate(req,'media',150);return json(res,200,mediaService.mutate(u.slot,b))}
@@ -172,11 +120,12 @@ async function api(req,res,p){
  }
  if(p==='/api/life'){rate(req,'life',200);return json(res,200,store.life(u.slot,b))}
  if(p==='/api/state'){rate(req,'save',400);return json(res,200,store.save(u.slot,b))}
- if(p==='/api/invite'){rate(req,'invite',30);return json(res,200,store.invite(u.slot))}
- if(p==='/api/pair'){rate(req,'pair',20);return json(res,200,store.accept(u.slot,b.code))}
- if(p==='/api/unpair'){store.unlink();return json(res,200,store.get(u.slot))}
+ if(p==='/api/invite'){rate(req,'invite',30);return json(res,200,hub.invite(u.id))}
+ if(p==='/api/pair/preview'){rate(req,'pair-preview',30);return json(res,200,hub.preview(u.id,b.code))}
+ if(p==='/api/pair'){rate(req,'pair',20);const next=hub.accept(u.id,b.code,b.partnerId);return json(res,200,{ok:true,...identity(next)})}
+ if(p==='/api/unpair'){const next=hub.unlink(u.id);return json(res,200,{ok:true,...identity(next)})}
  if(p==='/api/logout'){
-  db.prepare('DELETE FROM sessions WHERE token=?').run(u.token);
+  db.prepare('DELETE FROM account_sessions WHERE token=?').run(u.token);
   res.setHeader('Set-Cookie','planet_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0'+(secure?'; Secure':''));
   return json(res,200,{ok:true});
  }

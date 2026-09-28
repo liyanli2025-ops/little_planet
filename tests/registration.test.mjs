@@ -20,79 +20,60 @@ async function start(file,legacy=''){
   let ready=false;for(let i=0;i<100;i++){try{if((await fetch(origin+'/api/health')).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,50))}assert.ok(ready,logs);
  }catch(e){await close();throw e}
  async function request(route,data,auth={}){
-  const res=await fetch(origin+route,{method:data===undefined?'GET':'POST',headers:{...(data===undefined?{}:{'Content-Type':'application/json',Origin:origin}),...(auth.cookie?{Cookie:auth.cookie}:{}),...(auth.csrf?{'X-CSRF-Token':auth.csrf}:{})},body:data===undefined?undefined:JSON.stringify(data)});
-  const body=await res.json();return {status:res.status,body,cookie:res.headers.get('set-cookie')?.split(';')[0],csrf:body.csrf};
+  const res=await fetch(origin+route,{method:data===undefined?'GET':'POST',headers:{...(data===undefined?{}:{'Content-Type':'application/json',Origin:origin}),...(auth.cookie?{Cookie:auth.cookie}:{}),...(auth.csrf?{'X-CSRF-Token':auth.csrf,'X-Planet-Space':String(auth.space)}:{})},body:data===undefined?undefined:JSON.stringify(data)});
+  const body=await res.json();return {status:res.status,body,cookie:res.headers.get('set-cookie')?.split(';')[0],csrf:body.csrf,space:body.space};
  }
  return {request,close};
 }
 const signup=(username,actor,code,setup)=>({username,password:'test-password-123',actor,code,setup});
-test('first resident chooses the code; restart preserves it and wrong codes cannot join',async()=>{
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'echoo-code-')),file=path.join(dir,'state.sqlite');
- let server=await start(file);
+test('many accounts can register with either avatar; pairing confirmation, rotation, isolation and stale writes',async()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'echoo-multi-')),server=await start(path.join(dir,'state.sqlite'));
  try{
-  assert.equal((await server.request('/api/session')).body.registration.first,true);
-  assert.equal((await server.request('/api/register',signup('first',1,'abc',true))).status,400);
-  const a=await server.request('/api/register',signup('first',1,'SweetTea8',true));
-  assert.equal(a.status,201);assert.equal(a.body.registration.canManage,true);assert.equal(a.body.actor,1);
-  assert.equal((await server.request('/api/join-code',{code:'NewTea8'})).status,401);
-  assert.equal((await server.request('/api/join-code',{code:'NewTea8'},{cookie:a.cookie})).status,403);
-  assert.equal((await server.request('/api/join-code',{code:'NewTea8'},a)).status,200);
-  await server.close();server=await start(file);
-  assert.equal((await server.request('/api/session')).body.registration.first,false);
-  assert.equal((await server.request('/api/register',signup('second',0,'SweetTea8',false))).status,403);
-  assert.equal((await server.request('/api/register',signup('second',0,'NewTea8',true))).status,409);
-  const b=await server.request('/api/register',signup('second',0,'NewTea8',false));
-  assert.equal(b.status,201);assert.equal(b.body.registration.canManage,false);assert.equal(b.body.registration.full,true);
-  assert.equal((await server.request('/api/join-code',{code:'Hacked8'},b)).status,403);
-  assert.equal((await server.request('/api/register',signup('third',0,'NewTea8',false))).status,409);
-  const db=new DatabaseSync(file);const encoded=db.prepare("SELECT value FROM settings WHERE key='join_code'").get().value;
-  assert.ok(!encoded.includes('NewTea8'));assert.equal(JSON.parse(encoded).digest.length,128);db.close();
- }finally{await server.close();fs.rmSync(dir,{recursive:true,force:true})}
-});
-test('concurrent first registrations commit only one owner and never replace the chosen code',async()=>{
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'echoo-race-')),server=await start(path.join(dir,'state.sqlite'));
- try{
-  const codes=['FirstCode8','SecondCode9'];
-  const requests=[signup('alice',0,codes[0],true),signup('bobby',1,codes[1],true)];
-  const results=await Promise.all(requests.map(b=>server.request('/api/register',b)));
-  assert.deepEqual(results.map(r=>r.status).sort(),[201,409]);
-  const winner=results.findIndex(r=>r.status===201),loser=1-winner;
-  assert.equal((await server.request('/api/register',signup('joined',loser,codes[loser],false))).status,403);
-  assert.equal((await server.request('/api/register',signup('joined',loser,codes[winner],false))).status,201);
- }finally{await server.close();fs.rmSync(dir,{recursive:true,force:true})}
-});
-test('legacy first account can replace the old environment code without losing any save',async()=>{
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'echoo-upgrade-')),file=path.join(dir,'state.sqlite');
- const old=openStore(file),salt='legacy-test-salt';
- old.db.prepare('INSERT INTO users VALUES(?,?,?,?,?)').run(1,'existing',salt,scryptSync('test-password-123',salt,64).toString('hex'),123);
- const v=old.get(1);v.state.worlds[1].deco=true;v.state.notes.push({id:randomUUID(),actor:1,world:1,title:'升级前的手账',body:'仍然保留',date:'2026-09-24',kind:'memory',shared:false,repeat:false,created:123,weather:'晴',comments:[]});
- old.save(1,{state:v.state,revision:v.revision,command:randomUUID()});
- old.db.exec('DROP TABLE settings; PRAGMA user_version=1;');old.db.close();
- const legacy='old-server-generated-code-123456789',server=await start(file,legacy);
- try{
-  const login=await server.request('/api/login',{username:'existing',password:'test-password-123'});
-  assert.equal(login.status,200);assert.equal(login.body.registration.canManage,true);assert.equal(login.body.registration.legacy,true);
-  assert.equal(login.body.state.notes[0].title,'升级前的手账');
-  assert.equal(login.body.state.worlds[1].deco,true);
-  assert.equal((await server.request('/api/join-code',{code:'Memory9'},login)).status,200);
-  assert.equal((await server.request('/api/register',signup('partner',0,legacy,false))).status,403);
-  assert.equal((await server.request('/api/register',signup('partner',0,'Memory9',false))).status,201);
-  const current=(await server.request('/api/state',undefined,login)).body;
-  assert.equal(current.state.notes[0].body,'仍然保留');assert.equal(current.state.worlds[1].deco,true);
-  const db=new DatabaseSync(file);assert.equal(db.prepare('PRAGMA user_version').get().user_version,2);db.close();
+ const users=[];for(const username of ['alice','bobby','carol','david']){const r=await server.request('/api/register',signup(username,0));assert.equal(r.status,201,JSON.stringify(r.body));users.push(r)}
+ const [a,b,c,d]=users;
+ assert.equal((await server.request('/api/register',signup('alice',1))).status,409);
+ assert.equal((await server.request('/api/login',{username:'alice',password:'wrong-password-123'})).status,401);
+ const old=await server.request('/api/invite',{},a),next=await server.request('/api/invite',{},a);
+ assert.equal((await server.request('/api/pair/preview',{code:old.body.code},b)).status,400);
+ assert.equal((await server.request('/api/pair/preview',{code:next.body.code},a)).status,400);
+ const preview=await server.request('/api/pair/preview',{code:' '+next.body.code.toUpperCase()+'\n'},b);assert.equal(preview.body.username,'alice');
+ assert.equal((await server.request('/api/pair',{code:next.body.code},b)).status,409);
+ const results=await Promise.all([b,c].map(u=>server.request('/api/pair',{code:next.body.code,partnerId:a.body.accountId},u)));
+ assert.equal(results.filter(r=>r.status===200).length,1);
+ const winner=results[0].status===200?b:c,loser=winner===b?c:b;
+ const info=await server.request('/api/session',undefined,a);assert.equal(info.body.partner,winner.body.username);assert.deepEqual(info.body.avatars,[0,0]);
+ assert.equal((await server.request('/api/session',undefined,loser)).body.paired,false);
+ assert.equal((await server.request('/api/invite',{},a)).status,409); // stale space header
+ a.space=info.body.space;winner.space=a.space;
+ assert.equal((await server.request('/api/invite',{},a)).status,409); // already bound
+ const v=(await server.request('/api/state',undefined,a)).body;
+ v.state.notes.push({id:randomUUID(),actor:v.actor,world:v.actor,title:'只给这段关系',body:'私密共同内容',date:'2026-09-28',kind:'memory',shared:true,repeat:false,created:Date.now(),weather:'晴',comments:[]});
+ assert.equal((await server.request('/api/state',{state:v.state,revision:v.revision,command:randomUUID()},a)).status,200);
+ assert.equal((await server.request('/api/state',undefined,winner)).body.state.notes.length,1);
+ assert.equal((await server.request('/api/state',undefined,d)).body.state.notes.length,0);
+ assert.equal((await server.request('/api/unpair',{},a)).status,200);
+ assert.equal((await server.request('/api/state',{state:v.state,revision:v.revision,command:randomUUID()},winner)).status,409);
+ for(const u of [a,winner]){const i=(await server.request('/api/session',undefined,u)).body;assert.equal(i.paired,false);u.space=i.space}
+ const archive=(await server.request('/api/account/history',undefined,a)).body;assert.ok(archive.archives.some(x=>x.state.notes.some(n=>n.body==='私密共同内容')));
+ assert.equal((await server.request('/api/account/history',undefined,d)).body.archives.length,0);
+ const invite=(await server.request('/api/invite',{},a)).body;
+ assert.equal((await server.request('/api/pair',{code:invite.code,partnerId:a.body.accountId},d)).status,200);
+ assert.equal((await server.request('/api/state',undefined,d)).body.state.notes.length,0);
+ assert.equal((await server.request('/api/session',undefined,winner)).body.paired,false);
  }finally{await server.close();fs.rmSync(dir,{recursive:true,force:true})}
 });
 
-test('registration and pairing accept pasted padding without conflating their credentials',async()=>{
- const dir=fs.mkdtempSync(path.join(os.tmpdir(),'echoo-code-paste-')),server=await start(path.join(dir,'state.sqlite'));
- try{
- const a=await server.request('/api/register',signup('alice',0,'  OurHome8  ',true));assert.equal(a.status,201);
- assert.equal((await server.request('/api/register',signup('bobby',1,'ourhome8',false))).status,403);
- const b=await server.request('/api/register',signup('bobby',1,'  OurHome8\n',false));assert.equal(b.status,201);
- const wrong=await server.request('/api/pair',{code:'OurHome8'},b);assert.equal(wrong.status,400);assert.match(wrong.body.error,/36 位/);
- const invite=await server.request('/api/invite',{},a);assert.equal(invite.status,200);
- assert.equal((await server.request('/api/pair',{code:invite.body.code},a)).status,400);
- const joined=await server.request('/api/pair',{code:'  '+invite.body.code.toUpperCase()+'\n'},b);assert.equal(joined.status,200);assert.equal(joined.body.paired,true);
- assert.equal((await server.request('/api/login',{username:'bobby',password:'test-password-123'})).status,200);
+test('legacy paired accounts, password, personal world and relationship survive upgrade and restart',async()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'echoo-migrate-')),file=path.join(dir,'state.sqlite'),old=openStore(file),salt='old-salt';
+ for(const slot of [0,1])old.db.prepare('INSERT INTO users VALUES(?,?,?,?,?)').run(slot,'legacy'+slot,salt,scryptSync('test-password-123',salt,64).toString('hex'),123);
+ old.accept(1,old.invite(0).code);const v=old.get(0);v.state.worlds[0].deco=true;old.save(0,{state:v.state,revision:v.revision,command:randomUUID()});old.db.close();
+ let server=await start(file);
+ try{for(let i=0;i<2;i++){const a=await server.request('/api/login',{username:'legacy0',password:'test-password-123'});assert.equal(a.status,200);assert.equal(a.body.paired,true);assert.equal(a.body.partner,'legacy1');assert.equal(a.body.state.worlds[0].deco,true);if(i===0){await server.close();server=await start(file)}}
+ const db=new DatabaseSync(file);assert.equal(db.prepare('PRAGMA integrity_check').get().integrity_check,'ok');assert.equal(db.prepare('PRAGMA user_version').get().user_version,3);assert.equal(db.prepare('SELECT COUNT(*) AS n FROM accounts').get().n,2);db.close();
  }finally{await server.close();fs.rmSync(dir,{recursive:true,force:true})}
+});
+
+test('legacy unpaired users are not silently bound during migration',async()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'echoo-unpaired-')),file=path.join(dir,'state.sqlite'),old=openStore(file),salt='old-salt';for(const slot of [0,1])old.db.prepare('INSERT INTO users VALUES(?,?,?,?,?)').run(slot,'legacy'+slot,salt,scryptSync('test-password-123',salt,64).toString('hex'),123);old.db.close();const server=await start(file);
+ try{const a=await server.request('/api/login',{username:'legacy0',password:'test-password-123'}),b=await server.request('/api/login',{username:'legacy1',password:'test-password-123'});assert.equal(a.body.paired,false);assert.equal(b.body.paired,false);assert.notEqual(a.space,b.space)}finally{await server.close();fs.rmSync(dir,{recursive:true,force:true})}
 });

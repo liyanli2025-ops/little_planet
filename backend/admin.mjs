@@ -18,13 +18,13 @@ if(command==='backup'){
  let input='';for await(const c of process.stdin)input+=c;
  const password=input.replace(/\r?\n$/, '');
  if(password.length<10||password.length>128)throw Error('Password must contain 10–128 characters');
- const db=new DatabaseSync(filename),user=db.prepare('SELECT slot FROM users WHERE username=?').get(arg.toLowerCase());
+ const db=new DatabaseSync(filename),modern=!!db.prepare("SELECT name FROM sqlite_master WHERE name='accounts'").get(),user=db.prepare(modern?'SELECT id AS slot FROM accounts WHERE username=?':'SELECT slot FROM users WHERE username=?').get(arg.toLowerCase());
  if(!user)throw Error('User not found');
  const salt=randomBytes(24).toString('hex'),digest=scryptSync(password,salt,64).toString('hex');
  db.exec('BEGIN IMMEDIATE');
  try{
-  db.prepare('UPDATE users SET salt=?,password=? WHERE slot=?').run(salt,digest,user.slot);
-  db.prepare('DELETE FROM sessions WHERE slot=?').run(user.slot);
+  db.prepare(modern?'UPDATE accounts SET salt=?,password=? WHERE id=?':'UPDATE users SET salt=?,password=? WHERE slot=?').run(salt,digest,user.slot);
+  db.prepare(modern?'DELETE FROM account_sessions WHERE account=?':'DELETE FROM sessions WHERE slot=?').run(user.slot);
   db.exec('COMMIT');
  }catch(e){db.exec('ROLLBACK');throw e}
  db.close();console.log('Password reset; existing sessions revoked.');

@@ -89,20 +89,20 @@ test('HTTP registration, sessions, CSRF, origin, pairing, privacy and logout',as
  try{
   let ready=false;for(let i=0;i<100;i++){try{if((await fetch(origin+'/api/health')).ok){ready=true;break}}catch{}await new Promise(r=>setTimeout(r,50))}assert.ok(ready,log);
   async function request(route,data,auth={}){
-   const res=await fetch(origin+route,{method:data===undefined?'GET':'POST',headers:{...(data===undefined?{}:{'Content-Type':'application/json',Origin:auth.origin||origin}),...(auth.cookie?{Cookie:auth.cookie}:{}),...(auth.csrf?{'X-CSRF-Token':auth.csrf}:{})},body:data===undefined?undefined:JSON.stringify(data)});
+   const res=await fetch(origin+route,{method:data===undefined?'GET':'POST',headers:{...(data===undefined?{}:{'Content-Type':'application/json',Origin:auth.origin||origin}),...(auth.cookie?{Cookie:auth.cookie}:{}),...(auth.csrf?{'X-CSRF-Token':auth.csrf,'X-Planet-Space':String(auth.space)}:{})},body:data===undefined?undefined:JSON.stringify(data)});
    return {status:res.status,body:await res.json(),cookie:res.headers.get('set-cookie')?.split(';')[0],headers:res.headers};
   }
   assert.equal((await request('/api/state')).status,401);
-  assert.equal((await request('/api/register',{username:'alice',password:'test-password-123',actor:0,code:'short',setup:true})).status,400);
+  assert.equal((await request('/api/register',{username:'alice',password:'test-password-123',actor:3,code:'short',setup:true})).status,400);
   const a=await request('/api/register',{username:'alice',password:'test-password-123',actor:0,code,setup:true});assert.equal(a.status,201);assert.match(a.headers.get('set-cookie'),/HttpOnly/);
-  const auth={cookie:a.cookie,csrf:a.body.csrf};
+  const auth={cookie:a.cookie,csrf:a.body.csrf,space:a.body.space};
   const b=await request('/api/register',{username:'bobby',password:'test-password-456',actor:1,code,setup:false});assert.equal(b.status,201);
-  assert.equal((await request('/api/register',{username:'third',password:'test-password-789',actor:1,code})).status,409);
+  assert.equal((await request('/api/register',{username:'third',password:'test-password-789',actor:1,code})).status,201);
   assert.equal((await request('/api/invite',{}, {cookie:a.cookie})).status,403);
   assert.equal((await request('/api/invite',{}, {...auth,origin:'https://evil.example'})).status,403);
   const invitation=await request('/api/invite',{},auth);assert.equal(invitation.status,200);
-  assert.equal((await request('/api/pair',{code:invitation.body.code},{cookie:b.cookie,csrf:b.body.csrf})).status,200);
-  let life=(await request('/api/state',undefined,auth)).body;const lifeCmd={world:0,type:'plant',plot:0,crop:'carrot',revision:life.revision,command:randomUUID()};
+  assert.equal((await request('/api/pair',{code:invitation.body.code,partnerId:a.body.accountId},{cookie:b.cookie,csrf:b.body.csrf,space:b.body.space})).status,200);
+  auth.space=(await request('/api/session',undefined,auth)).body.space;let life=(await request('/api/state',undefined,auth)).body;const lifeCmd={world:0,type:'plant',plot:0,crop:'carrot',revision:life.revision,command:randomUUID()};
   assert.equal((await request('/api/life',lifeCmd,{cookie:a.cookie})).status,403);
   assert.equal((await request('/api/life',lifeCmd,{...auth,origin:'https://evil.example'})).status,403);
   const planted=await request('/api/life',lifeCmd,auth);assert.equal(planted.status,200);assert.equal(planted.body.state.worlds[0].life.plots[0].crop,'carrot');assert.equal((await request('/api/life',lifeCmd,auth)).body.revision,planted.body.revision);

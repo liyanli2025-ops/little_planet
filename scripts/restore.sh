@@ -15,14 +15,15 @@ docker compose run --rm -T --no-deps --user 0:0 -v "$source_file:/restore.sqlite
 import fs from "node:fs"; import {DatabaseSync} from "node:sqlite";
 const source=new DatabaseSync("/restore.sqlite",{readOnly:true});
 if(source.prepare("PRAGMA integrity_check").get().integrity_check!=="ok")throw Error("Invalid backup");
-if(![1,2].includes(source.prepare("PRAGMA user_version").get().user_version))throw Error("Unsupported schema");
+if(![1,2,3].includes(source.prepare("PRAGMA user_version").get().user_version))throw Error("Unsupported schema");
 for(const table of ["users","sessions","invitations","saves","receipts"])source.prepare("SELECT * FROM "+table+" LIMIT 1").all();
+if(source.prepare("PRAGMA user_version").get().user_version===3)for(const table of ["accounts","account_spaces","account_sessions","account_invites","account_archives"])source.prepare("SELECT * FROM "+table+" LIMIT 1").all();
 source.close();
 const target="/data/planet.sqlite";
 fs.copyFileSync("/restore.sqlite",target+".restore");
 for(const suffix of ["-wal","-shm"])if(fs.existsSync(target+suffix))fs.unlinkSync(target+suffix);
 fs.renameSync(target+".restore",target);fs.chmodSync(target,0o600);
-const restored=new DatabaseSync(target);restored.exec("DELETE FROM sessions; DELETE FROM invitations;");restored.close();fs.chownSync(target,1000,1000);
+const restored=new DatabaseSync(target);restored.exec("DELETE FROM sessions; DELETE FROM invitations;");if(restored.prepare("PRAGMA user_version").get().user_version===3)restored.exec("DELETE FROM account_sessions; DELETE FROM account_invites;");restored.close();fs.chownSync(target,1000,1000);
 console.log("Restored. All users must log in again.");
 '
 docker compose up -d planet

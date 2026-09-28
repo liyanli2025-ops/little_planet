@@ -20,14 +20,14 @@ const id=v=>typeof v==='string'&&/^[a-zA-Z0-9_-]{8,80}$/.test(v);
 const keys=(v,allowed)=>isObj(v)&&Object.keys(v).every(k=>allowed.includes(k));
 const foods=Object.keys(foodCatalog);
 const bagItems=[...foods,'rose','tulip','sunflower'];
-const baseWorld=i=>({weather:i?'rain':'sun',deco:false,camp:false,pet:{feeds:0,games:0,walks:0},fridge:['milk','pudding','rice','egg','tomato'].map(food=>({id:randomUUID(),food,qty:3})),meals:[]});
+const baseWorld=i=>({theme:i,weather:i?'rain':'sun',deco:false,camp:false,pet:{feeds:0,games:0,walks:0},fridge:['milk','pudding','rice','egg','tomato'].map(food=>({id:randomUUID(),food,qty:3})),meals:[]});
 const emptyWorld=()=>({weather:'sun',deco:false,camp:false,pet:{feeds:0,games:0,walks:0},fridge:[],meals:[]});
 const initial=()=>({version:1,worlds:[baseWorld(0),baseWorld(1)],bags:[{cookie:3,pudding:2,milk:2},{cookie:3,pudding:2,milk:2}],events:[],notes:[],favorites:[[],[]]});
 export const hash=v=>createHash('sha256').update(v).digest('hex');
 
-export function openStore(filename){
+export function openStore(filename, connection){
  fs.mkdirSync(path.dirname(filename),{recursive:true});
- const db=new DatabaseSync(filename,{timeout:5000});
+ const db=connection||new DatabaseSync(filename,{timeout:5000});
  db.exec(`
  PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA cache_size=-4096;
  CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -36,9 +36,10 @@ export function openStore(filename){
  CREATE TABLE IF NOT EXISTS invitations (token TEXT PRIMARY KEY, slot INTEGER NOT NULL REFERENCES users(slot), expires INTEGER NOT NULL);
  CREATE TABLE IF NOT EXISTS saves (id INTEGER PRIMARY KEY CHECK(id=1), revision INTEGER NOT NULL, paired INTEGER NOT NULL DEFAULT 0, state TEXT NOT NULL);
  CREATE TABLE IF NOT EXISTS receipts (slot INTEGER NOT NULL, command TEXT NOT NULL, digest TEXT NOT NULL, created INTEGER NOT NULL, PRIMARY KEY(slot,command));
- PRAGMA user_version=2;`);
+ `);
+ if(!connection&&db.prepare('PRAGMA user_version').get().user_version<2)db.exec('PRAGMA user_version=2');
  db.prepare('INSERT OR IGNORE INTO saves(id,revision,paired,state) VALUES(1,0,0,?)').run(JSON.stringify(initial()));
- const read=()=>{const r=db.prepare('SELECT * FROM saves WHERE id=1').get();const state=JSON.parse(r.state);state.worlds.forEach(w=>w.life??=freshLife());return {...r,state}};
+ const read=()=>{const r=db.prepare('SELECT * FROM saves WHERE id=1').get();const state=JSON.parse(r.state);state.worlds.forEach((w,i)=>{w.life??=freshLife();w.theme??=i});return {...r,state}};
  if(!db.prepare('SELECT key FROM settings WHERE key=?').get('unified-storage-v1')){db.exec('BEGIN IMMEDIATE');try{const row=read();migrateStorage(row.state,randomUUID);db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state));db.prepare('INSERT INTO settings(key,value) VALUES(?,?)').run('unified-storage-v1','done');db.exec('COMMIT')}catch(e){db.exec('ROLLBACK');throw e}}
  const visible=(e,slot,paired)=>e.actor===slot || (paired && (e.shared || e.target===slot));
  function project(row,slot){
@@ -105,7 +106,7 @@ export function openStore(filename){
   return [...current.filter(e=>!allowed.has(e.id)),...proposed];
  }
  function validateWorld(w){
-  fail(keys(w,['weather','deco','camp','pet','fridge','meals','life'])&&['sun','cloudy','overcast','fog','haze','rain','snow','night'].includes(w.weather)&&typeof w.deco==='boolean'&&typeof w.camp==='boolean');
+  fail(keys(w,['theme','weather','deco','camp','pet','fridge','meals','life'])&&['sun','cloudy','overcast','fog','haze','rain','snow','night'].includes(w.weather)&&typeof w.deco==='boolean'&&typeof w.camp==='boolean');
   fail(keys(w.pet,['feeds','games','walks'])&&['feeds','games','walks'].every(k=>integer(w.pet[k])));
   fail(Array.isArray(w.fridge)&&w.fridge.every(isObj)&&w.fridge.length<=500&&new Set(w.fridge.map(i=>i.id)).size===w.fridge.length,'冰箱最多存放 500 组食物');
   fail(w.fridge.every(i=>keys(i,['id','food','qty','event'])&&id(i.id)&&foods.includes(i.food)&&integer(i.qty,1,999)&&(!i.event||id(i.event))));
@@ -114,6 +115,7 @@ export function openStore(filename){
  }
  function validateWorldChange(prev,next,slot,owner,events,priorEvents){
   validateWorld(next);
+  fail(next.theme===prev.theme,'星球风格不能通过存档修改',403);
   fail(same(next.life??prev.life,prev.life),'请通过种植或生活互动更新这些物品',403);next.life=prev.life;
   const visitor=slot!==owner;
   if(visitor){

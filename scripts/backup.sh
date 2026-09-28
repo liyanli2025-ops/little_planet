@@ -33,10 +33,13 @@ with sqlite3.connect(file.as_uri() + "?mode=ro&immutable=1", uri=True) as db:
     for table in ("users", "sessions", "invitations", "saves", "receipts"):
         db.execute("SELECT * FROM " + table + " LIMIT 1").fetchall()
     version = db.execute("PRAGMA user_version").fetchone()[0]
-    if version not in (1, 2):
+    if version not in (1, 2, 3):
         raise RuntimeError("Unsupported backup schema")
-    if version == 2:
+    if version >= 2:
         db.execute("SELECT * FROM settings LIMIT 1").fetchall()
+    if version == 3:
+        for table in ("accounts", "account_spaces", "account_sessions", "account_invites", "account_archives"):
+            db.execute("SELECT * FROM " + table + " LIMIT 1").fetchall()
 print("Exported backup verified.")
 PY
 chmod 600 "$partial"

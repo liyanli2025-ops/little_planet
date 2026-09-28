@@ -9,7 +9,7 @@ export function createEnvironment({cloud,context,modal,toast,cities,planets}){
  controls.innerHTML='<div class="weather-live-actions"><button id="location-settings" class="pill">设置所在地</button><button id="sync-weather" class="pill">刷新天气</button></div><p id="weather-status" class="subtle" role="status"></p><small>天气与空气质量模型：<a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a> / CAMS · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a><br>地名：<a href="https://www.geonames.org/" target="_blank" rel="noopener">GeoNames</a> · 附近城市（CC BY 4.0）</small>';
  $('.weather-switch').before(controls);
  async function api(route,data){
-  const r=await fetch(route,{method:data===undefined?'GET':'POST',headers:data===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':cloud.session.csrf},body:data===undefined?undefined:JSON.stringify(data),signal:AbortSignal.timeout(20000)});
+  const r=await fetch(route,{method:data===undefined?'GET':'POST',headers:data===undefined?{}:{'Content-Type':'application/json','X-CSRF-Token':cloud.session.csrf,'X-Planet-Space':String(cloud.session.space)},body:data===undefined?undefined:JSON.stringify(data),signal:AbortSignal.timeout(20000)});
   const b=await r.json();if(!r.ok)throw Error(b.error||'暂时连接不上天气服务');return b;
  }
  function paint(){

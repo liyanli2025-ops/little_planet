@@ -15,7 +15,7 @@ import {createEnvironment} from './environment.js';
 import {closeDaybook} from './immersive.js';
 import {connectCloud,newId} from './cloud.js?v=3';
 const cloud=await connectCloud();
-import {createScene} from './scene.js?v=21';
+import {createScene} from './scene.js?v=22';
 import {createModelView} from './model-room.js?v=8';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const names=['小禾','阿远'],planets=['慢慢星','晚风星'],cities=['未设置所在地','未设置所在地'];
@@ -107,7 +107,7 @@ $('#view-mode').onclick=()=>visual?.toggleView();$('#tour-world').onclick=()=>{i
 const readingPages=['风沿着小路走来，把树叶翻到新的一页。我们不急着赶路，坐在这里，也是在认真生活。','远处的窗户亮起来了。有人在等一锅汤，有人在等一句晚安；长椅替我们留着慢慢说话的时间。','把今天折成一个小小的书角吧。等下一次风吹过，我们还可以回到这里，接着读。'];
 let hammockDrink=null;let outdoorMode='',readingPage=0,paired=false,readingEvent=null,campEvent=null;
 function dock(html){$('#activity-dock').innerHTML=html;$('#activity-dock').hidden=false;$('.scene-wrap').classList.add('engaged')}
-function endOutdoor(){wordCards.close();sleepSound.end();$('#activity-dock').classList.remove('sleep-dock');hammockDrink=null;$('#activity-dock').classList.remove('hammock-dock');if(outdoorMode==='pet'){visual?.stopPet();$('.scene-wrap').classList.remove('pet-active')}visual?.stand();$('#activity-dock').hidden=true;$('.scene-wrap').classList.remove('engaged');outdoorMode='';paired=false;readingEvent=null;campEvent=null}
+function endOutdoor(){lifeUI.hideGarden();wordCards.close();sleepSound.end();$('#activity-dock').classList.remove('sleep-dock');hammockDrink=null;$('#activity-dock').classList.remove('hammock-dock');if(outdoorMode==='pet'){visual?.stopPet();$('.scene-wrap').classList.remove('pet-active')}visual?.stand();$('#activity-dock').hidden=true;$('.scene-wrap').classList.remove('engaged');outdoorMode='';paired=false;readingEvent=null;campEvent=null}
 function readBench(){close();outdoorMode='read';paired=false;readingPage=0;visual?.sit(false,true);readingEvent=mediaUI.selected()?null:record(names[actor]+'在长椅上读了一会儿书','在长椅上坐着，翻了翻书。');renderReading();mediaUI.openReading()}
 function renderReading(){$('#activity-dock').hidden=true;$('.scene-wrap').classList.add('engaged')}
 

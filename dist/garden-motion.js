@@ -1,0 +1,20 @@
+import * as T from './vendor/three.module.js';
+import {createPlant} from './garden-models.js';
+export function createGardenMotion({garden,beds,avatar,body,arms,legs,outdoor,groundAt}){
+ function ground(){const p=outdoor.worldToLocal(garden.localToWorld(avatar.position.clone()));avatar.position.copy(garden.worldToLocal(outdoor.localToWorld(groundAt(p))))}
+ let run=null;const tool=new T.Group();body.add(tool);tool.visible=false;
+ const material=new T.MeshStandardMaterial({color:0x85a99c,roughness:.65});
+ function mesh(g,m=material){const o=new T.Mesh(g,m);tool.add(o);return o}
+ const can=mesh(new T.CylinderGeometry(.08,.09,.14,18));
+ const spout=mesh(new T.CylinderGeometry(.022,.016,.17,12));spout.position.set(-.12,.02,0);spout.rotation.z=-1;
+ const handle=mesh(new T.TorusGeometry(.07,.012,7,20));handle.position.x=.085;
+ const scoop=mesh(new T.SphereGeometry(1,12,8),new T.MeshStandardMaterial({color:0xb8bca9}));scoop.scale.set(.045,.075,.018);scoop.position.set(0,-.10,0);const shaft=mesh(new T.CylinderGeometry(.012,.012,.17,8),new T.MeshStandardMaterial({color:0xb99565}));shaft.position.y=.015;
+ const drops=[];for(let i=0;i<12;i++){const d=mesh(new T.SphereGeometry(.009,6,4),new T.MeshBasicMaterial({color:0xa8d7df}));drops.push(d)}
+ function stop(ok=false){if(!run)return;const r=run;run=null;tool.visible=false;if(r.flower){r.flower.traverse(o=>{if(o.isMesh)o.geometry.dispose()});r.flower.removeFromParent()}r.parent.add(avatar);avatar.position.copy(r.position);avatar.quaternion.copy(r.quaternion);body.rotation.copy(r.bodyRotation);body.position.copy(r.bodyPosition);arms.forEach((a,i)=>a.rotation.copy(r.arms[i]));legs.forEach((a,i)=>a.rotation.copy(r.legs[i]));r.resolve(ok)}
+ return {get active(){return !!run},stop,start(type,plot,crop){if(run)return Promise.resolve(false);return new Promise(resolve=>{run={type,t:0,resolve,parent:avatar.parent,position:avatar.position.clone(),quaternion:avatar.quaternion.clone(),bodyRotation:body.rotation.clone(),bodyPosition:body.position.clone(),arms:arms.map(a=>a.rotation.clone()),legs:legs.map(a=>a.rotation.clone())};garden.attach(avatar);run.from=avatar.position.clone();const b=beds[plot].position;run.to=new T.Vector3(plot%3===0?-1.04:plot%3===2?1.04:b.x,0,plot%3===1?.96:b.z);run.via=new T.Vector3(run.to.x,0,1.0);run.face=Math.atan2(b.x-run.to.x,b.z-run.to.z);avatar.rotation.set(0,run.face,0);body.position.y=0;body.rotation.set(0,0,0);arms.forEach(a=>a.rotation.set(0,0,0));legs.forEach(a=>a.rotation.set(0,0,0));if(type==='harvest'){run.flower=createPlant(body,crop,true);run.flower.scale.setScalar(.8);run.flower.position.set(0,.42,.38);run.flower.visible=false}})},tick(dt){if(!run)return;const r=run;r.t+=dt;const u=Math.min(1,r.t/1.1);const a=u<.5?r.from:r.via,b=u<.5?r.via:r.to,q=u<.5?u*2:(u-.5)*2;avatar.position.lerpVectors(a,b,q*q*(3-2*q));ground();if(u<1){legs.forEach((a,i)=>a.rotation.x=Math.sin(r.t*12+i*Math.PI)*.23);return}legs.forEach(a=>a.rotation.x=0);const t=r.t-1.1,p=Math.min(1,t/1.65),bend=Math.sin(p*Math.PI);body.rotation.x=.20*bend;arms.forEach((a,i)=>{a.rotation.x=-.9*bend-.13*Math.sin(t*8+i);a.rotation.z=(i?-.12:.12)*bend});
+ scoop.visible=shaft.visible=r.type==='plant';if(r.type==='plant'){tool.visible=true;tool.position.set(.24,.38-Math.sin(t*7)*.025,.36);tool.rotation.set(.5,0,.2);can.visible=spout.visible=handle.visible=false;drops.forEach(d=>d.visible=false)}
+ if(r.type==='water'){tool.visible=true;tool.position.set(-.24,.42,.32);tool.rotation.set(0,0,.35*bend);can.visible=spout.visible=handle.visible=true;drops.forEach((d,i)=>{const fall=(t*1.7+i/12)%1;d.visible=p>.13&&p<.88;d.position.set(-.2+Math.sin(i)*.018,-fall*.36,-.01+Math.cos(i)*.025)})}
+ if(r.flower){r.flower.visible=p>.4;r.flower.position.y=.28+Math.min(1,Math.max(0,(p-.4)*3))*.22}
+ if(p===1){tool.visible=false;const back=Math.min(1,(t-1.65)/1.1),a=back<.5?r.to:r.via,b=back<.5?r.via:r.from,q=back<.5?back*2:(back-.5)*2;avatar.position.lerpVectors(a,b,q*q*(3-2*q));ground();legs.forEach((a,i)=>a.rotation.x=Math.sin(t*12+i*Math.PI)*.20);if(back===1)stop(true);}
+ }};
+}

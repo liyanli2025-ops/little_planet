@@ -1,0 +1,8 @@
+import * as T from './vendor/three.module.js';
+import {createTurningPage} from './page-turn.js';
+export function createAlbumProp(body,arms,box){
+ const group=new T.Group();body.add(group);group.position.set(0,.48,.35);group.rotation.x=-.28;group.scale.setScalar(1.8);group.visible=false;
+ for(const side of [-1,1]){box(group,0xa48262,side*.074,0,0,.148,.018,.19);box(group,0xf4edda,side*.072,.017,0,.139,.019,.18)}
+ const photo=new T.Mesh(new T.PlaneGeometry(.123,.09),new T.MeshStandardMaterial({color:0xffffff,roughness:1}));photo.rotation.x=-Math.PI/2;photo.position.set(-.07,.032,0);group.add(photo);const page=createTurningPage(group);let turn=1,src=null,serial=0;const textures=new Map(),loader=new T.TextureLoader();
+ return {show(value,url,animate=false){group.visible=value;if(!value){turn=1;page.sheet.visible=false;arms[1].rotation.z=0;return}arms.forEach(g=>g.rotation.x=-.55);if(url&&url!==src){src=url;const token=++serial;photo.visible=false;const apply=t=>{if(token!==serial)return;t.colorSpace=T.SRGBColorSpace;photo.material.map=t;photo.material.needsUpdate=true;photo.visible=true};if(textures.has(url))apply(textures.get(url));else loader.load(url,t=>{textures.set(url,t);apply(t)},undefined,()=>{})}if(animate){turn=0;page.sheet.visible=true}},tick(dt){if(!group.visible)return;if(turn<1){turn=Math.min(1,turn+dt/1.1);page.pose(turn);arms[1].rotation.x=-.55-Math.sin(turn*Math.PI)*.15;arms[1].rotation.z=-Math.sin(turn*Math.PI)*.12;if(turn===1){page.sheet.visible=false;arms[1].rotation.z=0}}},state(){return {open:group.visible,turn,src}},dispose(){serial++;textures.forEach(t=>t.dispose());photo.material.dispose();photo.geometry.dispose()}};
+}

@@ -36,7 +36,11 @@ export function createLoft({indoor,box,ball,cylinder,group,tag}){
  box(bath,0x94aa9c,-.34,1.44,-.66,.68,.69,.06);box(bath,0xc7dcd8,-.34,1.44,-.62,.57,.58,.02);
  cylinder(bath,0xece9dc,.47,.25,.06,.16,.21,.45);const seat=ball(bath,0xf5f0e4,.47,.48,.06,.24,20);seat.scale.set(.23,.065,.29);box(bath,0xf0ebdc,.47,.65,-.35,.44,.5,.19);tag(bath,'bathroom');
  const stream=cylinder(bath,0x9bd8d6,-.34,.97,-.29,.015,.015,.21);stream.visible=false;
- const wardrobe=group(upper,-2.3,0,1.25);box(wardrobe,0xb69572,0,.74,0,.82,1.48,.51);box(wardrobe,0x6f7964,0,.77,.27,.69,1.27,.015);const doors=[];for(const side of [-1,1]){const hinge=group(wardrobe,side*.4,0,.3);box(hinge,0xc2a580,-side*.195,.75,0,.39,1.4,.06);ball(hinge,0x8b7758,-side*.32,.8,.05,.025);doors.push(hinge)}for(const [i,c]of [0x82b3a0,0xd4a15c].entries())box(wardrobe,c,-.15+i*.3,.86,.28,.2,.62,.03);tag(wardrobe,'wardrobe');let opened=false,washLeft=0;
+ const wardrobe=group(upper,-2.38,0,.97);box(wardrobe,0xb69572,0,.74,0,.82,1.48,.51);box(wardrobe,0x6f7964,0,.77,.27,.69,1.27,.015);const doors=[];for(const side of [-1,1]){const hinge=group(wardrobe,side*.4,0,.3);box(hinge,0xc2a580,-side*.195,.75,0,.39,1.4,.06);ball(hinge,0x8b7758,-side*.32,.8,.05,.025);doors.push(hinge)}for(const [i,c]of [0x82b3a0,0xd4a15c].entries())box(wardrobe,c,-.15+i*.3,.86,.28,.2,.62,.03);tag(wardrobe,'wardrobe');let opened=false,washLeft=0;
+ // Travel corner beside the wardrobe: rounded case, straps, handle and wheels.
+ const luggage=group(upper,-1.38,0,1.62);const shell=box(luggage,0x779284,0,.30,0,.55,.55,.29);shell.geometry.dispose();shell.geometry=new T.CapsuleGeometry(.145,.27,6,16);shell.rotation.z=Math.PI/2; shell.scale.set(1,1,1.15);
+ for(const x of [-.17,.17]){box(luggage,0xd7bd85,x,.30,.16,.036,.47,.028);cylinder(luggage,0x5d6657,x,.04,0,.04,.04,.06,12)}
+ box(luggage,0x92795d,0,.62,0,.23,.04,.05);for(const x of [-.10,.10])box(luggage,0x92795d,x,.575,0,.035,.08,.035);box(luggage,0xf3e6be,.07,.4,.18,.10,.11,.012);tag(luggage,'travel');
  // Exterior-side staircase leaves the ground-floor furniture intact.
  for(let i=0;i<15;i++){const h=(i+1)*2.7/15,z=1.65-i*.23;box(stairs,0xb49369,3.25,h/2,z,.9,h,.245);if(i%3===0){box(stairs,0x917353,3.68,h+.34,z,.045,.7,.045)}}
  box(stairs,0xb49369,2.85,2.6,-1.7,1.05,.2,.55);tag(stairs,'stairs');

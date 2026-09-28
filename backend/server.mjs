@@ -1,3 +1,4 @@
+import {createTravelService} from './travel.mjs';
 
 import http from 'node:http';
 import fs from 'node:fs';
@@ -19,6 +20,7 @@ const secure=originURL.protocol==='https:';
 const filename=process.env.DATABASE_PATH||path.resolve('data/planet.sqlite');
 const hub=openAccounts(filename),db=hub.db;
 async function environmentFor(u){const result=await hub.space(u.space).weatherService.get(u.slot,!!hub.partner(u));fail(hub.account(u.id).space===u.space,'配对状态已更新，请刷新后重试',409);return result}
+const travelService=createTravelService(db);
 const ttl=7*86400000;
 const rates=new Map();
 function rate(req,kind,max=20){
@@ -78,6 +80,7 @@ async function api(req,res,p){
  }
  if(req.method==='GET'&&p==='/api/fm'){const u=requireUser(req);rate(req,'fm-read',200);return json(res,200,await musicService.list(u.slot,new URL(req.url,'http://local').searchParams.get('mode')||'discover'));}
  if(req.method==='GET'&&p==='/api/fm/track'){const u=requireUser(req);rate(req,'fm-track',200);return json(res,200,await musicService.track(u.slot,new URL(req.url,'http://local').searchParams.get('id')||''));}
+ if(req.method==='GET'&&p==='/api/travel'){const u=requireUser(req),peer=hub.partner(u);const worlds=[null,null];worlds[u.slot]={away:!!travelService.active(u.id)};if(peer)worlds[1-u.slot]={away:!!travelService.active(peer.id)};return json(res,200,{...travelService.view(u.id),worlds})}
  if(req.method==='GET'&&p==='/api/media')return json(res,200,mediaService.view(requireUser(req).slot));
  if(req.method==='GET'&&p==='/api/account/history'){const u=requireUser(req);return json(res,200,{archives:hub.archives(u.id)})}
  if(req.method==='GET'&&p==='/api/state')return json(res,200,{...store.get(requireUser(req).slot),space:current.space,displayNames:hub.displayNames(current)});
@@ -105,6 +108,7 @@ async function api(req,res,p){
  fail(req.headers['x-csrf-token']===u.csrf,'会话验证失败，请刷新页面',403);
  fail(String(u.space)===req.headers['x-planet-space'],'账号或配对状态已更新，请刷新页面后重试',409);
 
+ if(p==='/api/travel'){rate(req,'travel',40);fail(['depart','collect'].includes(b.action),'旅行操作不存在');return json(res,200,b.action==='depart'?travelService.depart(u.id,u.avatar):travelService.collect(u.id))}
  if(p==='/api/account/profile'){rate(req,'profile',30);hub.profile(u.id,b.nickname);return json(res,200,identity({...u,...hub.account(u.id)}))}
  if(p==='/api/environment'){
   rate(req,'location',30);weatherService.configure(u.slot,b);return json(res,200,await environmentFor(u));
@@ -119,7 +123,7 @@ async function api(req,res,p){
   fail(['bind','sync'].includes(b.action),'操作不存在');
   return json(res,200,await mediaService.sync(u.slot,b.action==='bind'?b.key:undefined,b.action==='sync'&&b.automatic===true));
  }
- if(p==='/api/life'){rate(req,'life',200);return json(res,200,store.life(u.slot,b,hub.displayNames(u)))}
+ if(p==='/api/life'){fail(!travelService.active(u.id),'小熊正在旅行，回来后再互动吧',409);rate(req,'life',200);return json(res,200,store.life(u.slot,b,hub.displayNames(u)))}
  if(p==='/api/state'){rate(req,'save',400);return json(res,200,store.save(u.slot,b))}
  if(p==='/api/invite'){rate(req,'invite',30);return json(res,200,hub.invite(u.id))}
  if(p==='/api/pair/preview'){rate(req,'pair-preview',30);return json(res,200,hub.preview(u.id,b.code))}

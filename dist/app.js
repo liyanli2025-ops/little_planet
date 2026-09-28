@@ -133,6 +133,7 @@ $('#activity-dock').addEventListener('click',e=>{const b=e.target.closest('[data
 function cloudSettings(){
  modal('settings','Echoo','账号与两颗星球',
  '<p>你好，'+esc(cloud.session.username)+'。这是'+names[actor]+'的'+planets[actor]+'。</p>'+
+ '<details class="help-details"><summary>素材鸣谢</summary><div class="cloud-account-note"><a href="/food-credits.html" target="_blank" rel="noopener">食物模型与作者 ↗</a></div></details>'+
  '<details class="help-details"><summary>存档与互访说明</summary><div class="cloud-account-note">账号身份固定，存档保存在服务器。私人手账仅本人可读；配对后可访问彼此的院子、冰箱、餐桌和共同回忆。<br>当前为异步互访，每隔约 5 秒在空闲时同步。双人同时走动、并坐与共同做饭尚未开放。</div></details>'+
  (!cloud.session.secure?'<p class="cloud-warning">HTTP 试玩连接：请仅使用临时测试密码和测试记录。正式记录前请配置 HTTPS。</p>':'')+
  (cloud.paired?'<p>♡ 已配对：'+names[1-actor]+' · '+planets[1-actor]+'</p><div class="form-actions">'+btn('go-partner','去对方的星球',true)+btn('unpair','解除配对')+'</div>':

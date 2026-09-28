@@ -11,7 +11,15 @@ export function createTeddy(parent,identity=0){
  const torso=new T.Mesh(new T.LatheGeometry(pts,64),fur);torso.scale.z=.81;torso.castShadow=torso.receiveShadow=true;body.add(torso);
  const legs=[],arms=[];
  for(let i=0;i<2;i++){let s=i?1:-1,g=new T.Group();body.add(g);g.position.set(s*.145,.25,0);g.name='leg-'+i;ell(g,fur,0,-.078,.022,.128,.167,.144);legs.push(g)}
- for(let i=0;i<2;i++){let s=i?1:-1,g=new T.Group();body.add(g);g.position.set(s*.27,.61,0);g.name='arm-'+i;ell(body,fur,s*.245,.61,0,.102,.10,.113).name='shoulder-root-'+i;const joint=ell(g,fur,0,0,0,.092,.092,.102);joint.name='shoulder-joint';let arm=ell(g,fur,s*.027,-.16,0,.102,.222,.115);arm.rotation.z=s*.13;arms.push(g)}
+ // Each arm is one soft continuous surface, with its rounded root buried in the torso.
+ // Keep the existing shoulder pivot so all held objects and animation paths stay aligned.
+ const armProfile=[[0,-.382],[.052,-.366],[.085,-.326],[.102,-.26],[.108,-.17],[.103,-.08],[.087,.005],[.058,.067],[0,.096]];
+ const armCurve=new T.CatmullRomCurve3(armProfile.map(([r,y])=>new T.Vector3(r,y,0)),false,'centripetal');
+ for(let i=0;i<2;i++){const side=i?1:-1,g=new T.Group();body.add(g);g.position.set(side*.27,.61,0);g.name='arm-'+i;
+  const geo=new T.LatheGeometry(armCurve.getPoints(64).map(v=>new T.Vector2(Math.max(0,v.x),v.y)),40),pos=geo.attributes.position;
+  for(let j=0;j<pos.count;j++){const y=pos.getY(j),u=T.MathUtils.smoothstep(y,-.24,.096);pos.setX(j,pos.getX(j)+side*(.035-.10*u));pos.setZ(j,pos.getZ(j)*1.08)}
+  geo.computeVertexNormals();const arm=new T.Mesh(geo,fur);arm.name='continuous-arm';arm.castShadow=arm.receiveShadow=true;g.add(arm);arms.push(g)
+ }
  for(let s of [-1,1]){ell(head,fur,s*.218,.215,-.005,.089,.093,.061);ell(head,earMat,s*.218,.216,.047,.052,.058,.012)}
  const muzzle=ell(head,muzzleMat,0,-.009,.228,.095,.092,.065);
  const nose=ell(head,black,0,.023,.288,.032,.026,.023);
@@ -44,3 +52,4 @@ export function createTeddy(parent,identity=0){
  setIdentity(identity);
  return {avatar,body,legs,arms,setIdentity,relax(v){relaxed=!!v;smile.visible=relaxed;mouth.visible=!v;sipMouth.visible=false},sipping(v){sipMouth.visible=!!v;smile.visible=relaxed&&!v;mouth.visible=!relaxed&&!v},sunglasses(v){sunglasses.visible=!!v},get sleeping(){return closedEyes.visible},sleep(v){openEyes.visible=!v;closedEyes.visible=!!v;arms.forEach((g,i)=>g.position.x=(i?1:-1)*(v?.20:.27))},mask(v){mask.visible=!!v},headphones(v){headphones.visible=!!v},get listening(){return headphones.visible},outfit(v){scarf.visible=v!=="plain"&&!!v;cloth.color.set(v==="amber"?0xd4a15c:0x82b3a0)},rain(v){if(rainy!==v){rainy=v;rainGear.set(v)}},rainTick(t,hold=true,shared=false){rainGear.tick(t,hold,shared)},rainState:rainGear.state};
 }
+

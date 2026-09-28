@@ -5,7 +5,7 @@ import {createCozyHome} from './cozy-home.js';
 import {createLeisure} from './leisure.js';
 import {groundedBody,footBottom} from './grounding.js';
 import {createLoft} from './loft.js?v=2';
-import {createTeddy} from './teddy.js?v=15';
+import {createTeddy} from './teddy.js?v=16';
 import {createPet} from './pet.js?v=5';
 import {createWeather} from './weather-fx.js?v=3';
 import {createLifestyle} from './lifestyle.js?v=12';

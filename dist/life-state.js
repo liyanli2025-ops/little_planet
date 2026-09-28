@@ -6,7 +6,9 @@ export function applyLife(state,actor,paired,b,now=Date.now(),id=()=>crypto.rand
  check(b&&[0,1].includes(b.world),'请选择星球');const world=b.world;
  check(world===actor||paired,'请先配对再访问对方',403);
  state.worlds.forEach(w=>w.life??=freshLife());const life=state.worlds[world].life,bag=state.bags[actor];let title='',body='';
- if(b.type?.startsWith('kitchen-')){title=applyKitchen(state,actor,b,id);body='在小屋里，给自己做了一顿饭。';
+ if(b.type==='shared-meal-eat'){
+  check(typeof b.item==='string','请选择餐点');const meal=state.worlds[world].meals.find(m=>m.id===b.item);check(meal,'这份饭已经吃完了',409);const gift=state.events.find(e=>e.id===meal.event);check(!gift?.pending||gift.target===actor,'这份礼物还在等收件人',403);state.worlds[world].meals=state.worlds[world].meals.filter(m=>m.id!==b.item);title='吃了一份桌上的饭';body='在小屋里，好好吃饭。';
+ }else if(b.type?.startsWith('kitchen-')){title=applyKitchen(state,actor,b,id);body='在小屋里，给自己做了一顿饭。';
  }else if(['plant','water','harvest'].includes(b.type)){
   check(world===0,'花园在小禾的慢慢星');check(Number.isInteger(b.plot)&&b.plot>=0&&b.plot<6,'种植地不存在');const p=life.plots[b.plot];
   if(b.type==='plant'){check(!p,'这块地已经种了东西',409);check(Object.hasOwn(crops,b.crop),'请选择种子');const c=crops[b.crop];life.plots[b.plot]={crop:b.crop,plantedAt:now,readyAt:now+c.seconds*1000,watered:false,plantedBy:actor};title='种下了'+c.name;body='在第 '+(b.plot+1)+' 块地播种，等它慢慢长大。'}
@@ -15,7 +17,7 @@ export function applyLife(state,actor,paired,b,now=Date.now(),id=()=>crypto.rand
  }else if(b.type==='vase'){
   check(crops[b.crop]?.flower,'请选择采摘的花');const flowers=state.worlds[actor].life.flowers??={};check(flowers[b.crop]>0,'还没有采摘这朵花');check(life.vase.length<8,'花瓶已有八枝花，可以先整理花瓶');flowers[b.crop]--;life.vase.push(b.crop);title='把'+crops[b.crop].name+'插进花瓶';body='一层餐桌上，多了一朵亲手采来的花。';
  }else if(b.type==='clear-vase'){check(life.vase.length,'花瓶已经是空的');life.vase=[];title='整理了桌上的花瓶';body='把旧花收好，给下一束花留位置。';
- }else if(b.type==='outfit'){check(world===actor,'只能更换自己的衣着',403);check(['plain','mint','amber'].includes(b.outfit),'请选择衣着');life.outfit=b.outfit;title='换上了'+({plain:'日常装扮',mint:'薄荷围巾',amber:'暖橘围巾'})[b.outfit];body='在二层衣柜前，选了一点今天喜欢的颜色。';
+ }else if(b.type==='outfit'){check(['plain','mint','amber'].includes(b.outfit),'请选择衣着');state.worlds[actor].life.outfit=b.outfit;title='换上了'+({plain:'日常装扮',mint:'薄荷围巾',amber:'暖橘围巾'})[b.outfit];body='在二层衣柜前，选了一点今天喜欢的颜色。';
  }else if(b.type==='wash'){check(['hands','brush'].includes(b.kind),'请选择洗漱方式');life.wash++;title=b.kind==='brush'?'认真刷了牙':'洗净了双手';body='在二层洗手间，照顾好自己。';
  }else if(b.type==='basket'){check(world===1,'篮球场在阿远的晚风星');check(typeof b.made==='boolean','投篮结果不正确');life.basket.shots++;if(b.made)life.basket.made++;title=b.made?'投进了一颗篮球':'在篮球场练习投篮';body='球弹了几下，又回到手边。';
  }else check(false,'互动不存在');

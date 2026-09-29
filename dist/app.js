@@ -18,8 +18,8 @@ import {createEnvironment} from './environment.js?v=4';
 import {closeDaybook} from './immersive.js';
 import {connectCloud,newId} from './cloud.js?v=5';
 const cloud=await connectCloud();
-import {createScene} from './scene.js?v=27';
-import {createModelView} from './model-room.js?v=9';
+import {createScene} from './scene.js?v=28';
+import {createModelView} from './model-room.js?v=10';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const names=['小禾','阿远'],planets=['慢慢星','晚风星'],cities=['未设置所在地','未设置所在地'];
 function syncNames(){if(!cloud)return;const current=cloud.session.displayNames;names[cloud.session.actor]=current?.[cloud.session.actor]||cloud.session.nickname||cloud.session.username;names[1-cloud.session.actor]=current?.[1-cloud.session.actor]||cloud.session.partnerNickname||cloud.session.partner||'另一位住户';names.forEach((n,i)=>planets[i]=n+'的星球')}syncNames();
@@ -34,7 +34,7 @@ let state;if(cloud){state=cloud.state}else try{let raw=JSON.parse(localStorage.g
 state.worlds.forEach(w=>w.life??=freshLife());if(!cloud)migrateStorage(state,uid);
 let actor=state.actor===1?1:0,world=actor,inside=false,visual=null,currentPanel='',journalTab='personal',recipe='omelet',recipient='self',toastTimer,game=null;
 let environment=null,pendingCookSource=null,travelUI=null;
-let modelView=null,selectedFood=null,selectedMeal=null,mealPage=0,fridgePage=0,cookStage=0,mealDraft='';
+let modelView=null,selectedFood=null,selectedMeal=null,mealPage=0,cookStage=0,mealDraft='';
 function dropModel(){const old=modelView;modelView=null;old?.dispose()}
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const time=s=>new Date(s).toLocaleString('zh-CN',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
@@ -51,8 +51,9 @@ function enter(){endOutdoor();inside=true;visual?.enter(true);refresh()}
 function go(i){pendingCookSource=null;if(cloud&&i!==actor&&!cloud.paired){settings();return toast('先用邀请码连接对方，再去做客。')}const arriving=i!==world;const change=()=>{endOutdoor();world=i;inside=false;visual?.enter(false);refresh();if(cloud&&arriving&&i!==actor)void cloud.life({type:'visit',world:i})};close();closeDaybook();if(i===world){change();return}window.planetArrival.travel(i!==actor,change)}
 function modal(id,kicker,title,html){const changed=currentPanel!==id;closeDaybook();dropModel();currentPanel=id;$('#panel').dataset.page=id;let back=$('#panel-back');if(back)back.hidden=['room','journal','settings','radio','garden','bookshelf'].includes(id);$('#panel').classList.toggle('model-panel',['fridge','cook','table'].includes(id));$('#panel-kicker').textContent=kicker;$('#panel-title').textContent=title;$('#panel-body').innerHTML=html;if(!$('#panel').open)$('#panel').showModal();if(changed){$('#panel').scrollTop=0;$('#panel-body').scrollTop=0}}
 const btn=(action,text,primary=false,extra='')=>'<button class="pill '+(primary?'primary':'')+'" data-do="'+action+'" '+extra+'>'+text+'</button>';
-function fridge(live=false){if(live!==true){enter();discover(state.worlds[world].fridge)};const all=state.worlds[world].fridge.filter(i=>i.qty>0),cold=all.filter(i=>foodCatalog[i.food]?.zone!=='freezer'),frozen=all.filter(i=>foodCatalog[i.food]?.zone==='freezer'),pages=Math.max(1,Math.ceil(cold.length/18),Math.ceil(frozen.length/6));fridgePage=Math.max(0,Math.min(fridgePage,pages-1));const items=[...cold.slice(fridgePage*18,fridgePage*18+18),...frozen.slice(fridgePage*6,fridgePage*6+6)];if(!items.some(i=>i.id===selectedFood))selectedFood=null;
-modal('fridge','','冰箱','<div id="model-stage" aria-label="双门冰箱，点选食物"></div><div id="model-selection" aria-live="polite"></div><div class="fridge-footer">'+(world===actor?btn('stock-fridge','添点食物'):'')+(pages>1?btn('fridge-prev','‹',false,fridgePage===0?'disabled aria-label="上一批"':'aria-label="上一批"')+btn('fridge-next','›',false,fridgePage===pages-1?'disabled aria-label="下一批"':'aria-label="下一批"'):'')+'</div>');modelView=createModelView($('#model-stage'),{mode:'fridge',items:items.map(i=>({...i,gift:!!i.event})),onSelect:i=>selectFood(i.id)});selectFood(selectedFood)}
+function fridge(live=false){const continuing=currentPanel==='fridge'&&modelView?.update&&$('#model-stage');if(live!==true&&!continuing){enter();discover(state.worlds[world].fridge)}const items=state.worlds[world].fridge.filter(i=>i.qty>0).map(i=>({...i,gift:!!i.event,reserved:!!(findRecord(i.event)?.pending&&findRecord(i.event)?.target!==actor)}));if(!items.some(i=>i.id===selectedFood))selectedFood=null;
+if(continuing){modelView.update(items,selectedFood);selectFood(selectedFood);return}
+modal('fridge','','冰箱','<div id="model-stage" aria-label="双门冰箱，点选食物"></div><div id="model-selection" aria-live="polite"></div><div class="fridge-footer">'+(world===actor?btn('stock-fridge','添点食物'):'')+'</div>');modelView=createModelView($('#model-stage'),{mode:'fridge',items,onSelect:i=>selectFood(i.id)});selectFood(selectedFood)}
 function selectFood(id){selectedFood=id;const i=state.worlds[world].fridge.find(i=>i.id===id&&i.qty>0);modelView?.select(id);if(!i){$('#model-selection').innerHTML='<p class="fridge-hint">'+(state.worlds[world].fridge.some(i=>i.qty>0)?'点一点想吃的':'放一点喜欢的食物进来吧')+'</p>';return}const e=findRecord(i.event),reserved=e?.pending&&e.target!==actor,ready=foodCatalog[i.food]?.ready!==false;$('#model-selection').innerHTML='<div class="selected-food"><div><b>'+foods[i.food][0]+'</b><small>'+(reserved?'留给对方':i.event?'来自'+names[e?.actor??world]+'的心意':'')+'</small></div><div>'+btn(ready?'eat-model':'cook-food',ready?'吃掉':'去烹饪',true,'data-id="'+id+'" '+(reserved?'disabled':''))+(world===actor&&cloud?.paired&&!reserved?' '+btn('gift-food','留给对方',false,'data-id="'+id+'"'):'')+(drinkFoods.has(i.food)&&!reserved?' '+btn('sunbathe-drink','去晒太阳',false,'data-id="'+id+'"'):'')+'</div></div>'}
 let stockCategory='乳品饮料';function stockFridge(){if(world!==actor)return;modal('fridge-stock','','添点食物','<div class="stock-categories">'+foodCategories.map(c=>btn('stock-category',c,c===stockCategory,'data-category="'+c+'"')).join('')+'</div><div class="stock-foods">'+Object.values(foodCatalog).filter(f=>f.category===stockCategory).map(f=>'<button data-do="stock-food" data-food="'+f.id+'"><span>'+f.emoji+'</span>'+f.name+'<span aria-hidden="true">＋</span></button>').join('')+'</div><div class="form-actions">'+btn('fridge','放好了，看看冰箱',true)+'</div>')}
 
@@ -140,7 +141,7 @@ function hammockPicker(){
 }
 function startSunbathing(){const choice=hammockDrink;hammockDrink=null;if(!choice){if(!visual?.sunbathe(null)){endOutdoor();return}outdoorMode='hammock';dock('<button data-outdoor="leave">起身</button>');$('#activity-dock').classList.add('hammock-dock');return}const i=state.worlds[choice.world]?.fridge.find(x=>x.id===choice.id),e=findRecord(i?.event);if(choice.world!==world||!i||i.qty<=0||!drinkFoods.has(i.food)||e?.pending&&e.target!==actor){endOutdoor();return toast('这份饮料已经不在冰箱里了。')}if(!visual?.sunbathe(i.food)){endOutdoor();return}i.qty--;state.worlds[world].fridge=state.worlds[world].fridge.filter(x=>x.qty>0);if(e)e.steps.push({text:names[actor]+'带着'+foods[i.food][0]+'去吊床休息。',at:Date.now()});record(names[actor]+'带着'+foods[i.food][0]+'在吊床上休息','戴上墨镜，轻轻晃一晃，慢慢喝完这份饮料。');save();outdoorMode='hammock';dock('<button data-outdoor="leave">起身</button>');$('#activity-dock').classList.add('hammock-dock');}
 
-handlers['select-food']=b=>selectFood(b.dataset.id);handlers['select-meal']=b=>selectMeal(b.dataset.id);handlers['fridge-prev']=()=>{fridgePage--;fridge()};handlers['fridge-next']=()=>{fridgePage++;fridge()};
+handlers['select-food']=b=>selectFood(b.dataset.id);handlers['select-meal']=b=>selectMeal(b.dataset.id);
 for(const [from,to]of [['eat-model','eat-fridge'],['eat-meal-model','eat-meal']])handlers[from]=async b=>{const view=modelView,id=b.dataset.id;if(!view||b.disabled)return;b.disabled=true;await view.consume(id);if(modelView!==view)return;handlers[to]({dataset:{id}})};
 
 

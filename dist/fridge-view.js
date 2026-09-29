@@ -1,3 +1,4 @@
+import {fridgeLayout} from './fridge-layout.js';
 import * as T from './vendor/three.module.js';
 import {makeFood} from './food-models.js';
 import {foodCatalog} from './food-catalog.js';
@@ -21,11 +22,9 @@ export function createFridgeView(host,options){
  if(zone==='chill'){for(const y of [.20,1.05,1.87]){box(hinge,cream,-1.04,y,-.26,1.8,.06,.4);box(hinge,0xc5d7ce,-1.04,y+.16,-.47,1.8,.25,.025,true);for(const x of [-1.95,-.13])box(hinge,cream,x,y+.12,-.26,.04,.23,.42)}box(hinge,trim,-1.04,2.58,.183,.58,.085,.008);box(hinge,0x65867e,-1.04,2.58,.19,.24,.035,.006)}
  }
  const toolbar=document.createElement('div');toolbar.className='fridge-doors';for(const [zone,label]of [['chill','冷藏'],['freezer','冷冻']]){const b=document.createElement('button');b.type='button';b.textContent=label;b.setAttribute('aria-label','开合'+label+'门');b.setAttribute('aria-expanded','true');b.onclick=()=>{doors[zone]=!doors[zone];b.setAttribute('aria-expanded',String(doors[zone]));if(models.find(m=>m.item.id===selected)?.zone===zone&&!doors[zone]){selected=null;options.onSelect?.({id:null})}};toolbar.append(b)}host.append(toolbar);
- const chilled=options.items.filter(i=>foodCatalog[i.food]?.zone!=='freezer'),frozen=options.items.filter(i=>foodCatalog[i.food]?.zone==='freezer');
-
  // Stable physical sizes, independent of the amount in stock. Storage belongs
  // to each selectable stock group, so it comes forward with the food.
- function stockModel(item,index,zone){
+ function stockModel(item,index,zone,single=false){
   const g=new T.Group(),f=foodCatalog[item.food];
   function food(x,y,z,w,h,d,rotation=0){const model=makeFood(item.food);const bounds=new T.Box3().setFromObject(model),size=bounds.getSize(new T.Vector3()),center=bounds.getCenter(new T.Vector3());const scale=Math.min(w/Math.max(size.x,.001),h/Math.max(size.y,.001),d/Math.max(size.z,.001));const anchor=new T.Group();model.scale.setScalar(scale);model.position.set(-center.x*scale,-bounds.min.y*scale,-center.z*scale);anchor.add(model);anchor.position.set(x,y,z);anchor.rotation.y=rotation;g.add(anchor)}
   function tub(color=0x92b8a7,height=.20){box(g,0xe5eee8,0,.025,0,.49,.035,.39);for(const x of [-.24,.24])box(g,0xc4d9d1,x,height/2,0,.018,height,.39,true);for(const z of [-.19,.19])box(g,0xc4d9d1,0,height/2,z,.48,height,.018,true);box(g,color,0,height+.014,0,.51,.034,.41);for(const x of [-.25,.25])box(g,color,x,height-.026,0,.025,.09,.13)}
@@ -40,7 +39,7 @@ export function createFridgeView(host,options){
    box(g,0xc7b590,0,.027,0,.5,.04,.4);
    for(const z of [-.20,.20])for(const y of [.07,.12])box(g,0xd1c19f,0,y,z,.51,.027,.018);
    for(const x of [-.25,.25]){box(g,0xc1ad84,x,.085,0,.025,.14,.41);for(const z of [-.20,.20])box(g,0xbfae8d,x,.09,z,.025,.16,.025)}
-   const count=Math.min(3,item.qty||1);for(let k=0;k<count;k++)food(k===1?.12:-.10,.052,k===0?.07:-.11,.21,.23,.19,(k-1)*.27);
+   const count=single?1:Math.min(3,item.qty||1);for(let k=0;k<count;k++)food(k===1?.12:-.10,.052,k===0?.07:-.11,.21,.23,.19,(k-1)*.27);
   }else if(['熟食便当','甜点点心','做好的饭菜'].includes(f.category)||['cheese','butter','tofu'].includes(item.food)){
    food(0,.045,0,.42,.19,.32);tub(f.category==='甜点点心'?0xd5b38d:0x8eafa4,.24);
    // A clear inset in the lid lets the actual dish remain visible.
@@ -49,20 +48,26 @@ export function createFridgeView(host,options){
    box(g,0xc9bda0,0,.032,0,.48,.055,.34);food(0,.060,0,.42,.16,.28);box(g,0xd7cdb2,0,.17,-.17,.49,.27,.028);
   }else{
    food(-.06,0,.04,.29,.48,.30,-.045);
-   if(item.qty>1)food(.13,0,-.13,.29,.48,.30,.06);
+   if(!single&&item.qty>1)food(.13,0,-.13,.29,.48,.30,.06);
   }
   return g;
  }
- function place(item,index,zone){const g=stockModel(item,index,zone),f=foodCatalog[item.food];g.scale.setScalar(1.1);let parent=root;
- if(zone==='freezer')g.position.set((index%3-1)*.60,.16+Math.floor(index/3)*.46,.16+(index%2)*.035);
- else if(index>=12){parent=hinges.chill;g.position.set(-.70-(index%2)*.70,.24+Math.floor((index-12)/2)*.835,-.29);g.rotation.y=Math.PI}
- else {const row=Math.floor(index/3);g.position.set((index%3-1)*.60,row===3?1.28:3.16-row*.66,.04+(index%2)*.18);g.rotation.y=(index%3-1)*.025}
- parent.add(g);const button=document.createElement('button');button.type='button';button.className='fridge-food-hit';button.setAttribute('aria-label',f.name+(item.gift?'，对方留下的':''));button.dataset.food=item.food;button.dataset.item=item.id;button.onclick=()=>{if(doors[zone]){api.select(item.id);options.onSelect?.(item)}};host.append(button);models.push({g,item,zone,base:g.position.clone(),parent,button});}
- const rack=[],shelves=[];for(const i of chilled){if(rack.length<6&&['乳品饮料','酱料小菜'].includes(foodCatalog[i.food].category))rack.push(i);else shelves.push(i)}while(shelves.length>12)rack.push(shelves.pop());shelves.sort((a,b)=>Number(['水果','果蔬食材'].includes(foodCatalog[a.food].category))-Number(['水果','果蔬食材'].includes(foodCatalog[b.food].category)));const produce=shelves.filter(i=>['水果','果蔬食材'].includes(foodCatalog[i.food].category));const other=shelves.filter(i=>!produce.includes(i));const bottom=produce.splice(0,3);other.push(...produce);other.forEach((i,n)=>place(i,n<9?n:9+bottom.length+n-9,'chill'));bottom.forEach((i,n)=>place(i,9+n,'chill'));rack.forEach((i,n)=>place(i,n+12,'chill'));frozen.forEach((i,n)=>place(i,n,'freezer'));
+ function place(entry){const {item,zone,area,scale,position,single}=entry,g=stockModel(item,0,zone,single),f=foodCatalog[item.food];g.scale.setScalar(scale);const parent=area==='rack'?hinges.chill:root;g.position.set(...position);if(area==='rack')g.rotation.y=Math.PI;
+ parent.add(g);const button=document.createElement('button');button.type='button';button.className='fridge-food-hit';button.setAttribute('aria-label',f.name+(item.gift?'，对方留下的':''));button.dataset.food=item.food;button.dataset.item=item.id;button.onclick=()=>{if(doors[zone]&&!dragged){api.select(item.id);options.onSelect?.(item)}};host.append(button);models.push({g,item,zone,scale,base:g.position.clone(),parent,button});}
+ function releaseFoods(){const gs=new Set(),ms=new Set();for(const m of models){m.g.removeFromParent();m.button.remove();m.g.traverse(o=>{if(o.geometry)gs.add(o.geometry);if(o.material)for(const mat of [].concat(o.material))if(![...materials.values()].includes(mat))ms.add(mat)})}gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());models.length=0}
+ function populate(items){for(const entry of fridgeLayout(items,selected))place(entry)}
+ populate(options.items);
  function resize(){const w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h);camera.aspect=w/h;camera.updateProjectionMatrix();camera.position.set(2.6,4.0,9.6);const target=new T.Vector3(.85,1.96,.25);camera.position.sub(target).multiplyScalar(Math.max(1,.84/camera.aspect)).add(target);camera.lookAt(target)}const observer=new ResizeObserver(resize);observer.observe(host);resize();
+ // Pinch to inspect tightly packed shelves without switching to another fridge.
+ let dragged=false;const pointers=new Map();let previousDistance=0;host.style.touchAction='none';
+ const onDown=e=>{pointers.set(e.pointerId,[e.clientX,e.clientY]);dragged=false;previousDistance=0};
+ const onMove=e=>{if(!pointers.has(e.pointerId))return;const before=pointers.get(e.pointerId);pointers.set(e.pointerId,[e.clientX,e.clientY]);if(pointers.size===2){const [a,b]=[...pointers.values()],d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(previousDistance){camera.zoom=T.MathUtils.clamp(camera.zoom*d/previousDistance,1,3);camera.updateProjectionMatrix();if(camera.zoom===1)resize();dragged=true}previousDistance=d}else if(camera.zoom>1&&Math.hypot(e.clientX-before[0],e.clientY-before[1])>1){const factor=.012/camera.zoom,right=new T.Vector3().setFromMatrixColumn(camera.matrixWorld,0),up=new T.Vector3().setFromMatrixColumn(camera.matrixWorld,1);camera.position.addScaledVector(right,-(e.clientX-before[0])*factor).addScaledVector(up,(e.clientY-before[1])*factor);dragged=true}};
+ const onUp=e=>{pointers.delete(e.pointerId);previousDistance=0;if(!pointers.size)setTimeout(()=>dragged=false,0)};
+ const onWheel=e=>{e.preventDefault();camera.zoom=T.MathUtils.clamp(camera.zoom*Math.exp(-e.deltaY*.002),1,3);camera.updateProjectionMatrix();if(camera.zoom===1)resize()};
+ host.addEventListener('pointerdown',onDown);host.addEventListener('pointermove',onMove);host.addEventListener('pointerup',onUp);host.addEventListener('pointercancel',onUp);host.addEventListener('wheel',onWheel,{passive:false});
  let consuming=null;const screen=new T.Vector3();function tick(){if(!active)return;for(const zone of ['chill','freezer'])hinges[zone].rotation.y=T.MathUtils.lerp(hinges[zone].rotation.y,doors[zone]?2.72:0,.13);
- for(const m of models){const isSelected=m.item.id===selected;const target=m.base.clone();if(isSelected)target.z+=m.parent===root?.40:-.40;m.g.position.lerp(target,.14);m.g.scale.lerp(new T.Vector3().setScalar(isSelected?1.30:1.1),.14);if(consuming?.id===m.item.id){const t=Math.min(1,(performance.now()-consuming.start)/360);m.g.scale.multiplyScalar(1-t);if(t===1){consuming=null;consumeResolve?.();consumeResolve=null}}
- m.g.updateWorldMatrix(true,false);screen.set(0,.16,0).applyMatrix4(m.g.matrixWorld).project(camera);m.button.hidden=!doors[m.zone]||Math.abs(hinges[m.zone].rotation.y-2.72)>.18;m.button.style.left=(screen.x*.5+.5)*host.clientWidth+'px';m.button.style.top=(-screen.y*.5+.5)*host.clientHeight+'px';m.button.classList.toggle('selected',isSelected);m.button.setAttribute('aria-pressed',String(isSelected));}
- renderer.render(scene,camera);frame=requestAnimationFrame(tick)}
- const api={select(id){selected=id},consume(id){return new Promise(resolve=>{consumeResolve=resolve;consuming={id,start:performance.now()}})},state(){return {mode:'fridge',selected,doors:{...doors},items:models.map(m=>({id:m.item.id,food:m.item.food,zone:m.zone,extension:m.g.position.z-m.base.z}))}},dispose(){active=false;cancelAnimationFrame(frame);observer.disconnect();consumeResolve?.();const gs=new Set(),ms=new Set();scene.traverse(o=>{if(o.geometry)gs.add(o.geometry);if(o.material)for(const m of [].concat(o.material))ms.add(m)});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());renderer.dispose();renderer.forceContextLoss();host.replaceChildren();delete host.getModelState}};host.getModelState=api.state;tick();return api;
+ for(const m of models){const isSelected=m.item.id===selected;const target=m.base.clone();if(isSelected)target.z+=m.parent===root?.40:-.40;m.g.position.lerp(target,.14);m.g.scale.lerp(new T.Vector3().setScalar(isSelected?Math.max(1.15,m.scale*1.18):m.scale),.14);if(consuming?.id===m.item.id){const t=Math.min(1,(performance.now()-consuming.start)/360);m.g.scale.multiplyScalar(1-t);if(t===1){consuming=null;consumeResolve?.();consumeResolve=null}}
+ m.g.updateWorldMatrix(true,false);screen.copy(m.base).add(new T.Vector3(0,.16*m.scale,0));m.parent.localToWorld(screen);screen.project(camera);m.button.hidden=!doors[m.zone]||Math.abs(hinges[m.zone].rotation.y-2.72)>.18;m.screen=[(screen.x*.5+.5)*host.clientWidth,(-screen.y*.5+.5)*host.clientHeight];m.button.style.left=m.screen[0]+'px';m.button.style.top=m.screen[1]+'px';m.button.classList.toggle('selected',isSelected);m.button.setAttribute('aria-pressed',String(isSelected));}
+ for(const m of models){let distance=60;for(const n of models)if(n!==m&&!n.button.hidden)distance=Math.min(distance,Math.hypot(m.screen[0]-n.screen[0],m.screen[1]-n.screen[1]));const size=Math.max(6,Math.min(39,distance*.68));m.button.style.width=size+'px';m.button.style.height=size+'px'}renderer.render(scene,camera);frame=requestAnimationFrame(tick)}
+ const api={update(items,id=selected){selected=id;options.items=items;if(consuming){consumeResolve?.();consumeResolve=null;consuming=null}releaseFoods();populate(items)},select(id){selected=id},consume(id){return new Promise(resolve=>{consumeResolve=resolve;consuming={id,start:performance.now()}})},state(){return {mode:'fridge',selected,zoom:camera.zoom,doors:{...doors},angles:Object.fromEntries(Object.entries(hinges).map(([k,h])=>[k,h.rotation.y])),items:models.map(m=>({id:m.item.id,food:m.item.food,zone:m.zone,extension:m.g.position.z-m.base.z}))}},dispose(){host.removeEventListener('pointerdown',onDown);host.removeEventListener('pointermove',onMove);host.removeEventListener('pointerup',onUp);host.removeEventListener('pointercancel',onUp);host.removeEventListener('wheel',onWheel);active=false;cancelAnimationFrame(frame);observer.disconnect();consumeResolve?.();const gs=new Set(),ms=new Set();scene.traverse(o=>{if(o.geometry)gs.add(o.geometry);if(o.material)for(const m of [].concat(o.material))ms.add(m)});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());renderer.dispose();renderer.forceContextLoss();host.replaceChildren();delete host.getModelState}};host.getModelState=api.state;tick();return api;
 }

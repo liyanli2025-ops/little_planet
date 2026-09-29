@@ -1,7 +1,7 @@
 import {createCookingView} from './cooking-view.js';
 import {createPlant} from './garden-models.js';
 import {makeDish} from './dish-models.js';
-import {createFridgeView} from './fridge-view.js';
+import {createFridgeView} from './fridge-view.js?v=2';
 import * as T from './vendor/three.module.js';
 export function createModelView(host,options){
 if(options.mode==='cook')return createCookingView(host,options);

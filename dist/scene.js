@@ -1,5 +1,5 @@
 import {createAlbumProp} from './album-prop.js';
-import {createKitchenMotion} from './kitchen-motion.js?v=2';
+import {createKitchenMotion} from './kitchen-motion.js?v=3';
 import {createRemoteBear} from './remote-bear.js';
 import {createTableFood} from './table-food.js';
 import {hammockLocation} from './hammock.js';
@@ -86,7 +86,7 @@ box(indoor,0xb59873,0,-.15,0,5.8,.26,4.6);box(indoor,0xe6d8ba,0,1.2,-2.2,5.8,2.5
 const fridge=group(indoor,-2.24,.02,-1.55);box(fridge,0xa0b4a0,0,.79,0,.72,1.58,.65);box(fridge,0xc4d1b6,0,1.23,.34,.69,.66,.035);box(fridge,0xc0cdb2,0,.45,.34,.69,.8,.035);box(fridge,0x748974,.24,1.17,.385,.035,.23,.055);box(fridge,0x748974,.24,.7,.385,.035,.23,.055);box(fridge,0xf8e9c1,-.13,1.32,.37,.2,.17,.02);tag(fridge,'fridge');
 const cooker=group(indoor,1.22,0,-1.64);box(cooker,0xc6b48f,0,.43,0,1.72,.85,.75);box(cooker,0xece5d1,0,.91,0,1.86,.1,.83);for(const x of [-.4,.4]){box(cooker,0xb7a781,x,.44,.39,.7,.64,.03);ball(cooker,0x907e61,x,.63,.43,.04,8)}cylinder(cooker,0x50584b,-.3,.99,0,.25,.25,.035);cylinder(cooker,0x9baf9b,-.3,1.12,0,.21,.18,.22);cylinder(cooker,0xc7d1ac,-.3,1.25,0,.22,.22,.035);ball(cooker,0x716d50,-.3,1.3,0,.06);box(cooker,0xb7a47b,.47,1,.1,.35,.05,.29);tag(cooker,'cook');
 const rug=box(indoor,0xd8bd86,.3,.045,.6,2.35,.035,1.9);const sofa=group(indoor,-1.92,.06,.85);box(sofa,0x819880,0,.36,0,1.15,.55,1.65);box(sofa,0x6e866d,-.47,.68,0,.22,.66,1.65);for(const z of [-.72,.72])box(sofa,0x788d72,0,.61,z,1.13,.39,.19);box(sofa,0xa3b292,.1,.68,-.36,.69,.2,.54);box(sofa,0xaab294,.1,.68,.26,.69,.2,.54);box(sofa,0xe8d6aa,.15,.81,.3,.45,.085,.45);tag(sofa,'sit');
-const table=group(indoor,.12,.1,.62);box(table,0xb88b5d,0,.58,0,1.45,.13,1.06);for(const x of [-.55,.55])for(const z of [-.36,.36])box(table,0x997748,x,.28,z,.08,.58,.08);const tableFood=createTableFood(table);tag(table,'table');
+const table=group(indoor,.12,.1,.62);box(table,0xb88b5d,0,.58,0,1.45,.13,1.06);for(const x of [-.55,.55])for(const z of [-.36,.36])box(table,0x997748,x,.28,z,.08,.58,.08);table.scale.x=.9;const tableFood=createTableFood(table);tag(table,'table');
 const desk=group(indoor,1.95,.08,.95);box(desk,0xbc9d6e,0,.75,0,1.19,.12,.76);for(const x of [-.47,.47])for(const z of [-.25,.25])box(desk,0xa2865d,x,.37,z,.075,.75,.075);box(desk,0x617d65,-.1,.84,.06,.43,.06,.33);box(desk,0xf5e7c7,-.09,.879,.06,.37,.015,.29);cylinder(desk,0xc4a263,.37,1.07,-.2,.14,.23,.24);box(desk,0x9e835b,.37,.89,-.2,.035,.3,.035);tag(desk,'journal');
 const record=group(indoor,2.28,.08,-.55);box(record,0xaa8658,0,.36,0,.67,.72,.61);box(record,0x715d43,0,.79,0,.66,.13,.61);cylinder(record,0x444b41,0,.87,0,.22,.22,.025);cylinder(record,0xc4b784,0,.886,0,.07,.07,.012);tag(record,'music');const games=group(indoor,-2.5,.1,1.85);for(let i=0;i<3;i++)box(games,[0xb98065,0xd4ba7b,0x7c9f93][i],0,.08+i*.13,0,.48,.11,.39);tag(games,'games');
 
@@ -113,12 +113,12 @@ const leisure=createLeisure({outdoor,avatar,body,legs,arms,place,box,ball,cylind
 const pet=createPet({outdoor,box,ball,cylinder,group,place,obstacles,onEvent:e=>onAction('pet-'+e)});interactive('puppy',.12,.16,.35,.12,.29);
 const keys=new Set();let pointer=null,touchDistance=null,walkPhase=0,dragged=false,disposed=false;
 const ray=new T.Raycaster(),screen=new T.Vector2();const sphereFrame=new T.Matrix4(),qTarget=new T.Quaternion();
-const kitchenMotion=createKitchenMotion({host,avatar,body,arms,legs,indoor,fridge,camera});
-const lowerStops={bookshelf:[-.85,-1.05],fridge:[-1.47,-1.3],cook:[.8,-.84],table:[.08,1.5],journal:[1.72,1.7],music:[1.64,-.47],games:[-1.5,1.83],sit:[-1.08,.72]};
-const lowerRects=[[-1.37,-.16,-2.1,-1.57],[-2.59,-1.29,.02,1.72],[-.75,.97,-.03,1.28],[1.26,2.64,.46,1.46],[-2.7,-1.8,-2.08,-1.16],[.25,2.2,-2.13,-1.13],[1.9,2.68,-.96,-.19]];
+const kitchenMotion=createKitchenMotion({host,avatar,body,arms,legs,indoor,fridge,camera,route:(x,z)=>roomRoute(x,z)});
+const lowerStops={bookshelf:[-.85,-1.05],fridge:[-1.47,-1.3],cook:[.8,-.84],table:[.08,1.65],journal:[1.72,1.7],music:[1.64,-.47],games:[-1.5,1.83],sit:[-1.08,.72]};
+const lowerRects=[[-1.37,-.16,-2.1,-1.57],[-2.7,-1.005,-.30,2.02],[-.913,1.153,-.29,1.53],[.975,2.7,.19,1.71],[-2.7,-1.8,-2.08,-1.16],[.25,2.2,-2.13,-1.13],[1.9,2.68,-.96,-.19]];
 const upperStops={travel:[-.85,1.65],bathroom:[1.66,-.42],wardrobe:[-1.65,1.3],bed:[-1.2,.95],journal:[1.5,1.5],stairs:[2.5,-1.25]};
 const upperRects=[[-2.12,-.28,-1.7,.6],[-.3,.5,-1.65,-.9],[.8,2.2,.25,1.15],[.72,2.3,-2.05,-.76],[-2.8,-1.94,.63,1.27],[-1.7,-1.06,1.4,1.83]];
-lowerStops.vase=[.08,1.5];lowerStops.stairs=[2.5,1.78];
+lowerStops.vase=[.08,1.65];lowerStops.stairs=[2.5,1.78];
 const roomFree=(x,z)=>Math.abs(x)<2.7&&Math.abs(z)<2.05&&!(floor?upperRects:lowerRects).some(r=>x>r[0]&&x<r[1]&&z>r[2]&&z<r[3]);
 let roomPath=[];
 function roomRoute(x,z){const W=39,H=31,dx=5.2/(W-1),dz=3.9/(H-1),position=i=>new T.Vector3(-2.6+(i%W)*dx,floor*2.7+.022,-1.95+Math.floor(i/W)*dz);let best=(x,z)=>{let idx=-1,d=Infinity;for(let i=0;i<W*H;i++){let p=position(i),d1=(p.x-x)**2+(p.z-z)**2;if(roomFree(p.x,p.z)&&d1<d){d=d1;idx=i}}return idx},a=best(avatar.position.x,avatar.position.z),b=best(x,z);let queue=[a],prev=new Map([[a,-1]]);for(let k=0;k<queue.length;k++){let c=queue[k];if(c===b){let out=[];for(let n=b;n!==a;n=prev.get(n))out.push(position(n));return out.reverse()}for(let [di,dj]of [[1,0],[-1,0],[0,1],[0,-1]]){let ii=c%W+di,jj=Math.floor(c/W)+dj;if(ii<0||ii>=W||jj<0||jj>=H)continue;let n=jj*W+ii,p=position(n);if(!prev.has(n)&&roomFree(p.x,p.z)){prev.set(n,c);queue.push(n)}}}return []}

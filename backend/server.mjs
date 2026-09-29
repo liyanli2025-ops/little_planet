@@ -114,7 +114,7 @@ async function api(req,res,p){
  fail(req.headers['x-csrf-token']===u.csrf,'会话验证失败，请刷新页面',403);
  fail(String(u.space)===req.headers['x-planet-space'],'账号或配对状态已更新，请刷新页面后重试',409);
 
- if(p==='/api/design'){fail(b&&['generate','accept','rollback','gift','wearGift'].includes(b.action),'设计操作不存在');return json(res,200,await designService[b.action](u.id,b))}
+ if(p==='/api/design'){fail(b&&['generate','accept','rollback','gift','wearGift','previewItem'].includes(b.action),'设计操作不存在');return json(res,200,await designService[b.action](u.id,b))}
  if(p==='/api/presence'){fail(b&&typeof b==='object','位置不正确');const peer=hub.partner(u);fail(b.hidden===true||b.world===u.slot||peer,'请先配对再访问对方',403);presence.update(u,travelService.active(u.id)?{hidden:true}:b);let live=null,resident=null;if(peer&&!travelService.active(peer.id)){live=presence.peer(u,peer);if(!live){const owner=hub.account(peer.id),environment=JSON.parse(store.db.prepare('SELECT value FROM settings WHERE key=?').get('environment:'+owner.slot)?.value||'{}');resident=residentPresence(owner,environment,store.read().state.worlds[owner.slot].life.outfit)}}return json(res,200,{peer:live,resident})}
  if(p==='/api/travel'){rate(req,'travel',40);fail(['depart','collect'].includes(b.action),'旅行操作不存在');return json(res,200,b.action==='depart'?travelService.depart(u.id,u.avatar):travelService.collect(u.id))}
  if(p==='/api/account/profile'){rate(req,'profile',30);hub.profile(u.id,b.nickname);return json(res,200,identity({...u,...hub.account(u.id)}))}

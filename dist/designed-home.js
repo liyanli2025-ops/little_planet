@@ -1,3 +1,4 @@
+import {buildGeneratedSofa,disposeObject} from './generated-objects.js';
 import {createHangingGarment} from './hanging-garments.js';
 import {outfits} from './outfits.js';
 import {designColors,defaultDesign} from './design-schema.js';
@@ -7,6 +8,7 @@ import {createHomeWindows} from './home-windows.js';
 
 // Shared geometry helpers, but two independent architectural plans and furnishing sets.
 export function createDesignedHome(indoor){
+ const generatedSofas=[];let creationKey='';
  const materials=new Map(),geometries=new Map(),textures=[],windows=createHomeWindows();
  let seed=7251;const random=()=>((seed=(seed*16807)%2147483647)-1)/2147483646;
  function texture(kind){if(typeof document==='undefined')return null;const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');x.fillStyle=kind==='wood'?'#e4d8c6':'#f3eee4';x.fillRect(0,0,256,256);for(let i=0;i<(kind==='wood'?330:18000);i++){const v=random();if(kind==='wood'){x.strokeStyle=`rgba(${v>.5?'80,53,25':'255,248,230'},${.025+random()*.065})`;x.lineWidth=.3+random()*1.4;x.beginPath();const z=random()*256;x.moveTo(0,z);for(let j=0;j<=8;j++)x.lineTo(j*32,z+Math.sin(j*.9+i)*1.5);x.stroke()}else{x.fillStyle=`rgba(${v>.5?'80,70,55':'255,255,250'},.085)`;x.fillRect(random()*256,random()*256,1,random()*3)}}if(kind==='fabric'){for(let i=0;i<256;i+=3){x.fillStyle='rgba(90,74,55,.055)';x.fillRect(i,0,1,256);x.fillStyle='rgba(255,255,255,.24)';x.fillRect(0,i,256,1)}}const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(kind==='wood'?1:3,kind==='wood'?1:3);textures.push(t);return t}
@@ -95,7 +97,7 @@ export function createDesignedHome(indoor){
   const backLight=new T.PointLight(0xffd8a6,.6,2.7,2);backLight.position.set(kx,1.63,kz+.12);low.add(backLight);lights.push(backLight);
   // Small wall art and plants create a lived-in room without occupying its walking paths.
   const art=group(low,theme?-4.405:3.77,1.55,theme?1.75:-.8);art.rotation.y=theme?Math.PI/2:-Math.PI/2;box(art,c.wood,0,0,0,.55,.72,.04,.015,'wood');box(art,0xe6dfcd,0,0,.028,.48,.64,.015,.008);ell(art,c.accent,0,.05,.043,.15,.21,.006);ell(art,0xc2ad81,.11,-.13,.047,.09,.09,.006);plant(low,theme?-2.95:3.35,0,theme?-1.3:2.85,.9);
-  const [sx,sz]=L.lower.sofa,sofa=group(low,sx,0,sz,'sit');sofa.rotation.y=theme?Math.PI/2:-Math.PI/2;
+  const [sx,sz]=L.lower.sofa,sofa=group(low,sx,0,sz,'sit');sofa.rotation.y=theme?Math.PI/2:-Math.PI/2;sofa.userData.dynamic=true;const custom=group(low,sx,0,sz,'sit');custom.rotation.y=sofa.rotation.y;custom.userData.dynamic=true;custom.visible=false;generatedSofas.push({original:sofa,custom,top:L.sit[1]+.17});
   if(theme){box(sofa,c.wood,0,.24,0,2.55,.44,.80,.04,'wood');box(sofa,c.fabric,0,.50,0,2.49,.16,.77,.08,'fabric');box(sofa,c.fabric,0,.74,-.32,2.5,.50,.18,.08,'fabric');for(const [xx,col]of [[-.77,0xd6c8ad],[.65,0x79846a]]){const q=cushion(sofa,col,xx,.84,-.07,.58,.53);q.rotation.x=1.10;q.rotation.z=xx*.12}}
   else{ell(sofa,c.fabric,0,.36,0,1.02,.30,.52,'fabric');const back=cushion(sofa,c.fabric,0,.77,-.34,1.93,.70);back.rotation.x=Math.PI/2;for(const x of [-.86,.86])ell(sofa,c.fabric,x,.59,0,.19,.35,.51,'fabric');for(const x of [-.38,.38])cushion(sofa,0xe7ddc7,x,.59,.09,.72,.70);cushion(sofa,c.accent,-.42,.91,-.12,.50,.52).rotation.x=1.10;cushion(sofa,0xd4c7aa,.30,.91,-.14,.43,.46).rotation.x=1.14;const blanket=cloth(sofa,0xa9b49a,.54,.79,.15,.38,.85,.02);blanket.rotation.z=.15;}
   if(theme){rug(low,0xc6baa0,-1,.65,4.25,3.30);pouf(low,0xb9ac8c,-1,.15,.85,.91).userData.action='sit-floor-0';pouf(low,0x829073,.20,.15,.25,.98).userData.action='sit-floor-1';const coffee=group(low,-1.15,0,1.85,'journal');const top=cyl(coffee,c.wood,0,.39,0,1,1,.08,64);top.scale.set(.76,1,.39);for(const x of [-.49,.49])box(coffee,c.wood,x,.18,0,.065,.35,.44,.02,'wood');books(coffee,c,-.3,.44,0,.33);cyl(coffee,c.accent,.35,.51,.04,.065,.06,.13);}
@@ -138,7 +140,7 @@ export function createDesignedHome(indoor){
  beds.forEach(b=>b.resting.userData.dynamic=true);
  for(const t of themes){batch(t.low);batch(t.high);batch(t.stair)}
  let designValue=defaultDesign().home;
- function design(v){designValue=v||defaultDesign().home;for(const m of materials.values()){const base=m.userData.designBase;let color=base;for(const p of palettes){for(const [role,field]of [['wall','wall'],['curtain','curtain'],['fabric','fabric'],['bedding','fabric'],['accent','fabric']])if(base===p[role]&&(role!=='wall'||m.userData.designKind!=='fabric')&&(role!=='curtain'||m.userData.designKind==='fabric')&&designColors[designValue[field]])color=designColors[designValue[field]]}m.color.set(color)}lighting(night,weather)}
+ function design(v){designValue=v||defaultDesign().home;const key=JSON.stringify(designValue.creation||null);if(key!==creationKey){creationKey=key;for(const x of generatedSofas){disposeObject(x.custom);x.original.visible=!designValue.creation;x.custom.visible=!!designValue.creation;if(designValue.creation)buildGeneratedSofa(x.custom,designValue.creation,x.top)}}for(const m of materials.values()){const base=m.userData.designBase;let color=base;for(const p of palettes){for(const [role,field]of [['wall','wall'],['curtain','curtain'],['fabric','fabric'],['bedding','fabric'],['accent','fabric']])if(base===p[role]&&(role!=='wall'||m.userData.designKind!=='fabric')&&(role!=='curtain'||m.userData.designKind==='fabric')&&designColors[designValue[field]])color=designColors[designValue[field]]}m.color.set(color)}lighting(night,weather)}
  let identity=0,currentFloor=0,night=false,weather='sun',opened=false,washLeft=0;
  for(const l of lights){l.userData.baseIntensity=l.intensity;l.userData.baseColor=l.color.getHex()}
  function lighting(n,w){night=n;weather=w;lights.forEach(l=>{l.intensity=l.userData.baseIntensity*(n?2.0:['rain','overcast','fog'].includes(w)?1.2:.55)*({dim:.8,normal:1,bright:1.15}[designValue.brightness]||1);l.color.set(designValue.light==='warm'?0xffd5a1:designValue.light==='soft'?0xffead0:l.userData.baseColor)});windows.set(n,w);patches.forEach(g=>g.visible=!n&&['sun','cloudy'].includes(w))}

@@ -220,4 +220,4 @@ travelUI=createTravelUI({cloud,context:()=>({world,actor,visual}),modal,close,ha
 
 if(cloud)connectPresence({cloud,snapshot:()=>visual?{...visual.presence(),outfit:state.worlds[actor].life?.outfit||'plain'}:null,receive:p=>visual?.peer(p)});
 
-designUI=createDesignUI({cloud,context:()=>({actor,world,visual}),closePanel:close,handlers,toast,onWardrobe(){enter();visual?.request('wardrobe')},onScope(scope){if(scope==='home'&&!inside)enter();if(scope==='planet'&&inside){endOutdoor();inside=false;visual?.enter(false);refresh()}}});
+designUI=createDesignUI({cloud,context:()=>({actor,world,visual}),closePanel:close,handlers,toast,onPreviewCreation(){enter();visual?.enter(false);visual?.enter(true)},onWardrobe(){enter();visual?.request('wardrobe')},onScope(scope){if(scope==='home'&&!inside)enter();if(scope==='planet'&&inside){endOutdoor();inside=false;visual?.enter(false);refresh()}}});

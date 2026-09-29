@@ -66,3 +66,10 @@ test('design follows account across pairing, unlink and database restart',async(
  hub.unlink(a.id);assert.equal(s.current(a.id).version,1);assert.equal(s.current(b.id).version,0);hub.db.close();hub=openAccounts(file);s=createDesignService(hub.db);assert.deepEqual(s.current(a.id).design.home,designExamples.home);assert.equal(s.view(a.id).history.length,1);
  }finally{hub.db.close();fs.rmSync(dir,{recursive:true,force:true})}
 });
+
+test('BigModel Flash disables thinking without sending provider flags to other endpoints',async()=>{
+ for(const base of ['https://open.bigmodel.cn/api/paas/v4','https://other.example/v1']){
+ const {db,s}=setup({env:{...env,AI_BASE_URL:base,AI_MODEL:'glm-4.7-flash'},fetcher:async(url,options)=>{const b=JSON.parse(options.body);assert.equal(url.pathname.endsWith('/chat/completions'),true);if(url.hostname==='open.bigmodel.cn')assert.deepEqual(b.thinking,{type:'disabled'});else assert.equal(b.thinking,undefined);return result(designExamples.home)}});
+ assert.equal((await s.generate(1,request('glm'))).source,'ai');db.close();
+ }
+});

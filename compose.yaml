@@ -8,6 +8,12 @@ services:
       - "${BIND_ADDRESS:-0.0.0.0}:${HOST_PORT:-8081}:8080"
     environment:
       PUBLIC_ORIGIN: "${PUBLIC_ORIGIN:?Run scripts/configure.py first}"
+      AI_DESIGN_ENABLED: "${AI_DESIGN_ENABLED:-false}"
+      AI_API_KEY: "${AI_API_KEY:-}"
+      AI_BASE_URL: "${AI_BASE_URL:-}"
+      AI_MODEL: "${AI_MODEL:-}"
+      AI_DESIGN_DAILY_LIMIT: "${AI_DESIGN_DAILY_LIMIT:-5}"
+      AI_DESIGN_GLOBAL_DAILY_LIMIT: "${AI_DESIGN_GLOBAL_DAILY_LIMIT:-50}"
       REGISTRATION_CODE: "${REGISTRATION_CODE:-}"
     volumes:
       - planet_data:/data

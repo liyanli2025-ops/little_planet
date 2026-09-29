@@ -1,4 +1,5 @@
 import {createClothing} from './clothing.js';
+import {designColors,defaultDesign} from './design-schema.js';
 import * as T from './vendor/three.module.js';
 import {createRainGear} from './rain-gear.js?v=8';
 export function createTeddy(parent,identity=0){
@@ -52,6 +53,8 @@ export function createTeddy(parent,identity=0){
  const scarf=new T.Group();body.add(scarf);scarf.visible=false;const cloth=new T.MeshStandardMaterial({color:0x82b3a0,roughness:1});const collar=new T.Mesh(new T.TorusGeometry(.282,.037,12,40),cloth);collar.rotation.x=Math.PI/2;collar.scale.y=.81;collar.position.y=.69;scarf.add(collar);for(const x of [.07,.14]){const tail=new T.Mesh(new T.BoxGeometry(.055,.19,.027),cloth);tail.position.set(x,.60,.245);tail.rotation.z=x===.07?-.12:.15;scarf.add(tail)}
  const clothing=createClothing(body,arms);
  setIdentity(identity);
- return {avatar,body,legs,arms,setIdentity,relax(v){relaxed=!!v;smile.visible=relaxed;mouth.visible=!v;sipMouth.visible=false},sipping(v){sipMouth.visible=!!v;smile.visible=relaxed&&!v;mouth.visible=!relaxed&&!v},sunglasses(v){sunglasses.visible=!!v},get sleeping(){return closedEyes.visible},sleep(v){openEyes.visible=!v;closedEyes.visible=!!v;arms.forEach((g,i)=>g.position.x=(i?1:-1)*(v?.20:.27))},mask(v){mask.visible=!!v},headphones(v){headphones.visible=!!v},get listening(){return headphones.visible},outfit(v){clothing.set(v);scarf.visible=["mint","amber"].includes(v);cloth.color.set(v==="amber"?0xd4a15c:0x82b3a0)},rain(v){if(rainy!==v){rainy=v;rainGear.set(v)}},rainTick(t,hold=true,shared=false){rainGear.tick(t,hold,shared)},rainState:rainGear.state};
+ let design=defaultDesign().outfit,lastOutfit='plain';
+ const paintScarf=()=>cloth.color.set(designColors[design.primary]||(lastOutfit==='amber'?0xd4a15c:0x82b3a0));
+ return {avatar,body,legs,arms,design(v){design=v||defaultDesign().outfit;clothing.design(design);paintScarf()},setIdentity,relax(v){relaxed=!!v;smile.visible=relaxed;mouth.visible=!v;sipMouth.visible=false},sipping(v){sipMouth.visible=!!v;smile.visible=relaxed&&!v;mouth.visible=!relaxed&&!v},sunglasses(v){sunglasses.visible=!!v},get sleeping(){return closedEyes.visible},sleep(v){openEyes.visible=!v;closedEyes.visible=!!v;arms.forEach((g,i)=>g.position.x=(i?1:-1)*(v?.20:.27))},mask(v){mask.visible=!!v},headphones(v){headphones.visible=!!v},get listening(){return headphones.visible},outfit(v){lastOutfit=v;clothing.set(v);scarf.visible=["mint","amber"].includes(v);paintScarf()},rain(v){if(rainy!==v){rainy=v;rainGear.set(v)}},rainTick(t,hold=true,shared=false){rainGear.tick(t,hold,shared)},rainState:rainGear.state};
 }
 

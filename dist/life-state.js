@@ -7,6 +7,7 @@ export function applyLife(state,actor,paired,b,now=Date.now(),id=()=>crypto.rand
  check(b&&[0,1].includes(b.world),'请选择星球');const world=b.world;
  check(world===actor||paired,'请先配对再访问对方',403);
  state.worlds.forEach(w=>w.life??=freshLife());const life=state.worlds[world].life,bag=state.bags[actor];let title='',body='';
+ if(b.type==='home-light'){check([0,1,2].includes(b.level),'请选择灯光亮度');life.nightLight=b.level;return;}
  if(b.type==='visit'){
   check(world!==actor&&paired,'只能记录到对方星球的来访',403);title='来到了你的星球';
  }else if(b.type==='shared-meal-eat'){

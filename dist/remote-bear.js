@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {createTeddy} from './teddy.js?v=17';
+import {createTeddy} from './teddy.js?v=18';
 export function createRemoteBear(outdoor,indoor){
  const bear=createTeddy(outdoor,1),a=bear.avatar; a.visible=false;a.userData.remote=true;let target=null,last=0,snap=true;
  const q=new T.Quaternion(),p=new T.Vector3();

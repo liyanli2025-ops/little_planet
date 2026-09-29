@@ -10,7 +10,7 @@ import {homeFree,homeRoute} from './home-layout.js';
 import {createLeisure} from './leisure.js?v=3';
 import {groundedBody,footBottom} from './grounding.js';
 
-import {createTeddy} from './teddy.js?v=17';
+import {createTeddy} from './teddy.js?v=18';
 import {createPet} from './pet.js?v=5';
 import {createWeather} from './weather-fx.js?v=3';
 import {createLifestyle} from './lifestyle.js?v=13';

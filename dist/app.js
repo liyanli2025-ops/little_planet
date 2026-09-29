@@ -18,7 +18,7 @@ import {createEnvironment} from './environment.js?v=4';
 import {closeDaybook} from './immersive.js';
 import {connectCloud,newId} from './cloud.js?v=5';
 const cloud=await connectCloud();
-import {createScene} from './scene.js?v=29';
+import {createScene} from './scene.js?v=30';
 import {createModelView} from './model-room.js?v=10';
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const names=['小禾','阿远'],planets=['慢慢星','晚风星'],cities=['未设置所在地','未设置所在地'];
@@ -61,7 +61,7 @@ function bag(){go(actor);fridge()}
 function kitchen(){
  if(visual?.readState().kitchen?.phase!=='idle')return;
  close();closeDaybook();if(!inside){enter();visual?.request('cook');return}
- const pos=visual?.readState().position;if(pos&&Math.hypot(pos[0]-.8,pos[2]+.84)>.2){visual.request('cook');return}
+ const pos=visual?.readState().position;if(pos&&Math.hypot(pos[0]-visual.readState().cookStop[0],pos[2]-visual.readState().cookStop[1])>.2){visual.request('cook');return}
  const source=pendingCookSource?.world===world?pendingCookSource.id:null;pendingCookSource=null;
  const ingredient=source?state.worlds[world].fridge.find(i=>i.id===source):null;
  if(source&&!ingredient){toast('这份食材已经用过了');return}

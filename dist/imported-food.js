@@ -1,3 +1,4 @@
+import {makeExpandedFood} from './expanded-food.js';
 import {makeUserFood} from './user-food.js';
 import * as T from './vendor/three.module.js';
 import {models} from './assets/styloo/models.js';
@@ -17,7 +18,9 @@ function bowl(parent){piece(parent,'ramenbowl',.4,0,0,0);solid(parent,new T.Cyli
 function shrimp(parent,x,y,z){const pts=Array.from({length:15},(_,j)=>new T.Vector3(x+Math.cos(j*.23)*.035,y+Math.sin(j*.23)*.008,z+Math.sin(j*.23)*.036));solid(parent,new T.TubeGeometry(new T.CatmullRomCurve3(pts),18,.012,8,false),0xeead89,0,0,0)}
 export function makeNoodleDish(kind){const g=makeUserFood('noodles');g.userData.importedDish=kind;return g}
 export function makeImportedFood(id){
+ const expanded=makeExpandedFood(id);if(expanded)return expanded;
  const user=makeUserFood(id);if(user)return user;
+ if(id==='lettuce'){const g=new T.Group();for(let i=0;i<9;i++){const a=i*2.4;const leaf=piece(g,'salad',.20,Math.cos(a)*.065,.035+(i%3)*.027,Math.sin(a)*.065,a);leaf.rotation.z=Math.sin(a)*.35}g.userData.food=id;return g}
  if(id==='salad'){const g=new T.Group();bowl(g);for(let i=0;i<8;i++){const a=i*2.4;const leaf=piece(g,'salad',.155,Math.sin(a)*.085,.18+(i%3)*.022,Math.cos(a)*.08,a);leaf.rotation.z=Math.sin(a)*.35}for(let i=0;i<3;i++){piece(g,'tomatoslice',.075,Math.sin(i*2.1)*.09,.25,Math.cos(i*2.1)*.075,i);piece(g,'cumcumberslice',.068,Math.sin(i*2.1+1)*.075,.245,Math.cos(i*2.1+1)*.09,i)}g.userData.food=id;return g}
  if(id==='cucumber'){const g=new T.Group();piece(g,'plate',.31,0,0,0);for(let i=0;i<4;i++)piece(g,'cumcumberslice',.13,(i-1.5)*.045,.024+i*.005,0,.2);g.userData.food=id;return g}
  const name=assetFoodMap[id];if(!name)return null;const g=makeAsset(name,sizes[id]||.28);g.userData.food=id;if(id==='flour'){const flour=solid(g,new T.SphereGeometry(1,24,16),0xf1e6c9,0,.22,0);flour.scale.set(.088,.023,.053)}return g;

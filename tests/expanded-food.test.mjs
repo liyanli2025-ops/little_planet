@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import {models} from '../dist/assets/food-expansion/models.js';
+import {makeFood} from '../dist/food-models.js';
+import {makeDish} from '../dist/dish-models.js';
+import {Box3,Vector3} from '../dist/vendor/three.module.js';
+const decode=(s,C)=>new C(Uint8Array.from(atob(s),c=>c.charCodeAt(0)).buffer);
+test('expanded assets ship complete geometry and their local textures',()=>{for(const [name,model] of Object.entries(models)){assert(model.meshes.length,name);for(const m of model.meshes){const p=decode(m.position.data,Float32Array),ix=decode(m.index,Uint32Array);assert([...p].every(Number.isFinite),name);assert.equal(ix.length%3,0,name);assert([...ix].every(i=>i<p.length/3),name);assert.equal(decode(m.normal.data,Float32Array).length,p.length,name);if(m.texture){assert.equal(decode(m.uv.data,Float32Array).length,p.length/3*2,name);const bytes=fs.readFileSync(new URL('../dist/assets/food-expansion/'+m.texture,import.meta.url));assert.equal(bytes.toString('ascii',8,12),'WEBP',name)}}}});
+test('new source models reach basic food and corresponding kitchen meals at practical serving size',()=>{for(const id of ['bao','rice','noodles','cooked_steamedbao','cooked_friedrice','cooked_beefnoodles']){const g=makeFood(id),b=new Box3().setFromObject(g),size=b.getSize(new Vector3());assert(Math.max(...size.toArray())<.7,id);assert(size.y>.03,id);assert(b.min.y>-.01,id);let found=false;g.traverse(o=>{if(o.userData.asset?.startsWith('expansion-'))found=true});assert(found,id)}});
+test('four rice and four noodle recipes have different topping geometry',()=>{for(const ids of [['friedrice','beefrice','chickenrice','shrimprice'],['tomatonoodles','beefnoodles','shrimpnoodles','mushroomnoodles']]){const signatures=ids.map(id=>{const g=makeDish(id),a=[];g.traverse(o=>{if(o.geometry)a.push(o.geometry.attributes.position.count)});return a.join(',')});assert.equal(new Set(signatures).size,4)}});

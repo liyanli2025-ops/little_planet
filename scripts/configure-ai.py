@@ -12,8 +12,6 @@ VALUES = {
     'AI_DESIGN_ENABLED': 'true',
     'AI_BASE_URL': 'https://open.bigmodel.cn/api/paas/v4',
     'AI_MODEL': 'glm-4.7-flash',
-    'AI_DESIGN_DAILY_LIMIT': '5',
-    'AI_DESIGN_GLOBAL_DAILY_LIMIT': '50',
 }
 
 def replace_settings(content, key):

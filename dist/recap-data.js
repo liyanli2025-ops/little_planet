@@ -1,4 +1,5 @@
 export function recapKind(title=''){
+ if(/送来.*装扮/.test(title))return 'gift';
  if(/睡|休息|被子/.test(title))return 'sleep';
  if(/单词|书|阅读/.test(title))return 'read';
  if(/歌|音乐|唱片/.test(title))return 'music';

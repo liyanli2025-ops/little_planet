@@ -12,8 +12,6 @@ services:
       AI_API_KEY: "${AI_API_KEY:-}"
       AI_BASE_URL: "${AI_BASE_URL:-}"
       AI_MODEL: "${AI_MODEL:-}"
-      AI_DESIGN_DAILY_LIMIT: "${AI_DESIGN_DAILY_LIMIT:-5}"
-      AI_DESIGN_GLOBAL_DAILY_LIMIT: "${AI_DESIGN_GLOBAL_DAILY_LIMIT:-50}"
       REGISTRATION_CODE: "${REGISTRATION_CODE:-}"
     volumes:
       - planet_data:/data

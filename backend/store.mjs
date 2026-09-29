@@ -180,13 +180,14 @@ export function openStore(filename, connection){
    return get(slot);
   });
  }
- function life(slot,input,names){
+ function life(slot,input,names,onApplied=()=>{}){
   fail(input&&id(input.command)&&integer(input.revision),'互动请求不正确');
   return transaction(()=>{
    const digest=hash(JSON.stringify(input)),receipt=db.prepare('SELECT digest FROM receipts WHERE slot=? AND command=?').get(slot,input.command);
    if(receipt){fail(receipt.digest===digest,'重复请求内容不同',409);return get(slot)}
    const row=read();fail(row.revision===input.revision,'存档刚刚更新，请稍后再试',409);
    applyLife(row.state,slot,row.paired,input,Date.now(),randomUUID,names);
+   onApplied();
    db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state));
    db.prepare('INSERT INTO receipts(slot,command,digest,created) VALUES(?,?,?,?)').run(slot,input.command,digest,Date.now());
    return get(slot);

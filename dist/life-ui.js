@@ -1,15 +1,15 @@
 import {outfits} from './outfits.js';
 import {createGardenUI} from './garden-ui.js';
 import {crops,applyLife,freshLife} from './life-state.js';
-export function createLifeUI({context,replace,save,refresh,cloud,modal,close,toast,handlers,request,dock,endOutdoor,setMode}){
+export function createLifeUI({context,replace,save,refresh,cloud,modal,close,toast,handlers,request,dock,endOutdoor,setMode,onOutfit=()=>{}}){
  const icons={rose:'🌹',tulip:'🌷',sunflower:'🌻',daisy:'🌼',lavender:'🪻',hydrangea:'💠',lily:'⚜',tomato:'🍅',carrot:'🥕',strawberry:'🍓'};let busy=false;
  const c=()=>context(),button=(action,label,extra='')=>`<button class="pill" data-do="${action}" ${extra}>${label}</button>`;
  async function action(data){if(busy)return false;busy=true;document.querySelectorAll('#panel-body button').forEach(b=>b.disabled=true);try{if(cloud){if(!await cloud.life({world:c().world,...data}))return false}else{const next=structuredClone(c().state);applyLife(next,c().actor,true,{world:c().world,...data});replace(next);save();refresh()}if(!['plant','water','harvest','outfit','basket'].includes(data.type))toast('已经保存，也记进手账了。');return true}catch(e){toast(e.message);return false}finally{busy=false;document.querySelectorAll('#panel-body button').forEach(b=>b.disabled=false)}}
  const gardenUI=createGardenUI({context,action,close,toast});
  function garden(){if((c().state.worlds[c().world].theme??c().world)!==0)return toast('这个星球没有花园。');gardenUI.open()}
  function vase(){const flowers=c().state.worlds[c().world].life?.vase||[],bag=c().state.worlds[c().actor].life?.flowers||{},available=Object.entries(crops).filter(([id,v])=>v.flower&&bag[id]>0);modal('vase','','插花',`<div class="bouquet-preview">${flowers.map(f=>icons[f]).join(' ')||'✿'}</div><div class="chips">${available.map(([id,v])=>button('life-vase',`${icons[id]} ${v.name}`,`data-crop="${id}" ${flowers.length>=8?'disabled':''}`)).join('')}</div>${!available.length?'<p class="subtle">去花园摘几朵喜欢的花吧。</p>':''}${flowers.length?button('life-clear','整理花瓶'):''}`)}
- function wardrobe(){close();c().visual?.wardrobe(true);setMode('wardrobe');dock('')}
- async function wear(id){if(!Object.hasOwn(outfits,id)||busy||c().state.worlds[c().actor].life?.outfit===id)return;const visual=c().visual;if(!visual?.changeOutfit(id))return;dock('<span>'+outfits[id].name+'</span>');const ok=await action({type:'outfit',outfit:id});visual.finishOutfit(ok)}
+ function wardrobe(){close();c().visual?.wardrobe(true);setMode('wardrobe');dock(c().world===c().actor?'<button data-do=design-gifts>收到的装扮</button>':'')}
+ async function wear(id){if(!Object.hasOwn(outfits,id)||busy||c().visual?.readState().outfit===id)return;const visual=c().visual;if(!visual?.changeOutfit(id))return;dock('<span>'+outfits[id].name+'</span>');const ok=await action({type:'outfit',outfit:id});try{if(ok)await onOutfit()}catch(e){toast(e.message)}finally{visual.finishOutfit(ok)}}
  function desk(index){close();if(!c().visual?.deskSit(index))return;setMode('desk');dock((c().world===c().actor?'<button data-do="design-open">设计角</button>':''))}
 
  function bathroom(){modal('bathroom','TAKE CARE OF YOURSELF','二层洗手间','<div class="form-actions">'+button('life-wash','洗洗手','data-kind="hands"')+button('life-wash','刷牙洗漱','data-kind="brush"')+'</div>')}
@@ -20,5 +20,5 @@ export function createLifeUI({context,replace,save,refresh,cloud,modal,close,toa
  handlers['life-vase']=async b=>{await action({type:'vase',crop:b.dataset.crop});vase()};handlers['life-clear']=async()=>{await action({type:'clear-vase'});vase()};
  handlers['life-outfit']=async b=>{await action({type:'outfit',outfit:b.dataset.outfit});wardrobe()};
  handlers['life-wash']=async b=>{if(await action({type:'wash',kind:b.dataset.kind})){close();c().visual?.wash()}};
- return {hideGarden:()=>gardenUI.hide(),show(name){if(name.startsWith('outfit-')&&name!=='outfit-complete'){wear(name.slice(7));return true}if(name==='outfit-complete'){dock('');return true}if(/^desk-[01]$/.test(name)){desk(Number(name.slice(-1)));return true}if(name==='garden-leave'){gardenUI.hide();return true}if(/^garden-plot-[0-5]$/.test(name)){gardenUI.open(Number(name.slice(-1)));return true}const fn={garden,basketball,bathroom,wardrobe,vase}[name];if(!fn)return false;fn();return true}};
+ return {hideGarden:()=>gardenUI.hide(),show(name){if(name==='outfit-gifts'){handlers['design-gifts']?.();return true}if(name.startsWith('outfit-')&&name!=='outfit-complete'){wear(name.slice(7));return true}if(name==='outfit-complete'){dock('');return true}if(/^desk-[01]$/.test(name)){desk(Number(name.slice(-1)));return true}if(name==='garden-leave'){gardenUI.hide();return true}if(/^garden-plot-[0-5]$/.test(name)){gardenUI.open(Number(name.slice(-1)));return true}const fn={garden,basketball,bathroom,wardrobe,vase}[name];if(!fn)return false;fn();return true}};
 }

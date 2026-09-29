@@ -30,17 +30,17 @@ test('two tabs cannot overwrite each other; proposal expiry and history retentio
  for(let i=0;i<23;i++){const p=await example(s);s.accept(1,{id:p.id,version:p.base})}
  assert.equal(s.view(1).history.length,20);assert.throws(()=>s.rollback(1,{version:24,target:1}),/不可用/);assert.equal(s.rollback(1,{version:24,target:0}).version,25);db.close();
 });
-test('AI credential stays server-side; retries do not double charge; daily user/global quota',async()=>{
+test('AI credential stays server-side; retries do not double charge; daily limits removed',async()=>{
  let calls=0;const {db,s}=setup({env,fetcher:async(url,opts)=>{calls++;assert.equal(opts.headers.Authorization,'Bearer server-secret');const b=JSON.parse(opts.body);assert.equal(b.tools[0].function.parameters.additionalProperties,false);return result(designExamples.home)}});
  const p=await s.generate(1,request('a'));assert.equal(p.source,'ai');assert.equal((await s.generate(1,request('a'))).id,p.id);assert.equal(calls,1);
- await s.generate(1,request('b'));await assert.rejects(s.generate(1,request('c')),/次数用完/);
- await s.generate(2,request('d'));await assert.rejects(s.generate(3,request('e')),/额度已用完/);
+ for(let i=0;i<55;i++)await s.generate(1,request('unlimited'+i));
+ await s.generate(2,request('d'));await s.generate(3,request('e'));assert.equal(s.view(1).remaining,null);
  assert.ok(!JSON.stringify(s.view(1)).includes('server-secret'));db.close();
 });
 test('unconfigured provider offers explicitly marked example; invalid AI output never saves',async()=>{
  const offline=setup();await assert.rejects(offline.s.generate(1,request('a')),/尚未开启/);assert.equal((await example(offline.s)).source,'example');offline.db.close();
  for(const fetcher of [async()=>result({...designExamples.home,wall:'execute-code'}),async()=>new Response('{oops'),async()=>{throw Error('provider server-secret')},async()=>new Response('{}',{status:500})]){
- const {db,s}=setup({env,fetcher});await assert.rejects(s.generate(1,request('a')),e=>!e.message.includes('server-secret'));assert.equal(s.current(1).version,0);assert.equal(s.view(1).remaining,1);db.close();
+ const {db,s}=setup({env,fetcher});await assert.rejects(s.generate(1,request('a')),e=>!e.message.includes('server-secret'));assert.equal(s.current(1).version,0);assert.equal(s.view(1).remaining,null);db.close();
  }
 });
 import * as T from '../dist/vendor/three.module.js';
@@ -72,4 +72,19 @@ test('BigModel Flash disables thinking without sending provider flags to other e
  const {db,s}=setup({env:{...env,AI_BASE_URL:base,AI_MODEL:'glm-4.7-flash'},fetcher:async(url,options)=>{const b=JSON.parse(options.body);assert.equal(url.pathname.endsWith('/chat/completions'),true);if(url.hostname==='open.bigmodel.cn')assert.deepEqual(b.thinking,{type:'disabled'});else assert.equal(b.thinking,undefined);return result(designExamples.home)}});
  assert.equal((await s.generate(1,request('glm'))).source,'ai');db.close();
  }
+});
+
+
+test('gift belongs to recipient, never auto-equips, is idempotent and survives unlink',async()=>{
+ let paired=true,events=0;const {db,s}=setup({partner:id=>paired?{id:id===1?2:1}:null,onGift:()=>events++});
+ const p=await example(s,1,'outfit');s.gift(1,{id:p.id,partnerId:2});s.gift(1,{id:p.id,partnerId:2});assert.equal(events,1);assert.equal(s.view(2).gifts.length,1);assert.equal(s.current(2).version,0);assert.equal(s.current(1).version,0);
+ const id=s.view(2).gifts[0].id;assert.throws(()=>s.wearGift(1,{id,version:0}),/没有/);paired=false;assert.throws(()=>s.gift(1,{id:p.id,partnerId:2}),/配对/);assert.equal(s.view(2).gifts.length,1);
+ s.wearGift(2,{id,version:0});assert.deepEqual(s.current(2).design.outfit,designExamples.outfit);assert.deepEqual(s.rollback(2,{version:1,target:0}).design,defaultDesign());db.close();
+});
+test('gift event failure rolls back delivery, legacy designs acquire defaults',async()=>{
+ const {db,s}=setup({partner:()=>({id:2}),onGift:()=>{throw Error('event failed')}});const p=await example(s,1,'outfit');assert.throws(()=>s.gift(1,{id:p.id,partnerId:2}),/event failed/);assert.equal(s.view(2).gifts.length,0);
+ const d=defaultDesign();for(const k of ['garment','hat','shoes','accessory'])delete d.outfit[k];delete d.home.layout;db.prepare('INSERT INTO account_designs VALUES(?,?,?)').run(1,1,JSON.stringify(d));assert.deepEqual(s.current(1).design,defaultDesign());db.close();
+});
+test('one in-flight generation per account releases after failure',async()=>{
+ let finish;const {db,s}=setup({env,fetcher:()=>new Promise(r=>finish=r)});const pending=s.generate(1,request('first'));await assert.rejects(s.generate(1,request('second')),/仍在生成/);finish(result(designExamples.home));await pending;assert.equal(db.prepare("SELECT count(*) n FROM design_requests WHERE status='pending'").get().n,0);db.close();
 });

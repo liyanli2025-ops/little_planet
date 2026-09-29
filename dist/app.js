@@ -179,7 +179,7 @@ handlers['sleep-now']=()=>{
 };
 
 handlers['desk-0']=()=>requestAction('desk-0');
-const lifeUI=createLifeUI({context:()=>({state,world,actor,visual,panel:currentPanel}),replace:next=>state=next,save,refresh,cloud,modal,close,toast,handlers,request:requestAction,dock,endOutdoor,setMode:m=>outdoorMode=m});
+const lifeUI=createLifeUI({context:()=>({state,world,actor,visual,panel:currentPanel}),replace:next=>state=next,save,refresh,cloud,modal,close,toast,handlers,request:requestAction,dock,endOutdoor,setMode:m=>outdoorMode=m,onOutfit:()=>designUI?.reload()});
 $('#go-garden').onclick=()=>requestAction((state.worlds[world].theme??world)===0?'garden':'basketball');
 
 const mediaUI=createMediaUI({names,context:()=>({state,actor,world,visual,panel:currentPanel}),cloud,modal,close,toast,handlers,request:requestAction,enter,bench:()=>{if(inside){inside=false;visual?.enter(false);refresh()}visual?.request('sit')},journal,record,save,returnOwnShelf:()=>{go(actor);enter()}});

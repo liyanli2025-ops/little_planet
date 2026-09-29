@@ -60,7 +60,7 @@ export function openStore(filename, connection){
   fail(id(e.id)&&[0,1].includes(e.actor)&&[0,1].includes(e.world)&&text(e.title,160)&&e.title.trim().length>0&&text(e.body,2000)&&text(e.weather,200));
   fail(typeof e.shared==='boolean'&&integer(e.created,0,9000000000000000));
   if(note)fail(['memory','anniversary','calendar'].includes(e.kind)&&/^\d{4}-\d{2}-\d{2}$/.test(e.date)&&typeof e.repeat==='boolean');
-  if(note&&e.kind==='calendar')fail(validCalendarDate(e.date)&&!e.repeat,'记事日期不正确');
+  if(note&&['calendar','anniversary'].includes(e.kind))fail(validCalendarDate(e.date)&&(e.kind==='anniversary'||!e.repeat),'记事日期不正确');
   if(!note){
    fail([null,0,1].includes(e.target)&&typeof e.pending==='boolean'&&e.kind==='life');
    fail(Array.isArray(e.steps)&&e.steps.length<=500&&e.steps.every(s=>keys(s,['text','at'])&&text(s.text,500)&&integer(s.at,0,9000000000000000)));

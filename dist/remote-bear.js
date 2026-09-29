@@ -1,0 +1,11 @@
+import * as T from './vendor/three.module.js';
+import {createTeddy} from './teddy.js?v=16';
+export function createRemoteBear(outdoor,indoor){
+ const bear=createTeddy(outdoor,1),a=bear.avatar; a.visible=false;a.userData.remote=true;let target=null,last=0,snap=true;
+ const q=new T.Quaternion(),p=new T.Vector3();
+ return {receive(next){snap=!target||!next||target.world!==next.world||target.room!==next.room||target.floor!==next.floor;target=next;last=performance.now()},tick(dt,world,room,floor,localPosition,roomFree){
+  a.visible=!!target&&performance.now()-last<10000&&target.world===world&&target.room===room&&(!room||target.floor===floor);if(!a.visible)return;
+  const parent=room?indoor:outdoor;if(a.parent!==parent){parent.add(a);snap=true}const k=snap?1:1-Math.exp(-dt*9);p.fromArray(target.position);if(p.distanceTo(localPosition)<.62){if(room){for(const [dx,dz]of [[.68,0],[-.68,0],[0,.68],[0,-.68]]){if(roomFree(p.x+dx,p.z+dz)){p.x+=dx;p.z+=dz;break}}}else{const radius=p.length(),normal=p.clone().normalize(),tangent=new T.Vector3().crossVectors(normal,new T.Vector3(0,1,0));if(tangent.length()<.01)tangent.set(1,0,0);p.addScaledVector(tangent.normalize(),.68).normalize().multiplyScalar(radius)}}q.fromArray(target.quaternion);a.position.lerp(p,k);a.quaternion.slerp(q,k);bear.setIdentity(target.identity);bear.sleep(target.sleeping);bear.headphones(target.listening);bear.outfit(target.outfit);
+  bear.body.position.lerp(p.fromArray(target.bodyPosition),k);['x','y','z'].forEach((axis,i)=>bear.body.rotation[axis]+=(target.bodyRotation[i]-bear.body.rotation[axis])*k);for(const [name,parts]of [['arms',bear.arms],['legs',bear.legs]])parts.forEach((g,i)=>['x','y','z'].forEach((axis,j)=>g.rotation[axis]+=(target[name][i][j]-g.rotation[axis])*k));snap=false;
+ },state(){return {visible:a.visible,position:a.position.toArray(),identity:a.userData.identity,world:target?.world,room:target?.room}},dispose(){a.removeFromParent();const gs=new Set(),ms=new Set(),ts=new Set();a.traverse(o=>{if(o.geometry)gs.add(o.geometry);for(const m of o.material?[].concat(o.material):[]){ms.add(m);if(m.bumpMap)ts.add(m.bumpMap)}});gs.forEach(g=>g.dispose());ms.forEach(m=>m.dispose());ts.forEach(t=>t.dispose())}};
+}

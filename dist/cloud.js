@@ -1,5 +1,5 @@
 import {authenticate} from './auth-ui.js';
-import {reconcileState} from './state-reconcile.js';
+import {reconcileState} from './state-reconcile.js?v=2';
 
 const escapeHTML=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const copy=x=>JSON.parse(JSON.stringify(x));
@@ -44,10 +44,17 @@ export async function connectCloud(){
   clearTimeout(timer);timer=null;if(blocked||lifeRequest)return false;if(flight)return flight;
   const state=copy(hooks.getState()),serialized=JSON.stringify(state);
   if(!pending&&serialized===base)return true;
-  const request=pending||{state,revision,command:newId()};pending=request;status.textContent='☁ 正在保存…';
+  let request=pending||{state,revision,command:newId()};pending=request;status.textContent='☁ 正在保存…';
   flight=(async()=>{
    try{
-    const ack=await api('/api/state',request,session.csrf);
+    let ack;
+    for(let attempt=0;attempt<3;attempt++){try{ack=await api('/api/state',request,session.csrf);break}catch(e){
+     if(e.status!==409||attempt===2)throw e;const next=await api('/api/state');if(next.space!==session.space)throw e;
+     const merged=reconcileState(JSON.parse(base),request.state,next.state);if(merged.conflicts.length)throw e;
+     const live=reconcileState(request.state,hooks.getState(),merged.state);if(live.conflicts.length)throw e;
+     revision=next.revision;paired=next.paired;base=JSON.stringify(next.state);hooks.apply(live.state,true);
+     request={state:merged.state,revision,command:newId()};pending=request;
+    }}
     const changed=JSON.stringify(hooks.getState())!==JSON.stringify(request.state);
     // A retried request may return a newer revision. Never place a stale local draft on top of it.
     if(changed&&ack.revision!==request.revision+1){const e=new Error('云端已经有新的修改，请导出当前副本后重新载入。');e.status=409;throw e}
@@ -83,7 +90,7 @@ export async function connectCloud(){
   state:current.state,session,get lastActionError(){return lastActionError},get paired(){return paired},
   save:schedule,flush,refresh,
   get canAutoSync(){return !!hooks&&!lifeBusy&&!blocked&&!flight&&!pending&&!polling&&JSON.stringify(hooks.getState())===base},
-  attach(h){hooks=h;status.onclick=()=>h.settings();setInterval(refresh,5000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();else if(!blocked)flush()})},
+  attach(h){hooks=h;status.onclick=()=>h.settings();setInterval(refresh,1000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh();else if(!blocked)flush()})},
   async radioView(mode='discover'){return api('/api/fm?mode='+encodeURIComponent(mode))},
   async radioTrack(id){return api('/api/fm/track?id='+encodeURIComponent(id))},
   async radio(data){return this.life(data,'/api/fm')},
@@ -94,8 +101,12 @@ export async function connectCloud(){
    if(lifeBusy){lastActionError='另一项互动正在保存，请稍后重试。';return null}lifeBusy=true;lastActionError='';
    try{
     do{if(!(await flush())){lastActionError='存档尚未保存，请先处理存档提示。';return null}}while(pending||JSON.stringify(hooks.getState())!==base);
-    const before=copy(hooks.getState());lifeRequest=true;
-    const r=await api(url,{...data,revision,command:newId()},session.csrf);
+    let before=copy(hooks.getState());lifeRequest=true;let r;
+    for(let attempt=0;attempt<3;attempt++){try{r=await api(url,{...data,revision,command:newId()},session.csrf);break}catch(e){
+     if(e.status!==409||attempt===2)throw e;const next=await api('/api/state');if(next.space!==session.space)throw e;
+     const merged=reconcileState(before,hooks.getState(),next.state);if(merged.conflicts.length)throw e;
+     revision=next.revision;paired=next.paired;base=JSON.stringify(next.state);hooks.apply(merged.state,true);before=copy(next.state);
+    }}
     const merged=reconcileState(before,hooks.getState(),r.state);
     if(merged.conflicts.length){const e=new Error('互动已保存，但同一份内容还有未保存的修改。请先导出副本，再重新载入。');e.status=409;lastActionError=e.message;showFailure(e);return null}
     revision=r.revision;paired=r.paired;base=JSON.stringify(r.state);hooks.apply(merged.state,true);status.textContent='☁ 生活互动已保存';return r;

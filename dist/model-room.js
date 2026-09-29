@@ -1,4 +1,5 @@
 import {createCookingView} from './cooking-view.js';
+import {createPlant} from './garden-models.js';
 import {makeDish} from './dish-models.js';
 import {createFridgeView} from './fridge-view.js';
 import * as T from './vendor/three.module.js';
@@ -36,11 +37,13 @@ plate=food(options.recipe||'omelet',root);plate.position.set(-.55,.22,.33);plate
 const boardTarget=box(root,0xb89864,-.76,.259,.34,1.47,.008,.8);boardTarget.userData.item={step:true,id:'board'};pickables.push(boardTarget);panGroup.traverse(m=>{if(m.isMesh&&!steam.includes(m)){m.userData.item={step:true,id:'pan'};pickables.push(m)}});
 label(root,'MADE WITH CARE',0,.04,1.05,1.8,.1);
 }else{
-const count=Math.min(6,(options.items||[]).length),width=count<=1?1.6:count===2?2.5:3.7,depth=count<=3?1.3:1.9;box(root,0xbca074,0,.02,0,width,.14,depth);box(root,0xe2d6b8,0,.102,0,width-.22,.012,depth-.22);
-(options.items||[]).slice(0,6).forEach((item,i)=>{let g=item.locked?new T.Group():makeDish(item.recipe);if(!g.parent)root.add(g);g.position.set(count<=3?(i-(count-1)/2)*1.05:(i%3-1)*1.05,.11,count<=3?0:(Math.floor(i/3)-.5)*.80);g.scale.setScalar(count<=1?2:1.7);if(item.locked){g.clear();box(g,0xb3c5a2,0,.16,0,.55,.28,.42);box(g,0xd4dfbb,0,.32,0,.59,.04,.45)}selectable(g,item)});
+const count=Math.min(6,(options.items||[]).length),width=count<=1?2.1:count===2?2.5:3.7,depth=count<=3?1.8:2.4;box(root,0xbca074,0,.02,0,width,.14,depth);box(root,0xe2d6b8,0,.102,0,width-.22,.012,depth-.22);
+(options.items||[]).slice(0,6).forEach((item,i)=>{let g=item.locked?new T.Group():makeDish(item.recipe);if(!g.parent)root.add(g);g.position.set(count===1?-.25:count<=3?(i-(count-1)/2)*1.05:(i%3-1)*1.05,.11,count<=3?0:(Math.floor(i/3)-.5)*.80);g.scale.setScalar(count<=1?2:1.7);if(item.locked){g.clear();box(g,0xb3c5a2,0,.16,0,.55,.28,.42);box(g,0xd4dfbb,0,.32,0,.59,.04,.45)}selectable(g,item)});
+ const vase=group(root,width/2-.25,.11,-depth/2+.30);cyl(vase,0x9ebeb2,0,.20,0,.10,.15,.40);cyl(vase,0xe1e6ca,0,.405,0,.10,.10,.018);
+ (options.vase||[]).forEach((type,i)=>{const plant=createPlant(vase,type,true);plant.scale.setScalar(1.4);plant.position.set(Math.cos(i*2.4)*.045,.28,Math.sin(i*2.4)*.045);plant.rotation.z=Math.sin(i*2.4)*.25});vase.traverse(m=>{if(m.isMesh){m.userData.vase=true;pickables.push(m)}});
 }
 function resize(){let w=host.clientWidth,h=host.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}let observer=new ResizeObserver(resize);observer.observe(host);resize();
-let ray=new T.Raycaster(),down=null;renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,yaw};renderer.domElement.setPointerCapture(e.pointerId)});renderer.domElement.addEventListener('pointermove',e=>{if(down)yaw=T.MathUtils.clamp(down.yaw+(e.clientX-down.x)*.004,-.45,.6)});renderer.domElement.addEventListener('pointerup',e=>{if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<7){let rect=host.getBoundingClientRect();ray.setFromCamera(new T.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);let hit=ray.intersectObjects(pickables).find(h=>h.object.visible&&h.object.parent.visible);if(hit){if(mode==='cook')options.onStep?.();else{api.select(hit.object.userData.item.id);options.onSelect?.(hit.object.userData.item)}}}down=null});renderer.domElement.addEventListener('pointercancel',()=>down=null);
+let ray=new T.Raycaster(),down=null;renderer.domElement.addEventListener('pointerdown',e=>{down={x:e.clientX,y:e.clientY,yaw};renderer.domElement.setPointerCapture(e.pointerId)});renderer.domElement.addEventListener('pointermove',e=>{if(down)yaw=T.MathUtils.clamp(down.yaw+(e.clientX-down.x)*.004,-.45,.6)});renderer.domElement.addEventListener('pointerup',e=>{if(down&&Math.hypot(e.clientX-down.x,e.clientY-down.y)<7){let rect=host.getBoundingClientRect();ray.setFromCamera(new T.Vector2((e.clientX-rect.left)/rect.width*2-1,-(e.clientY-rect.top)/rect.height*2+1),camera);let hit=ray.intersectObjects(pickables).find(h=>h.object.visible&&h.object.parent.visible);if(hit){if(hit.object.userData.vase){options.onVase?.();down=null;return}if(mode==='cook')options.onStep?.();else{api.select(hit.object.userData.item.id);options.onSelect?.(hit.object.userData.item)}}}down=null});renderer.domElement.addEventListener('pointercancel',()=>down=null);
 let clock=new T.Clock(),last=0;
 function draw(){if(!active)return;frame=requestAnimationFrame(draw);let t=clock.getElapsedTime(),dt=Math.min(.05,t-last);last=t;root.rotation.y=yaw;
 if(door){doorAngle+=(-2.8-doorAngle)*(1-Math.exp(-dt*3.6));door.rotation.y=doorAngle}
@@ -51,3 +54,4 @@ let mobile=host.clientWidth<450;camera.position.set(mode==='fridge'?3.2:3.2,mode
 const api={select(id){selection=id},step(v){stage=v},consume(id){let e=itemModels.find(e=>e.item.id===id);if(!e)return Promise.resolve();return new Promise(done=>{consuming={g:e.g,scale:e.g.scale.x,start:clock.getElapsedTime(),done}})},state(){return {mode,stage,selected:selection,items:itemModels.map(e=>e.item.id),door:doorAngle}},dispose(){active=false;cancelAnimationFrame(frame);observer.disconnect();if(consuming){consuming.done();consuming=null}scene.traverse(m=>{if(m.isMesh){m.geometry.dispose();if(m.material.map&&!m.material.userData.foodAsset)m.material.map.dispose();m.material.dispose()}});renderer.dispose();renderer.forceContextLoss();renderer.domElement.remove()}};
 host.getModelState=api.state;draw();return api;
 }
+

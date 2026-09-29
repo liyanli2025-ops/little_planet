@@ -1,0 +1,4 @@
+export function connectPresence({cloud,snapshot,receive}){
+ let busy=false,last=0;async function send(){if(busy)return;const pose=document.hidden?{hidden:true}:snapshot();if(!pose)return;busy=true;try{const r=await fetch('/api/presence',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':cloud.session.csrf,'X-Planet-Space':String(cloud.session.space)},body:JSON.stringify(pose),signal:AbortSignal.timeout(5000)});if(r.ok){const data=await r.json();receive(data.peer);last=Date.now()}else if(r.status===401||r.status===409){receive(null)}}catch{if(Date.now()-last>10000)receive(null)}finally{busy=false}}
+ setInterval(send,500);document.addEventListener('visibilitychange',send);window.addEventListener('online',send);send();
+}

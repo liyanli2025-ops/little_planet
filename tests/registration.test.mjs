@@ -77,3 +77,20 @@ test('legacy unpaired users are not silently bound during migration',async()=>{
  const dir=fs.mkdtempSync(path.join(os.tmpdir(),'echoo-unpaired-')),file=path.join(dir,'state.sqlite'),old=openStore(file),salt='old-salt';for(const slot of [0,1])old.db.prepare('INSERT INTO users VALUES(?,?,?,?,?)').run(slot,'legacy'+slot,salt,scryptSync('test-password-123',salt,64).toString('hex'),123);old.db.close();const server=await start(file);
  try{const a=await server.request('/api/login',{username:'legacy0',password:'test-password-123'}),b=await server.request('/api/login',{username:'legacy1',password:'test-password-123'});assert.equal(a.body.paired,false);assert.equal(b.body.paired,false);assert.notEqual(a.space,b.space)}finally{await server.close();fs.rmSync(dir,{recursive:true,force:true})}
 });
+
+test('live presence requires authentication, CSRF and current pairing, and cannot impersonate a peer',async()=>{
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'echoo-live-api-')),s=await start(path.join(dir,'state.sqlite'));
+ try{let a=await s.request('/api/register',signup('livealice',0)),b=await s.request('/api/register',signup('livebobby',1)),c=await s.request('/api/register',signup('livecarol',0));
+ const invitation=await s.request('/api/invite',{},a);await s.request('/api/pair',{code:invitation.body.code,partnerId:a.body.accountId},b);
+ for(const u of [a,b]){const v=await s.request('/api/session',undefined,u);u.space=v.body.space;u.csrf=v.body.csrf}
+ const pose={world:0,room:false,floor:0,position:[0,6,0],quaternion:[0,0,0,1],bodyPosition:[0,0,0],bodyRotation:[0,0,0],arms:[[0,0,0],[0,0,0]],legs:[[0,0,0],[0,0,0]]};
+ assert.equal((await s.request('/api/presence',pose)).status,401);
+ assert.equal((await s.request('/api/presence',pose,{...a,csrf:'bad'})).status,403);
+ assert.equal((await s.request('/api/presence',{...pose,world:1},c)).status,403);
+ assert.equal((await s.request('/api/presence',{...pose,accountId:a.body.accountId,identity:0},b)).status,200);
+ let v=await s.request('/api/presence',pose,a);assert.equal(v.body.peer.identity,1);assert.equal(v.body.peer.actor,1);
+ assert.equal((await s.request('/api/presence',pose,c)).body.peer,null);
+ await s.request('/api/travel',{action:'depart'},b);assert.equal((await s.request('/api/presence',pose,a)).body.peer,null);
+ await s.request('/api/unpair',{},a);assert.equal((await s.request('/api/presence',pose,b)).status,409);
+ }finally{await s.close();fs.rmSync(dir,{recursive:true,force:true})}
+});

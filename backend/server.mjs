@@ -1,3 +1,4 @@
+import {createPresence} from './presence.mjs';
 import {createTravelService} from './travel.mjs';
 
 import http from 'node:http';
@@ -21,6 +22,7 @@ const filename=process.env.DATABASE_PATH||path.resolve('data/planet.sqlite');
 const hub=openAccounts(filename),db=hub.db;
 async function environmentFor(u){const result=await hub.space(u.space).weatherService.get(u.slot,!!hub.partner(u));fail(hub.account(u.id).space===u.space,'配对状态已更新，请刷新后重试',409);return result}
 const travelService=createTravelService(db);
+const presence=createPresence();
 const ttl=7*86400000;
 const rates=new Map();
 function rate(req,kind,max=20){
@@ -66,7 +68,7 @@ function registrationInfo(){return {first:db.prepare('SELECT COUNT(*) AS n FROM 
 function identity(u){const p=hub.partner(u),avatars=[0,1];avatars[u.slot]=u.avatar;if(p)avatars[1-u.slot]=p.avatar;return {authenticated:true,secure,accountId:u.id,legacyActor:db.prepare('SELECT slot FROM users WHERE username=?').get(u.username)?.slot,space:u.space,actor:u.slot,username:u.username,nickname:u.nickname||u.username,displayNames:hub.displayNames(u),partnerNickname:p?.nickname||p?.username||null,csrf:u.csrf,partner:p?.username||null,paired:!!p,avatars,invitationExpires:db.prepare('SELECT expires FROM account_invites WHERE account=?').get(u.id)?.expires||null,registration:registrationInfo()}}
 async function api(req,res,p){
  const current=session(req),services=current?hub.space(current.space):null,store=services?.store,mediaService=services?.mediaService,musicService=services?.musicService,weatherService=services?.weatherService;
- store?.expireMeals();
+ if(p!=='/api/presence')store?.expireMeals();
  if(req.method==='GET'&&p==='/api/health')return json(res,200,{ok:true});
  if(req.method==='GET'&&p==='/api/session'){
   const u=session(req);return json(res,200,u?identity(u):{authenticated:false,secure,registration:registrationInfo()});
@@ -108,6 +110,7 @@ async function api(req,res,p){
  fail(req.headers['x-csrf-token']===u.csrf,'会话验证失败，请刷新页面',403);
  fail(String(u.space)===req.headers['x-planet-space'],'账号或配对状态已更新，请刷新页面后重试',409);
 
+ if(p==='/api/presence'){fail(b&&typeof b==='object','位置不正确');const peer=hub.partner(u);fail(b.hidden===true||b.world===u.slot||peer,'请先配对再访问对方',403);presence.update(u,travelService.active(u.id)?{hidden:true}:b);return json(res,200,{peer:peer&&!travelService.active(peer.id)?presence.peer(u,peer):null})}
  if(p==='/api/travel'){rate(req,'travel',40);fail(['depart','collect'].includes(b.action),'旅行操作不存在');return json(res,200,b.action==='depart'?travelService.depart(u.id,u.avatar):travelService.collect(u.id))}
  if(p==='/api/account/profile'){rate(req,'profile',30);hub.profile(u.id,b.nickname);return json(res,200,identity({...u,...hub.account(u.id)}))}
  if(p==='/api/environment'){
@@ -130,6 +133,7 @@ async function api(req,res,p){
  if(p==='/api/pair'){rate(req,'pair',20);const next=hub.accept(u.id,b.code,b.partnerId);return json(res,200,{ok:true,...identity(next)})}
  if(p==='/api/unpair'){const next=hub.unlink(u.id);return json(res,200,{ok:true,...identity(next)})}
  if(p==='/api/logout'){
+  presence.remove(u.id);
   db.prepare('DELETE FROM account_sessions WHERE token=?').run(u.token);
   res.setHeader('Set-Cookie','planet_session=; Path=/; HttpOnly; SameSite=Strict; Max-Age=0'+(secure?'; Secure':''));
   return json(res,200,{ok:true});

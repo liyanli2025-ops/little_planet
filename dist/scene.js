@@ -133,7 +133,7 @@ function moveRoom(dir,dt){let next=avatar.position.clone().addScaledVector(dir,d
 const remoteBear=createRemoteBear(outdoor,indoor);
 const clock=new T.Clock();let prevTime=0;
 function animate(){if(disposed)return;frameId=requestAnimationFrame(animate);const t=clock.getElapsedTime(),dt=Math.min(.04,t-prevTime);prevTime=t;let moving=false;let [ix,iy]=directionInput();const modalOpen=!!document.querySelector('dialog[open]');
-if(modalOpen||travelling){keys.clear();ix=iy=0}avatar.visible=!travelling&&(!wardrobeInspect||!!changing);camera.layers.set(wardrobeInspect?1:0);if(wardrobeInspect){avatar.traverse(o=>o.layers.enable(1));scene.traverse(o=>{if(o.isLight)o.layers.enable(1)})}albumProp.tick(dt);remoteBear.tick(dt,world,room,floor,avatar.position,roomFree);
+if(modalOpen||travelling){keys.clear();ix=iy=0}avatar.visible=!travelling&&(!wardrobeInspect||!!changing);camera.layers.set(wardrobeInspect?1:0);if(wardrobeInspect){avatar.traverse(o=>o.layers.enable(1));scene.traverse(o=>{if(o.isLight)o.layers.enable(1)})}albumProp.tick(dt);remoteBear.tick(dt,world,room,floor,avatar.position,roomFree,cozy.layout);loft.sleep(sleeping||(remoteBear.state().visible&&remoteBear.state().sleeping));
 if(room){if(stairMotion){
  if(!modalOpen){stairMotion.t=Math.min(1,stairMotion.t+dt/3.6);const u=stairMotion.t,to=stairMotion.to;
  const L=cozy.layout,stop=L[to?'upper':'lower'].stops.stairs,bottom=new T.Vector3(L.stairX,.022,2.2),top=new T.Vector3(L.stairX,2.722,-1.65),end=new T.Vector3(stop[0],to*2.7+.022,stop[1]);

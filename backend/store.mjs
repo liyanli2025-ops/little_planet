@@ -1,3 +1,4 @@
+import {validCalendarDate} from '../dist/calendar-state.js';
 import {expireTableMeals} from '../dist/meal-expiry.js';
 import {migrateStorage} from '../dist/kitchen-state.js';
 import {recipes} from '../dist/recipe-catalog.js';
@@ -58,8 +59,9 @@ export function openStore(filename, connection){
   fail(keys(e,note?['id','actor','world','title','body','date','kind','shared','repeat','created','weather','comments']:['id','title','body','actor','world','target','shared','pending','kind','created','weather','steps','comments']));
   fail(id(e.id)&&[0,1].includes(e.actor)&&[0,1].includes(e.world)&&text(e.title,160)&&e.title.trim().length>0&&text(e.body,2000)&&text(e.weather,200));
   fail(typeof e.shared==='boolean'&&integer(e.created,0,9000000000000000));
-  if(note)fail(['memory','anniversary'].includes(e.kind)&&/^\d{4}-\d{2}-\d{2}$/.test(e.date)&&typeof e.repeat==='boolean');
-  else {
+  if(note)fail(['memory','anniversary','calendar'].includes(e.kind)&&/^\d{4}-\d{2}-\d{2}$/.test(e.date)&&typeof e.repeat==='boolean');
+  if(note&&e.kind==='calendar')fail(validCalendarDate(e.date)&&!e.repeat,'记事日期不正确');
+  if(!note){
    fail([null,0,1].includes(e.target)&&typeof e.pending==='boolean'&&e.kind==='life');
    fail(Array.isArray(e.steps)&&e.steps.length<=500&&e.steps.every(s=>keys(s,['text','at'])&&text(s.text,500)&&integer(s.at,0,9000000000000000)));
   }

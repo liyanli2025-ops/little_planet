@@ -23,7 +23,7 @@ export function applyLife(state,actor,paired,b,now=Date.now(),id=()=>crypto.rand
  }else if(b.type==='outfit'){check(Object.hasOwn(outfits,b.outfit),'请选择衣着');state.worlds[actor].life.outfit=b.outfit;title='换上了'+outfits[b.outfit].name;body='在二层衣柜前，选了一点今天喜欢的颜色。';
  }else if(b.type==='wash'){check(['hands','brush'].includes(b.kind),'请选择洗漱方式');life.wash++;title=b.kind==='brush'?'认真刷了牙':'洗净了双手';body='在二层洗手间，照顾好自己。';
  }else if(b.type==='basket'){check((state.worlds[world].theme??world)===1,'这个星球没有篮球场');check(typeof b.made==='boolean','投篮结果不正确');life.basket.shots++;if(b.made)life.basket.made++;title=b.made?'投进了一颗篮球':'在篮球场练习投篮';body='球弹了几下，又回到手边。';
- }else check(false,'互动不存在');
+ }else if(b.type==='social'){check(paired,'请先连接对方',403);check(['highfive','dance'].includes(b.kind),'请选择互动');title='和'+names[1-actor]+(b.kind==='highfive'?'击掌':'一起跳舞');body='在星球上，一起留下了一段小小的快乐。';}else check(false,'互动不存在');
  check(state.events.length<5000,'手账已满，请先整理');
  const eventId=id();if(b.type==='kitchen-serve'){const meal=state.worlds[world].meals.find(i=>i.id===b.item);meal.event=eventId;meal.servedAt=now;}
  state.events.unshift({id:eventId,actor,world,target:world,title:names[actor]+title,body,shared:!!paired,pending:false,kind:'life',created:now,weather:'',steps:[],comments:[]});

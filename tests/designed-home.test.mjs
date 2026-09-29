@@ -35,3 +35,7 @@ test('changing homes retains shared food anchors while relocating furniture and 
  let covers=0,hinges=0;root.traverse(o=>{if(!o.userData.dynamic)return;o.traverse(m=>{if(m.isMesh&&m.userData.action==='bed')covers++;if(m.isMesh&&m.userData.action==='wardrobe')hinges++})});assert(covers>=4);assert(hinges>=4);
  home.dispose();
 });
+
+test('bathroom wash stop is inside the room and connected through its entrance to stairs',()=>{
+ for(const L of homeLayouts){const [bx,bz]=L.upper.bath,inside=L.upper.stops.bathroom;assert(Math.abs(inside[0]-bx)<.7);assert(Math.abs(inside[1]-bz)<.6);const entrance=[bx-.32,bz+.84];assert(homeFree(L,1,...entrance));for(const [start,end]of [[entrance,inside],[inside,L.upper.stops.stairs]]){const path=homeRoute(L,1,new T.Vector3(start[0],2.722,start[1]),...end);assert(path.length);for(const q of path)assert(homeFree(L,1,q.x,q.z));assert(path.at(-1).distanceTo(new T.Vector3(end[0],2.722,end[1]))<.001)}}
+});

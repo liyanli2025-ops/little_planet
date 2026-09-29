@@ -13,8 +13,8 @@ export function createHomeWindows(){
   vec3 color=texture2D(yard,q).rgb;
   if(live<.5)color=mix(vec3(.56,.65,.49),vec3(.72,.83,.86),smoothstep(.1,1.,q.y))*(1.-dark*.82);
   color=mix(color,vec3(.64,.70,.69)*(1.-dark*.8),mist);
-  float rain=0.;for(int i=0;i<2;i++){float layer=float(i);vec2 uv=vUv*vec2(35.+layer*21.,9.+layer*6.);uv.x+=uv.y*.035;uv.y+=clock*(2.4+layer)+hash(vec2(floor(uv.x),layer+9.))*11.;vec2 cell=floor(uv),f=fract(uv);float h=hash(vec2(cell.x,layer+1.));rain+=smoothstep(.06,0.,abs(f.x-(.15+h*.65)))*smoothstep(.36,0.,abs(f.y-.5))*step(.25,h);}
-  color=mix(color,vec3(.78,.88,.91),rain*wet*.25);
+  float rain=0.;for(int i=0;i<2;i++){float layer=float(i);vec2 uv=vUv*vec2(24.+layer*16.,8.+layer*5.);uv.x+=uv.y*.035;uv.y+=clock*(2.4+layer)+hash(vec2(floor(uv.x),layer+9.))*11.;vec2 cell=floor(uv),f=fract(uv);float h=hash(vec2(cell.x,layer+1.));rain+=smoothstep(.06,0.,abs(f.x-(.15+h*.65)))*smoothstep(.36,0.,abs(f.y-.5))*step(.52,h);}
+  color=mix(color,vec3(.78,.88,.91),rain*wet*.20*(1.-dark*.65));
   float flakes=0.;for(int i=0;i<2;i++){float l=float(i);vec2 uv=vUv*vec2(20.+l*10.,13.+l*7.);uv.y+=clock*(.35+l*.20);uv.x+=sin(clock*.5+floor(uv.y))*.15;vec2 c=floor(uv),f=fract(uv)-.5;flakes+=smoothstep(.075,.01,length(f))*step(.72,hash(c+l));}
   color=mix(color,vec3(.95,.98,1.),flakes*snowy*.9);
   // Subtle glass reflections leave the actual yard readable.

@@ -11,13 +11,15 @@ export const homeLayouts=[
   sit:[2.65,.53,.95,-Math.PI/2],stand:[1.7,1],cookYaw:Math.PI},
  {name:'study',width:9,depth:6,stairX:4.95,entry:[0,2.35],
   lower:{fridge:[3.55,-2.45],cook:[1.95,-2.45],table:[2.05,1],sofa:[-3.8,.1],book:[-1.6,-2.65],record:[-3.6,-2.45],
-   stops:{fridge:[3.55,-1.5],cook:[1.95,-1.35],table:[2.05,2.12],vase:[2.05,2.12],sit:[-1,.95],bookshelf:[-1.6,-1.6],music:[-3.6,-1.55],games:[-2.9,2.25],journal:[-.1,1.8],stairs:[4.0,2.2]},
+   stops:{fridge:[3.55,-1.5],cook:[1.95,-1.35],table:[2.05,2.12],vase:[2.05,2.12],sit:[-2.95,.1],'sit-floor-0':[-1,.15],'sit-floor-1':[.2,1],bookshelf:[-1.6,-1.6],music:[-3.6,-1.55],games:[-2.9,2.25],journal:[-.1,1.8],stairs:[4.0,2.2]},
    rects:[[3.1,4,-2.9,-2],[.9,3,-2.9,-1.95],[1.2,2.9,.43,1.57],[-4.35,-3.35,-1.3,1.45],[-2.7,-.5,-2.95,-2.3],[-4.1,-3.1,-2.85,-2.1],[1.78,2.32,-.3,.23],[2.98,3.48,.73,1.27],[-1.89,-.41,1.475,2.225]]},
   upper:{bed:[-3.1,.95],bath:[-3.35,-2.1],wardrobe:[-2,-2.35],desk:[.85,-2.45],travel:[.1,1.7],
    stops:{bed:[-3.1,2.65],bathroom:[-3.67,-1.74],wardrobe:[-2,-1.15],journal:[.85,-1.35],'desk-0':[-.23,-.99],'desk-1':[1.93,-.99],travel:[.9,1.7],stairs:[4,-1.45]},
    rects:[[-4.08,-2.12,-.38,2.28],[-2.45,-1.55,-2.9,-1.9],[-1.5,3.2,-2.9,-1.98],[-.24,.44,1.45,1.95],[3.35,4.09,-2.75,-2.1],[.69,1.61,.29,1.21]]},
-  sit:[-1,.12,.85,0],stand:[-.1,1.2],cookYaw:Math.PI}
+  sit:[-3.68,.42,.1,Math.PI/2],stand:[-2.95,.1],cookYaw:Math.PI}
 ];
+homeLayouts[0].lower.seats={sit:{pose:homeLayouts[0].sit,stand:homeLayouts[0].stand}};
+homeLayouts[1].lower.seats={sit:{pose:homeLayouts[1].sit,stand:homeLayouts[1].stand},'sit-floor-0':{pose:[-1,.20,.85,0],stand:[-1,.15]},'sit-floor-1':{pose:[.2,.20,.25,.3],stand:[.2,1]}};
 homeLayouts[0].upper.seats=[[2.02,3.02,.65,Math.PI/2]];
 homeLayouts[1].upper.seats=[[-.23,3.15,-1.37,Math.PI],[1.93,3.15,-1.37,Math.PI]];
 // Individual bathroom fixtures leave the front-left doorway and washbasin approach walkable.

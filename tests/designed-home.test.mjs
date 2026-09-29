@@ -39,3 +39,19 @@ test('changing homes retains shared food anchors while relocating furniture and 
 test('bathroom wash stop is inside the room and connected through its entrance to stairs',()=>{
  for(const L of homeLayouts){const [bx,bz]=L.upper.bath,inside=L.upper.stops.bathroom;assert(Math.abs(inside[0]-bx)<.7);assert(Math.abs(inside[1]-bz)<.6);const entrance=[bx-.32,bz+.84];assert(homeFree(L,1,...entrance));for(const [start,end]of [[entrance,inside],[inside,L.upper.stops.stairs]]){const path=homeRoute(L,1,new T.Vector3(start[0],2.722,start[1]),...end);assert(path.length);for(const q of path)assert(homeFree(L,1,q.x,q.z));assert(path.at(-1).distanceTo(new T.Vector3(end[0],2.722,end[1]))<.001)}}
 });
+
+test('every lounge seat has its own visible furniture target and a reachable exit',()=>{
+ const root=new T.Group(),home=createDesignedHome(root);
+ for(const [theme,L]of homeLayouts.entries()){
+  home.select(theme);home.show(0);const occupied=[];
+  for(const [action,seat]of Object.entries(L.lower.seats)){
+   const targets=[];root.updateMatrixWorld(true);root.traverse(o=>{if(!o.isMesh||o.userData.action!==action)return;for(let p=o;p;p=p.parent)if(!p.visible)return;targets.push(o)});
+   assert(targets.length,`${L.name}/${action} needs visible hit geometry`);
+   const bounds=new T.Box3();for(const m of targets)bounds.union(new T.Box3().setFromObject(m));
+   const [x,,z]=seat.pose;assert(x>=bounds.min.x&&x<=bounds.max.x&&z>=bounds.min.z&&z<=bounds.max.z,`${action} pose must lie on its own furniture`);
+   assert(homeFree(L,0,...seat.stand));assert(homeRoute(L,0,new T.Vector3(...[seat.stand[0],.022,seat.stand[1]]),...L.lower.stops.bookshelf).length);
+   for(const previous of occupied)assert(Math.hypot(x-previous[0],z-previous[1])>.6,'different seats must not reuse a position');occupied.push([x,z]);
+  }
+ }
+ home.dispose();
+});

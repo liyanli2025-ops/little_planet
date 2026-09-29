@@ -37,19 +37,24 @@ export function createWeatherService(db,request=fetch,clock=Date.now){
   const timezone=b.timezone??old.timezone??old.snapshot?.timezone??'UTC';try{new Intl.DateTimeFormat('en',{timeZone:timezone}).format()}catch{fail(false,'时区无效')}
   const next={mode:b.mode,location,timezone,snapshot:same?old.snapshot:null};write(slot,next);retry.delete(slot);return next;
  }
+ const area=c=>c.location?c.location.latitude+','+c.location.longitude:null;
  async function refresh(slot){
-  const c=read(slot),now=clock();
-  if(!c.location||now-(c.snapshot?.fetchedAt||0)<TTL||(retry.get(slot)||0)>now)return;
-  if(busy.has(slot))return busy.get(slot);
-  const job=(async()=>{
-   try{
+  let c=read(slot);const now=clock(),key=area(c);if(!key)return;
+  // A saved location continues to update when its owner is offline. Nearby
+  // residents with the same rounded coordinates share weather AND air quality.
+  const candidates=[c,read(1-slot)].filter(v=>area(v)===key&&v.snapshot);
+  const newest=candidates.sort((a,b)=>b.snapshot.fetchedAt-a.snapshot.fetchedAt)[0]?.snapshot;
+  if(newest&&newest.fetchedAt>(c.snapshot?.fetchedAt||0)){c={...c,snapshot:newest};write(slot,c)}
+  if(now-(c.snapshot?.fetchedAt||0)<TTL||(retry.get(slot)||0)>now)return;
+  let job=busy.get(key);
+  if(!job){job=(async()=>{
     const u=new URL('https://api.open-meteo.com/v1/forecast');u.search=new URLSearchParams({latitude:String(c.location.latitude),longitude:String(c.location.longitude),current:'temperature_2m,weather_code,is_day',daily:'sunrise,sunset',timezone:'auto',forecast_days:'2',timeformat:'unixtime'});
     const snapshot=normalizeWeather(await remote(u),clock());
-    try{const a=new URL('https://air-quality-api.open-meteo.com/v1/air-quality');a.search=new URLSearchParams({latitude:String(c.location.latitude),longitude:String(c.location.longitude),current:'pm2_5,pm10',timeformat:'unixtime'});const v=(await remote(a)).current;if(Number.isFinite(v?.time)&&Number.isFinite(v.pm2_5)&&v.pm2_5>=0&&Number.isFinite(v.pm10)&&v.pm10>=0)snapshot.airQuality={pm25:v.pm2_5,pm10:v.pm10,observedAt:v.time*1000};}catch{/* Missing air quality must not discard valid weather. */}
-    const latest=read(slot);
-    if(JSON.stringify(latest.location)===JSON.stringify(c.location)){write(slot,{...latest,snapshot});retry.delete(slot)}
-   }catch{retry.set(slot,clock()+60000)}
-  })();busy.set(slot,job);try{await job}finally{busy.delete(slot)}
+    try{const a=new URL('https://air-quality-api.open-meteo.com/v1/air-quality');a.search=new URLSearchParams({latitude:String(c.location.latitude),longitude:String(c.location.longitude),current:'pm2_5,pm10',timeformat:'unixtime'});const v=(await remote(a)).current;if(Number.isFinite(v?.time)&&Number.isFinite(v.pm2_5)&&v.pm2_5>=0&&Number.isFinite(v.pm10)&&v.pm10>=0)snapshot.airQuality={pm25:v.pm2_5,pm10:v.pm10,observedAt:v.time*1000};}catch{/* Optional air quality must not discard weather. */}
+    return snapshot;
+  })();busy.set(key,job)}
+  try{const snapshot=await job,latest=read(slot);if(area(latest)===key){write(slot,{...latest,snapshot});retry.delete(slot)}}
+  catch{retry.set(slot,clock()+60000)}finally{if(busy.get(key)===job)busy.delete(key)}
  }
  async function get(slot,paired){
   const slots=paired?[0,1]:[slot];await Promise.all(slots.map(refresh));

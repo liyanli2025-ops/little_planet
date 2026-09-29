@@ -65,3 +65,15 @@ test('owner timezones persist without weather, and manual skies still fetch temp
  let result=await service.get(1,true);assert.equal(result.worlds[0].timezone,'Asia/Shanghai');assert.equal(result.worlds[1].timezone,'America/New_York');
  offline=false;service.configure(0,{mode:'manual'});result=await service.get(1,true);assert.equal(result.worlds[0].snapshot.temperature,26.6);assert.equal(result.worlds[0].mode,'manual');assert.equal(result.worlds[1].timezone,'America/New_York');db.close();
 });
+
+test('visiting refreshes an offline owner at their saved location and same-area residents share one snapshot',async()=>{
+ const db=new DatabaseSync(':memory:');db.exec('CREATE TABLE settings(key TEXT PRIMARY KEY,value TEXT)');let now=Date.now(),weatherCalls=0,airCalls=0;
+ const service=createWeatherService(db,async url=>{if(String(url).includes('air-quality')){airCalls++;return {ok:true,json:async()=>({current:{time:now/1000,pm2_5:88,pm10:110}})}}weatherCalls++;await new Promise(r=>setTimeout(r,5));return {ok:true,json:async()=>({...sample,current:{...sample.current,time:now/1000,temperature_2m:weatherCalls+20}})}},()=>now);
+ service.configure(0,{mode:'auto',location:{label:'北京',latitude:39.9,longitude:116.4}});
+ service.configure(1,{mode:'auto',location:{label:'北京',latitude:39.92,longitude:116.42}});
+ let result=await service.get(0,true);assert.equal(weatherCalls,1);assert.equal(airCalls,1);assert.deepEqual(result.worlds[0].snapshot,result.worlds[1].snapshot);
+ now+=16*60000;result=await service.get(0,true);assert.equal(weatherCalls,2);assert.equal(airCalls,2);assert.equal(result.worlds[1].snapshot.temperature,22);assert.deepEqual(result.worlds[0].snapshot,result.worlds[1].snapshot);
+ // A newly refreshed resident also updates the paired resident's older cache.
+ now+=16*60000;await service.get(0,false);result=await service.get(1,true);assert.equal(weatherCalls,3);assert.deepEqual(result.worlds[0].snapshot,result.worlds[1].snapshot);
+ service.configure(1,{mode:'auto',location:{label:'上海',latitude:31.2,longitude:121.5}});result=await service.get(0,true);assert.equal(weatherCalls,4);assert.equal(result.worlds[1].location.label,'上海');assert.notEqual(result.worlds[0].snapshot.temperature,result.worlds[1].snapshot.temperature);db.close();
+});

@@ -1,3 +1,4 @@
+import {createPhotoUI} from './photo-ui.js';
 import {expireVaseFlowers} from './vase-expiry.js';
 import {createLightUI} from './light-ui.js';
 import {createCalendarUI} from './calendar-ui.js';
@@ -231,3 +232,5 @@ const peerActions=document.createElement('div');peerActions.id='peer-actions';pe
 function openPeerActions(){close();peerActions.hidden=false}
 document.addEventListener('pointerdown',e=>{if(!peerActions.contains(e.target))peerActions.hidden=true},true);
 peerActions.onclick=e=>{const b=e.target.closest('[data-kind]');if(!b)return;peerActions.hidden=true;handlers['peer-'+b.dataset.kind]?.()};
+
+const photoUI=visual?createPhotoUI({visual,cloud,toast,onAlbum:()=>travelUI.openAlbum(false,'daily')}):null;

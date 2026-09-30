@@ -1,3 +1,4 @@
+import {createPhotos} from './photos.mjs';
 import {createSocial} from './social.mjs';
 import {homeLayouts} from '../dist/home-layout.js';
 import {residentPresence} from './resident.mjs';
@@ -25,7 +26,7 @@ const secure=originURL.protocol==='https:';
 const filename=process.env.DATABASE_PATH||path.resolve('data/planet.sqlite');
 const hub=openAccounts(filename),db=hub.db;
 async function environmentFor(u){const result=await hub.space(u.space).weatherService.get(u.slot,!!hub.partner(u));fail(hub.account(u.id).space===u.space,'配对状态已更新，请刷新后重试',409);return result}
-const travelService=createTravelService(db);
+const travelService=createTravelService(db),photos=createPhotos(db);
 const designService=createDesignService(db,{partner:id=>hub.partner(hub.account(id)),garment:id=>{const u=hub.account(id);return hub.space(u.space).store.read().state.worlds[u.slot].life.outfit||'plain'},onGift(sender,recipient,id,label,created){const u=hub.account(sender),peer=hub.partner(u);fail(peer?.id===recipient,'配对关系已变化',409);const store=hub.space(u.space).store,row=store.read();fail(row.state.events.length<5000,'手账已满，请先整理',409);row.state.events.unshift({id,title:(u.nickname||u.username)+'送来了一套装扮',body:label,actor:u.slot,world:1-u.slot,target:1-u.slot,shared:true,pending:false,kind:'life',created,weather:row.state.worlds[1-u.slot].weather||'',steps:[],comments:[]});store.db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state))}});
 const presence=createPresence(),social=createSocial();
 const ttl=7*86400000;
@@ -87,6 +88,8 @@ async function api(req,res,p){
  }
  if(req.method==='GET'&&p==='/api/fm'){const u=requireUser(req);rate(req,'fm-read',200);return json(res,200,await musicService.list(u.slot,new URL(req.url,'http://local').searchParams.get('mode')||'discover'));}
  if(req.method==='GET'&&p==='/api/fm/track'){const u=requireUser(req);rate(req,'fm-track',200);return json(res,200,await musicService.track(u.slot,new URL(req.url,'http://local').searchParams.get('id')||''));}
+ if(req.method==='GET'&&p==='/api/photos'){const u=requireUser(req);return json(res,200,{photos:photos.list(u.id,hub.partner(u)?.id)})}
+ if(req.method==='GET'&&/^\/api\/photos\/[a-f0-9-]{36}$/.test(p)){const u=requireUser(req),image=photos.read(u.id,hub.partner(u)?.id,p.split('/').pop());res.writeHead(200,{'Content-Type':'image/jpeg','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});res.end(image);return}
  if(req.method==='GET'&&p==='/api/travel'){const u=requireUser(req),peer=hub.partner(u);const worlds=[null,null];worlds[u.slot]={away:!!travelService.active(u.id)};if(peer)worlds[1-u.slot]={away:!!travelService.active(peer.id)};return json(res,200,{...travelService.view(u.id),worlds})}
  if(req.method==='GET'&&p==='/api/design'){const u=requireUser(req),peer=hub.partner(u),worlds=[null,null];worlds[u.slot]=designService.current(u.id);if(peer)worlds[1-u.slot]=designService.current(peer.id);return json(res,200,{...designService.view(u.id),worlds})}
  if(req.method==='GET'&&p==='/api/media')return json(res,200,mediaService.view(requireUser(req).slot));
@@ -118,6 +121,7 @@ async function api(req,res,p){
 
  if(p==='/api/design'){fail(b&&['generate','accept','rollback','gift','wearGift','previewItem'].includes(b.action),'设计操作不存在');return json(res,200,await designService[b.action](u.id,b))}
  if(p==='/api/presence'){fail(b&&typeof b==='object','位置不正确');const peer=hub.partner(u);fail(b.hidden===true||b.world===u.slot||peer,'请先配对再访问对方',403);presence.update(u,travelService.active(u.id)?{hidden:true}:b);let live=null,resident=null;if(peer&&!travelService.active(peer.id)){live=presence.peer(u,peer);if(!live){const owner=hub.account(peer.id),environment=JSON.parse(store.db.prepare('SELECT value FROM settings WHERE key=?').get('environment:'+owner.slot)?.value||'{}');resident=residentPresence(owner,environment,store.read().state.worlds[owner.slot].life.outfit)}}return json(res,200,{peer:live,resident,social:social.peek(u)})}
+ if(p==='/api/photos'){rate(req,'photos',120);if(b.action==='save')return json(res,200,{photo:photos.save(u.id,b)});if(b.action==='share'&&b.shared)fail(hub.partner(u),'请先连接对方',403);return json(res,200,photos.change(u.id,b))}
  if(p==='/api/travel'){rate(req,'travel',40);fail(['depart','collect'].includes(b.action),'旅行操作不存在');return json(res,200,b.action==='depart'?travelService.depart(u.id,u.avatar):travelService.collect(u.id))}
  if(p==='/api/account/profile'){rate(req,'profile',30);hub.profile(u.id,b.nickname);return json(res,200,identity({...u,...hub.account(u.id)}))}
  if(p==='/api/environment'){

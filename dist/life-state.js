@@ -17,7 +17,7 @@ export function applyLife(state,actor,paired,b,now=Date.now(),id=()=>crypto.rand
  }else if(['plant','water','harvest'].includes(b.type)){
   check((state.worlds[world].theme??world)===0,'这个星球没有花园');check(Number.isInteger(b.plot)&&b.plot>=0&&b.plot<6,'种植地不存在');const p=life.plots[b.plot];
   if(b.type==='plant'){check(!p,'这块地已经种了东西',409);check(Object.hasOwn(crops,b.crop),'请选择种子');const c=crops[b.crop];life.plots[b.plot]={crop:b.crop,plantedAt:now,readyAt:now+c.seconds*1000,watered:false,plantedBy:actor};title='种下了'+c.name;body='在第 '+(b.plot+1)+' 块地播种，等它慢慢长大。'}
-  if(b.type==='water'){check(p,'先种下种子');check(!p.watered,'这株植物已经浇过水了',409);p.watered=true;p.readyAt=Math.max(now,p.readyAt-30000);title='给'+crops[p.crop].name+'浇了水';body='小水珠落进土里，生长时间缩短了 30 秒。'}
+  if(b.type==='water'){check(p,'先种下种子');check(p.readyAt>now,'已经成熟，可以采摘了',409);check(!p.watered,'这株植物已经浇过水了',409);p.watered=true;p.readyAt=Math.max(now,p.readyAt-30000);title='给'+crops[p.crop].name+'浇了水';body='小水珠落进土里，生长时间缩短了 30 秒。'}
   if(b.type==='harvest'){check(p,'这块地还没有可采摘的植物',409);check(now>=p.readyAt,'还没有成熟，再等一会儿');if(crops[p.crop].flower){const flowers=state.worlds[actor].life.flowers??={};check((flowers[p.crop]||0)<999,'鲜花已经很多了');flowers[p.crop]=(flowers[p.crop]||0)+1}else{const fridge=state.worlds[actor].fridge;const item=fridge.find(i=>i.food===p.crop&&!i.event&&i.qty<999);if(item)item.qty++;else{check(fridge.length<190,'冰箱满了');fridge.push({id:id(),food:p.crop,qty:1})}}life.plots[b.plot]=null;title='采摘了'+crops[p.crop].name;body='蔬果收进冰箱，鲜花留着插进花瓶。'}
  }else if(b.type==='vase'){
   expireVaseFlowers(state,now);

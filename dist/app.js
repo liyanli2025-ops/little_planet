@@ -1,3 +1,4 @@
+import {expireVaseFlowers} from './vase-expiry.js';
 import {createLightUI} from './light-ui.js';
 import {createCalendarUI} from './calendar-ui.js';
 import {createDesignUI} from './design-ui.js';
@@ -197,7 +198,7 @@ $('#open-daybook').addEventListener('click',e=>{if(inside){e.stopImmediatePropag
 
 const recap=createRecap({context:()=>({state,actor,accountId:cloud?.session.accountId,avatars:cloud?.session.avatars}),refresh:cloud?()=>cloud.refresh():null,ready:()=>!currentPanel&&!outdoorMode&&!document.querySelector("dialog[open]"),toast});
 
-if(!cloud){const cleanTable=()=>{if(expireTableMeals(state)){save();refresh()}};cleanTable();setInterval(cleanTable,60000)}
+if(!cloud){const cleanTable=()=>{const meals=expireTableMeals(state),flowers=expireVaseFlowers(state);if(meals||flowers){save();refresh();if(currentPanel==='vase')lifeUI.show('vase')}};cleanTable();setInterval(cleanTable,60000)}
 
 window.planetArrival.finish();
 

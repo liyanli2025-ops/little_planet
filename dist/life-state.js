@@ -1,3 +1,4 @@
+import {expireVaseFlowers} from './vase-expiry.js';
 import {outfits} from './outfits.js';
 import {applyKitchen} from './kitchen-state.js';
 export const crops={rose:{name:'玫瑰',flower:true,color:0xd88896,seconds:120},tulip:{name:'郁金香',flower:true,color:0xe8b65d,seconds:120},sunflower:{name:'向日葵',flower:true,color:0xe5bc44,seconds:120},daisy:{name:'雏菊',flower:true,color:0xf3eace,seconds:120},lavender:{name:'薰衣草',flower:true,color:0x9c8ec4,seconds:120},hydrangea:{name:'绣球',flower:true,color:0x8faaca,seconds:120},lily:{name:'百合',flower:true,color:0xf2e4c5,seconds:120},tomato:{name:'番茄',color:0xd6674b,seconds:180},carrot:{name:'胡萝卜',color:0xe7a14b,seconds:180},strawberry:{name:'草莓',color:0xda6873,seconds:180}};
@@ -19,8 +20,8 @@ export function applyLife(state,actor,paired,b,now=Date.now(),id=()=>crypto.rand
   if(b.type==='water'){check(p,'先种下种子');check(!p.watered,'这株植物已经浇过水了',409);p.watered=true;p.readyAt=Math.max(now,p.readyAt-30000);title='给'+crops[p.crop].name+'浇了水';body='小水珠落进土里，生长时间缩短了 30 秒。'}
   if(b.type==='harvest'){check(p,'这块地还没有可采摘的植物',409);check(now>=p.readyAt,'还没有成熟，再等一会儿');if(crops[p.crop].flower){const flowers=state.worlds[actor].life.flowers??={};check((flowers[p.crop]||0)<999,'鲜花已经很多了');flowers[p.crop]=(flowers[p.crop]||0)+1}else{const fridge=state.worlds[actor].fridge;const item=fridge.find(i=>i.food===p.crop&&!i.event&&i.qty<999);if(item)item.qty++;else{check(fridge.length<190,'冰箱满了');fridge.push({id:id(),food:p.crop,qty:1})}}life.plots[b.plot]=null;title='采摘了'+crops[p.crop].name;body='蔬果收进冰箱，鲜花留着插进花瓶。'}
  }else if(b.type==='vase'){
-  check(crops[b.crop]?.flower,'请选择采摘的花');const flowers=state.worlds[actor].life.flowers??={};check(flowers[b.crop]>0,'还没有采摘这朵花');check(life.vase.length<8,'花瓶已有八枝花，可以先整理花瓶');flowers[b.crop]--;life.vase.push(b.crop);title='把'+crops[b.crop].name+'插进花瓶';body='一层餐桌上，多了一朵亲手采来的花。';
- }else if(b.type==='clear-vase'){check(life.vase.length,'花瓶已经是空的');life.vase=[];title='整理了桌上的花瓶';body='把旧花收好，给下一束花留位置。';
+  expireVaseFlowers(state,now);
+  check(crops[b.crop]?.flower,'请选择采摘的花');const flowers=state.worlds[actor].life.flowers??={};check(flowers[b.crop]>0,'还没有采摘这朵花');check(life.vase.length<8,'花瓶已满，过几天再添花吧');flowers[b.crop]--;life.vase.push(b.crop);(life.vasePlacedAt??=[]).push(now);title='把'+crops[b.crop].name+'插进花瓶';body='一层餐桌上，多了一朵亲手采来的花。';
  }else if(b.type==='outfit'){check(Object.hasOwn(outfits,b.outfit),'请选择衣着');state.worlds[actor].life.outfit=b.outfit;title='换上了'+outfits[b.outfit].name;body='在二层衣柜前，选了一点今天喜欢的颜色。';
  }else if(b.type==='wash'){check(['hands','brush'].includes(b.kind),'请选择洗漱方式');life.wash++;title=b.kind==='brush'?'认真刷了牙':'洗净了双手';body='在二层洗手间，照顾好自己。';
  }else if(b.type==='basket'){check((state.worlds[world].theme??world)===1,'这个星球没有篮球场');check(typeof b.made==='boolean','投篮结果不正确');life.basket.shots++;if(b.made)life.basket.made++;title=b.made?'投进了一颗篮球':'在篮球场练习投篮';body='球弹了几下，又回到手边。';

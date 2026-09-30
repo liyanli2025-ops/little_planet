@@ -1,3 +1,4 @@
+import {expireVaseFlowers} from '../dist/vase-expiry.js';
 import {validCalendarDate} from '../dist/calendar-state.js';
 import {expireTableMeals} from '../dist/meal-expiry.js';
 import {migrateStorage} from '../dist/kitchen-state.js';
@@ -195,7 +196,7 @@ export function openStore(filename, connection){
    return get(slot);
   });
  }
- function expireMeals(now=Date.now()){return transaction(()=>{const row=read();if(!expireTableMeals(row.state,now))return false;db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state));return true})}
+ function expireMeals(now=Date.now()){return transaction(()=>{const row=read();const meals=expireTableMeals(row.state,now),flowers=expireVaseFlowers(row.state,now);if(!meals&&!flowers)return false;db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state));return true})}
  function invite(slot){
   return transaction(()=>{
    fail(!read().paired,'已经配对，无需再次邀请',409);

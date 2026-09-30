@@ -1,4 +1,4 @@
-import {gesture,faceBear} from './social-motion.js';
+import {gesture,faceBear,pairGesture,socialPositions,resetGesture} from './social-motion.js';
 import * as T from './vendor/three.module.js';
 import {createTeddy} from './teddy.js?v=16';
 export function createRecapStage(host,avatars=[0,1]){
@@ -9,7 +9,7 @@ export function createRecapStage(host,avatars=[0,1]){
  function ball(c,x,y,z,r){const m=new T.Mesh(new T.SphereGeometry(r,20,16),new T.MeshStandardMaterial({color:c,roughness:.8}));m.position.set(x,y,z);props.add(m);return m}
  function cylinder(c,x,y,z,r1,r2,h){const m=new T.Mesh(new T.CylinderGeometry(r1,r2,h,32),new T.MeshStandardMaterial({color:c,roughness:.75}));m.position.set(x,y,z);props.add(m);return m}
  function clear(){props.traverse(o=>{o.geometry?.dispose();o.material?.dispose()});props.clear()}
- function show(e){clear();friend.avatar.visible=false;kind=e.kind;elapsed=0;teddy.setIdentity(avatars[e.actor]);teddy.avatar.position.set(0,0,0);teddy.avatar.rotation.set(0,-.15,0);teddy.body.rotation.set(0,0,0);teddy.sleep(kind==='sleep');teddy.headphones(kind==='music');teddy.arms.forEach(a=>a.rotation.set(0,0,0));teddy.legs.forEach(a=>a.rotation.set(0,0,0));
+ function show(e){resetGesture(teddy);resetGesture(friend);clear();friend.avatar.visible=false;kind=e.kind;elapsed=0;teddy.setIdentity(avatars[e.actor]);teddy.avatar.position.set(0,0,0);teddy.avatar.rotation.set(0,-.15,0);teddy.body.rotation.set(0,0,0);teddy.sleep(kind==='sleep');teddy.headphones(kind==='music');teddy.arms.forEach(a=>a.rotation.set(0,0,0));teddy.legs.forEach(a=>a.rotation.set(0,0,0));
  if(['highfive','dance'].includes(kind)){friend.avatar.visible=true;friend.setIdentity(avatars[1-e.actor]);teddy.avatar.position.x=-.46;friend.avatar.position.set(.46,0,0);faceBear(teddy,friend.avatar.position,true);faceBear(friend,teddy.avatar.position,true)}
  box(0xc6d3b2,0,-.045,0,2.4,.09,1.9);
  if(kind==='sleep'){box(0xbb9a71,0,.17,0,1.15,.3,1.4);box(0xf4ead6,0,.35,0,1.08,.08,1.35);box(0xfaf5e6,0,.43,-.48,.7,.16,.35);teddy.avatar.position.set(0,.54,.23);teddy.avatar.rotation.x=-Math.PI/2;box(0x99af96,0,.55,.27,1.09,.16,.73)}
@@ -19,7 +19,7 @@ export function createRecapStage(host,avatars=[0,1]){
  if(kind==='garden'){box(0x8c7152,0,.04,.63,.95,.08,.5);for(const x of [-.3,0,.3]){box(0x788e55,x,.19,.6,.025,.28,.025);ball(0xe2bc96,x,.34,.6,.08)}}
  }
  function tick(now){frame=requestAnimationFrame(tick);const dt=Math.min(.05,(now-last)/1000);last=now;if(!paused)elapsed+=dt;const t=elapsed;
- if(['highfive','dance'].includes(kind)){gesture(teddy,kind,t,1);gesture(friend,kind,t,0)}
+ if(['highfive','dance'].includes(kind)){const ps=socialPositions(kind,t,[new T.Vector3(-.42,0,0),new T.Vector3(.42,0,0)],true);teddy.avatar.position.copy(ps[0]);friend.avatar.position.copy(ps[1]);pairGesture(teddy,friend,kind,t,true)}
  else if(kind==='walk'){teddy.avatar.position.x=Math.sin(t*1.8)*.55;teddy.avatar.rotation.y=Math.cos(t*1.8)>0?1:-1;teddy.legs.forEach((a,i)=>a.rotation.x=Math.sin(t*9+i*Math.PI)*.4)}
  else if(kind==='cook'||kind==='wash'||kind==='garden'){teddy.arms.forEach((a,i)=>a.rotation.x=-.9+Math.sin(t*5+i)*.18);teddy.body.rotation.z=Math.sin(t*2)*.025}
  else if(kind==='eat'){teddy.arms[1].rotation.x=-.7-Math.sin(t*2)*.3}

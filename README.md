@@ -79,3 +79,23 @@
 右下角相机打开时保持当前镜头的位置、角度和景别。单指拖动旋转，双指捏合缩放、同向拖动平移；桌面支持滚轮缩放、Shift 拖动平移。没有镜头切换按钮，手势可放大到脸部特写。退出恢复原镜头。可设 3 秒倒计时，空闲时可选挥手、比心、托腮。照片为当前 3D 场景的 JPEG，不包含网页按钮。
 
 照片默认私密，收进沙发相册的“日常”；也可点拍摄缩略图查看、下载、删除或分享给当前伴侣。取消分享或解绑后，服务端撤销对方访问。照片绑定账号，保存在 SQLite 的 account_photos 表，随 scripts/backup.sh 的完整数据库备份保存；普通代码更新不会覆盖。每账号最多 200 张，每张最长边 1600 像素，满额时提示整理，不会自动删除旧照片。保存失败保留当前照片供重试或下载，刷新前请处理。
+
+
+### 腾讯 3D：真实接口验证（尚未连接设计界面）
+
+服务器 `.env` 增加 `TENCENT_3D_API_KEY`，重建容器后执行：
+
+```sh
+docker compose exec -T planet node backend/test-tencent-3d.mjs status
+docker compose exec -T planet node backend/test-tencent-3d.mjs generate
+```
+
+`generate` 首次提交一张沙发的真实 HY-3D-3.1 任务，指定 20,000 面；自定义面数可能额外消耗积分，按服务商账单收费。后续运行只查询既有任务，不重复生成。提交结果不明时会阻止自动重试，以免重复付费。排队/生成中可一分钟后再执行；任务有效期 24 小时，请及时查询下载。完成后的 GLB 存在 SQLite `tencent_3d_probe` 表中，随现有数据库备份保存。超过 32MB、超过 10 万面、外部资源引用暂拒绝导入。域名不在已核对范围时保留任务，不能通过重新生成解决。
+
+导出已完成模型：
+```sh
+docker compose exec -T planet node backend/test-tencent-3d.mjs export
+docker compose exec -T planet cat /tmp/echoo-tencent-sofa.glb > /tmp/echoo-tencent-sofa.glb
+```
+
+这是运维侧联通与真实产物验证，不是用户侧完整生成功能；没有用范例替代腾讯结果。密钥、带签名下载地址不打印到控制台。后续仍需模型实际视觉验收、家具交互适配及服装绑定。

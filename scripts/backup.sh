@@ -4,7 +4,9 @@ cd "$(dirname "$0")/.."
 umask 077
 mkdir -p backups
 stamp="$(date -u +%Y%m%dT%H%M%SZ)-$$"
-temporary="/tmp/planet-$stamp.sqlite"
+# Generated assets can exceed the container's 32 MB /tmp tmpfs.
+# Stage the SQLite snapshot on the persistent disk; the EXIT trap removes it.
+temporary="/data/planet-backup-$stamp.sqlite"
 destination="backups/planet-$stamp.sqlite"
 partial="$destination.partial"
 if [ -e "$destination" ] || [ -e "$partial" ]; then

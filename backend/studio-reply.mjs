@@ -3,7 +3,7 @@ const reasonText={response_json:'服务返回内容无法读取',truncated:'设�
 function reject(code,meta,argumentsText){const e=new Error(reasonText[code]);e.planCode=code;e.diagnostic={...meta,reason:code};if(typeof argumentsText==='string')e.repairArguments=argumentsText;throw e;}
 // Repair syntax only, never infer missing fields or evaluate model-generated code.
 // Quoted strings (including escaped quotes) are copied byte-for-byte.
-function parseArguments(value,meta){
+export function parseDesignArguments(value,meta={}){
  if(typeof value!=='string')return value;
  let text=value.trim();
  const fence=text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
@@ -38,13 +38,12 @@ export function parseStudioReply(raw,scope){
   if(c.length!==1)reject('multiple_tools',meta);
   if(c[0]?.function?.name!=='edit_object')reject('wrong_tool',meta);
   const a=c[0].function.arguments;meta.argumentChars=typeof a==='string'?a.length:0;
-  p=parseArguments(a,meta);
+  p=parseDesignArguments(a,meta);
  }else{
   // Some compatible endpoints put the structured result in content despite tool_choice.
   // Accept only a complete JSON object; never infer operations from prose.
   const content=typeof m?.content==='string'?m.content.trim():'';
-  const json=content.startsWith('```')?content.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,''):content;
-  try{p=JSON.parse(json)}catch{reject('no_plan',meta)}
+  try{p=parseDesignArguments(content,meta)}catch(e){if(content.startsWith('{')||content.startsWith('```'))throw e;reject('no_plan',meta)}
  }
  try{checkStudioPlan(p,scope)}catch{reject('invalid_plan',meta,JSON.stringify(p))}
  return p;

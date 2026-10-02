@@ -1,3 +1,5 @@
+import {studioLayout} from '../dist/studio-layout.js';
+import {createStudio} from './studio.mjs';
 import {createPhotos} from './photos.mjs';
 import {createSocial} from './social.mjs';
 import {homeLayouts} from '../dist/home-layout.js';
@@ -28,6 +30,8 @@ const hub=openAccounts(filename),db=hub.db;
 async function environmentFor(u){const result=await hub.space(u.space).weatherService.get(u.slot,!!hub.partner(u));fail(hub.account(u.id).space===u.space,'配对状态已更新，请刷新后重试',409);return result}
 const travelService=createTravelService(db),photos=createPhotos(db);
 const designService=createDesignService(db,{partner:id=>hub.partner(hub.account(id)),garment:id=>{const u=hub.account(id);return hub.space(u.space).store.read().state.worlds[u.slot].life.outfit||'plain'},onGift(sender,recipient,id,label,created){const u=hub.account(sender),peer=hub.partner(u);fail(peer?.id===recipient,'配对关系已变化',409);const store=hub.space(u.space).store,row=store.read();fail(row.state.events.length<5000,'手账已满，请先整理',409);row.state.events.unshift({id,title:(u.nickname||u.username)+'送来了一套装扮',body:label,actor:u.slot,world:1-u.slot,target:1-u.slot,shared:true,pending:false,kind:'life',created,weather:row.state.worlds[1-u.slot].weather||'',steps:[],comments:[]});store.db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state))}});
+const studio=createStudio(db,{design:designService,theme:id=>{const u=hub.account(id);return hub.space(u.space).store.read().state.worlds[u.slot].theme},partner:id=>hub.partner(hub.account(id))});
+setInterval(()=>void studio.tick(),10000).unref();
 const presence=createPresence(),social=createSocial();
 const ttl=7*86400000;
 const rates=new Map();
@@ -91,6 +95,9 @@ async function api(req,res,p){
  if(req.method==='GET'&&p==='/api/photos'){const u=requireUser(req);return json(res,200,{photos:photos.list(u.id,hub.partner(u)?.id)})}
  if(req.method==='GET'&&/^\/api\/photos\/[a-f0-9-]{36}$/.test(p)){const u=requireUser(req),image=photos.read(u.id,hub.partner(u)?.id,p.split('/').pop());res.writeHead(200,{'Content-Type':'image/jpeg','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});res.end(image);return}
  if(req.method==='GET'&&p==='/api/travel'){const u=requireUser(req),peer=hub.partner(u);const worlds=[null,null];worlds[u.slot]={away:!!travelService.active(u.id)};if(peer)worlds[1-u.slot]={away:!!travelService.active(peer.id)};return json(res,200,{...travelService.view(u.id),worlds})}
+ if(req.method==='GET'&&p==='/api/studio'){const u=requireUser(req);return json(res,200,studio.list(u.id))}
+ if(req.method==='GET'&&/^\/api\/studio\/jobs\/[a-f0-9-]{36}$/.test(p)){const u=requireUser(req);return json(res,200,studio.get(u.id,p.split('/').pop()))}
+ if(req.method==='GET'&&/^\/api\/studio\/assets\/[a-f0-9-]{36}$/.test(p)){const u=requireUser(req),model=studio.asset(u.id,p.split('/').pop());res.writeHead(200,{'Content-Type':'model/gltf-binary','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff'});return res.end(model)}
  if(req.method==='GET'&&p==='/api/design'){const u=requireUser(req),peer=hub.partner(u),worlds=[null,null];worlds[u.slot]=designService.current(u.id);if(peer)worlds[1-u.slot]=designService.current(peer.id);return json(res,200,{...designService.view(u.id),worlds})}
  if(req.method==='GET'&&p==='/api/media')return json(res,200,mediaService.view(requireUser(req).slot));
  if(req.method==='GET'&&p==='/api/account/history'){const u=requireUser(req);return json(res,200,{archives:hub.archives(u.id)})}
@@ -119,6 +126,7 @@ async function api(req,res,p){
  fail(req.headers['x-csrf-token']===u.csrf,'会话验证失败，请刷新页面',403);
  fail(String(u.space)===req.headers['x-planet-space'],'账号或配对状态已更新，请刷新页面后重试',409);
 
+ if(p==='/api/studio'){rate(req,'studio',30);return json(res,200,await studio.start(u.id,b))}
  if(p==='/api/design'){fail(b&&['generate','accept','rollback','gift','wearGift','previewItem'].includes(b.action),'设计操作不存在');return json(res,200,await designService[b.action](u.id,b))}
  if(p==='/api/presence'){fail(b&&typeof b==='object','位置不正确');const peer=hub.partner(u);fail(b.hidden===true||b.world===u.slot||peer,'请先配对再访问对方',403);presence.update(u,travelService.active(u.id)?{hidden:true}:b);let live=null,resident=null;if(peer&&!travelService.active(peer.id)){live=presence.peer(u,peer);if(!live){const owner=hub.account(peer.id),environment=JSON.parse(store.db.prepare('SELECT value FROM settings WHERE key=?').get('environment:'+owner.slot)?.value||'{}');resident=residentPresence(owner,environment,store.read().state.worlds[owner.slot].life.outfit)}}return json(res,200,{peer:live,resident,social:social.peek(u)})}
  if(p==='/api/photos'){rate(req,'photos',120);if(b.action==='save')return json(res,200,{photo:photos.save(u.id,b)});if(b.action==='share'&&b.shared)fail(hub.partner(u),'请先连接对方',403);return json(res,200,photos.change(u.id,b))}
@@ -137,7 +145,7 @@ async function api(req,res,p){
   fail(['bind','sync'].includes(b.action),'操作不存在');
   return json(res,200,await mediaService.sync(u.slot,b.action==='bind'?b.key:undefined,b.action==='sync'&&b.automatic===true));
  }
- if(p==='/api/life'){fail(!travelService.active(u.id),'小熊正在旅行，回来后再互动吧',409);rate(req,'life',200);let command=null;const result=store.life(u.slot,b,hub.displayNames(u),()=>{if(b.type==='outfit')designService.baseOutfit(u.id,b.outfit);if(b.type==='social'){const peer=hub.partner(u);fail(peer&&!travelService.active(peer.id),'对方正在旅行或尚未配对',409);const own=presence.peer(u,u);let other=presence.peer(u,peer);if(!other){const owner=hub.account(peer.id),environment=JSON.parse(store.db.prepare('SELECT value FROM settings WHERE key=?').get('environment:'+owner.slot)?.value||'{}');other=residentPresence(owner,environment)}fail(own&&b.world===own.world,'位置已变化，请重试',409);const owner=own.world===u.slot?u:hub.account(peer.id),design=designService.current(owner.id).design.home,theme=design.layout==='original'?store.read().state.worlds[own.world].theme:design.layout==='study'?1:0;command=social.prepare(u,peer,b.kind,own,other,homeLayouts[theme===1?1:0]);}});if(command)social.publish(u,command);return json(res,200,result)}
+ if(p==='/api/life'){fail(!travelService.active(u.id),'小熊正在旅行，回来后再互动吧',409);rate(req,'life',200);let command=null;const result=store.life(u.slot,b,hub.displayNames(u),()=>{if(b.type==='outfit')designService.baseOutfit(u.id,b.outfit);if(b.type==='social'){const peer=hub.partner(u);fail(peer&&!travelService.active(peer.id),'对方正在旅行或尚未配对',409);const own=presence.peer(u,u);let other=presence.peer(u,peer);if(!other){const owner=hub.account(peer.id),environment=JSON.parse(store.db.prepare('SELECT value FROM settings WHERE key=?').get('environment:'+owner.slot)?.value||'{}');other=residentPresence(owner,environment)}fail(own&&b.world===own.world,'位置已变化，请重试',409);const owner=own.world===u.slot?u:hub.account(peer.id),design=designService.current(owner.id).design.home,theme=design.layout==='original'?store.read().state.worlds[own.world].theme:design.layout==='study'?1:0;command=social.prepare(u,peer,b.kind,own,other,studioLayout(homeLayouts[theme===1?1:0],design.objects||[]));}});if(command)social.publish(u,command);return json(res,200,result)}
  if(p==='/api/state'){rate(req,'save',400);return json(res,200,store.save(u.slot,b))}
  if(p==='/api/invite'){rate(req,'invite',30);return json(res,200,hub.invite(u.id))}
  if(p==='/api/pair/preview'){rate(req,'pair-preview',30);return json(res,200,hub.preview(u.id,b.code))}

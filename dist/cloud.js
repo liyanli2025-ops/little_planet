@@ -11,7 +11,7 @@ export async function connectCloud(){
  const status=document.createElement('button');status.className='cloud-status';status.textContent='正在连接云端…';status.setAttribute('aria-live','polite');document.body.append(status);
  let session;
  async function api(url,data,csrf){
-  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),url==='/api/design'&&data?.action==='generate'?40000:15000);
+  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),url==='/api/studio'||url==='/api/design'&&data?.action==='generate'?85000:15000);
   try{
    const res=await fetch(url,{method:data===undefined?'GET':'POST',credentials:'same-origin',cache:'no-store',signal:controller.signal,headers:data===undefined?{}:{'Content-Type':'application/json',...(csrf?{'X-CSRF-Token':csrf,'X-Planet-Space':String(session.space)}:{})},body:data===undefined?undefined:JSON.stringify(data)});
    const value=await res.json();if(!res.ok){const error=new Error(value.error||'请求失败');error.status=res.status;throw error}return value;
@@ -95,7 +95,9 @@ export async function connectCloud(){
   async radioTrack(id){return api('/api/fm/track?id='+encodeURIComponent(id))},
   async radio(data){return this.life(data,'/api/fm')},
   async mediaView(){return api('/api/media')},
-  async design(data){return api('/api/design',data,session.csrf)},
+  async studio(data){return api('/api/studio',data,session.csrf)},
+    async studioJob(id){return api('/api/studio/jobs/'+encodeURIComponent(id))},
+    async design(data){return api('/api/design',data,session.csrf)},
   async media(data){return this.life(data,'/api/media')},
   async weread(data){return this.life(data,'/api/weread')},
   async life(data,url='/api/life'){

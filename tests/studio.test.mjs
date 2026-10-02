@@ -22,7 +22,7 @@ test('missing clothing arguments are repaired once through language service, not
  t.opts.fetcher=async(url,o)=>{const b=JSON.parse(o.body);calls.push(b);return Response.json({choices:[{message:{tool_calls:[{function:{name:'edit_object',arguments:JSON.stringify(calls.length===1?{operation:'tailor',reply:'预览'}:{operation:'tailor',tailoring,reply:'预览'})}}]}}]})};
  const s=createStudio(t.db,t.opts),j=await s.start(1,{scope:'outfit',version:0,prompt:'绿裙',requestId:randomUUID()});
  assert.equal(calls.length,2);assert.deepEqual(s.get(1,j.job).result.values.tailoring,tailoring);assert.equal(t.submits(),0);
- const fn=calls[0].tools[0].function;assert.deepEqual(fn.parameters.properties.operation.enum,['tailor','explain']);assert.ok(fn.parameters.properties.tailoring.required.includes('patternScale'));assert.equal(calls[0].tool_choice.function.name,'edit_object');
+ assert.equal(calls[0].model,'hy3');assert.deepEqual(calls[0].thinking,{type:'disabled'});const fn=calls[0].tools[0].function;assert.deepEqual(fn.parameters.properties.operation.enum,['tailor','explain']);assert.ok(fn.parameters.properties.tailoring.required.includes('patternScale'));assert.equal(calls[0].tool_choice.function.name,'edit_object');
  assert.equal(t.design.current(1).version,0);t.db.close();
 });
 

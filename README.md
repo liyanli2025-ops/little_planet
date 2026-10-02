@@ -118,3 +118,12 @@ docker compose exec -T planet node backend/import-tencent-probe.mjs 你的登录
 导入不直接覆盖小屋。打开设计窗口后确认保存。
 
 验证：`node --test tests/studio.test.mjs tests/tencent-3d.test.mjs` 为接口替身和持久化测试，不代表真实服务调用成功。发布前还需在配置了密钥的服务器实际输入新需求，验证语言服务、腾讯生成、下载、预览和保存的全链路。
+
+
+### 腾讯文字设计切换（2026-10-02）
+
+已配置 `TENCENT_3D_API_KEY` 时，`AI_TEXT_PROVIDER=auto`（Compose 默认）会将所有文字设计统一切到 `https://tokenhub.tencentmaas.com/v1` 的 `hy3`。Key 必须授权 hy3；旧 AI_API_KEY / AI_BASE_URL / AI_MODEL 不再用于该模式。没有腾讯 Key 的安装继续使用原自定义接口。显式 `AI_TEXT_PROVIDER=custom` 可保留旧接口；`tencent` 强制腾讯，缺少 Key 时不会偷偷回退。`TENCENT_TEXT_MODEL` 可覆盖型号，默认 hy3。Key 仅在后端使用。
+
+腾讯 Hy3 和 Hy4-preview 按官方协议关闭 thinking，以支持指定工具调用；不自动切换付费模型。权限开通不代表免费额度，请以 TokenHub 控制台为准。家具 3D 生成接口保持原状。
+
+更新重建容器后，可执行 `sudo docker compose exec -T planet node backend/test-tencent-text.mjs`。它在内存数据库中调用真实文字接口，校验服饰工具参数；不会发起 3D 生成，也不会修改用户作品。文字请求按服务商额度计费。自动测试使用模拟服务，不能替代服务器真实 Key 的验收。

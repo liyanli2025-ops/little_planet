@@ -12,6 +12,8 @@ services:
       AI_API_KEY: "${AI_API_KEY:-}"
       AI_BASE_URL: "${AI_BASE_URL:-}"
       TENCENT_3D_API_KEY: "${TENCENT_3D_API_KEY:-}"
+      AI_TEXT_PROVIDER: "${AI_TEXT_PROVIDER:-auto}"
+      TENCENT_TEXT_MODEL: "${TENCENT_TEXT_MODEL:-hy3}"
       AI_MODEL: "${AI_MODEL:-}"
       REGISTRATION_CODE: "${REGISTRATION_CODE:-}"
     volumes:

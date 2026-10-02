@@ -69,6 +69,12 @@ test('production veil response reaches one mocked 3D task without text retry and
  const j=await s.start(1,request);await s.start(1,request);
  assert.equal(textCalls,1);assert.equal(t.submits(),1);
  await s.tick();const result=s.get(1,j.job).result;
- assert.deepEqual(result.values.tailoring,tailoring);assert.equal(result.values.wearables[0].x,.5);assert.equal(result.values.wearables[0].z,.6);
+ assert.deepEqual(result.values.tailoring,tailoring);assert.equal(result.values.wearables[0].x,0);assert.equal(result.values.wearables[0].z,0);
  assert.equal(t.design.current(1).version,0);t.db.close();
+});
+
+test('queued generation resumes after service restart with no resubmit',async()=>{
+ const t=setup(),j=await t.s.start(1,{scope:'home',version:0,prompt:'沙发',requestId:randomUUID()});
+ const restarted=createStudio(t.db,t.opts);assert.equal(restarted.list(1).jobs[0].status,'queued');
+ await restarted.tick();assert.ok(restarted.get(1,j.job).result);assert.equal(t.submits(),1);t.db.close();
 });

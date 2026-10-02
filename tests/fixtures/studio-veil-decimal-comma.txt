@@ -1,0 +1,1 @@
+{"operation": "asset_create", "reply": "好的，为你生成一个白色头纱，点缀小花的轻盈款式。", "description": "白色薄纱头纱，轻柔垂落，边缘与纱面散布细小花朵装饰，浪漫雅致。", "wearable": {"name": "小白花头纱", "slot": "hat", "width": 0.4, "height": 0.2, "depth": 0.02, "x": 0,5, "y": 0.24, "z": 0,6, "yaw": 0, "tint": "#ffffff"}}

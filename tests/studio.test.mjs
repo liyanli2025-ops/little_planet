@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
@@ -56,4 +57,18 @@ test('malformed tool arguments are supplied to the single text repair with no 3D
  assert.equal(s.get(1,j.job).status,'awaiting_input');assert.equal(t.submits(),0);
  const data=JSON.parse(t.db.prepare('SELECT data FROM studio_diagnostics').get().data);
  assert.equal(data.reason,'arguments_json');assert.equal(data.syntax,'invalid_token');assert.ok(!JSON.stringify(data).includes('头纱'));t.db.close();
+});
+
+test('production veil response reaches one mocked 3D task without text retry and preserves dress',async()=>{
+ const t=setup(),original=t.opts.fetcher;let textCalls=0;
+ const raw=readFileSync(new URL('./fixtures/studio-veil-decimal-comma.txt',import.meta.url),'utf8');
+ t.opts.fetcher=async(url,o)=>{if(String(url).includes('chat/completions')){textCalls++;return Response.json({choices:[{finish_reason:'stop',message:{tool_calls:[{function:{name:'edit_object',arguments:raw}}]}}]})}return original(url,o)};
+ const s=createStudio(t.db,t.opts),tailoring={kind:'dress',name:'白色婚纱',pattern:'plain',color:'#ffffff',accent:'#ffffff',length:.3,flare:.08,pleats:8,patternScale:.05};
+ const draft=t.design.make(1,'outfit',{...t.design.current(1).design.outfit,tailoring},0,'test');
+ const request={scope:'outfit',version:0,draft:draft.id,prompt:'增加一个头纱，用小花装饰',requestId:randomUUID()};
+ const j=await s.start(1,request);await s.start(1,request);
+ assert.equal(textCalls,1);assert.equal(t.submits(),1);
+ await s.tick();const result=s.get(1,j.job).result;
+ assert.deepEqual(result.values.tailoring,tailoring);assert.equal(result.values.wearables[0].x,.5);assert.equal(result.values.wearables[0].z,.6);
+ assert.equal(t.design.current(1).version,0);t.db.close();
 });

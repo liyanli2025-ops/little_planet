@@ -1,3 +1,4 @@
+import {readFileSync} from 'node:fs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {parseStudioReply,repairInstruction} from '../backend/studio-reply.mjs';
@@ -18,4 +19,19 @@ test('malformed values are not invented; failed arguments available only to repa
   assert.equal(e.planCode,'arguments_json');assert.equal(e.repairArguments,a);assert.ok(e.diagnostic.syntax);assert.ok(!JSON.stringify(e.diagnostic).includes('私密'));return true;
  });
  assert.throws(()=>parseStudioReply(tool(JSON.stringify(p).replace('"width":0.4','"width":-.99')),'outfit'),e=>e.planCode==='invalid_plan');
+});
+
+test('replays actual Tencent veil response with comma decimal coordinates',()=>{
+ const raw=readFileSync(new URL('./fixtures/studio-veil-decimal-comma.txt',import.meta.url),'utf8');
+ assert.throws(()=>JSON.parse(raw));
+ const actual=parseStudioReply(tool(raw),'outfit');
+ assert.deepEqual(actual,JSON.parse(raw.replace('"x": 0,5','"x": 0.5').replace('"z": 0,6','"z": 0.6')));
+ assert.throws(()=>parseStudioReply(tool(raw.replace('"x": 0,5','"x": 0,9')),'outfit'),e=>e.planCode==='invalid_plan');
+});
+test('comma decimal compatibility preserves text and arrays and rejects ambiguous values',()=>{
+ const raw=JSON.stringify({...p,description:'原文 0,5 和 : 0,6, 都保留'}).replace('"x":0','"x":-0,25');
+ const actual=parseStudioReply(tool(raw),'outfit');assert.equal(actual.wearable.x,-0.25);assert.equal(actual.description,'原文 0,5 和 : 0,6, 都保留');
+ const array=JSON.stringify({...p,wearable:{...p.wearable,x:[0,5]}}).replace('"height":0.5','"height":.5');
+ assert.throws(()=>parseStudioReply(tool(array),'outfit'),e=>{assert.equal(e.planCode,'invalid_plan');assert.deepEqual(JSON.parse(e.repairArguments).wearable.x,[0,5]);return true});
+ for(const value of ['1,000','0,5,6','0, 5'])assert.throws(()=>parseStudioReply(tool(JSON.stringify(p).replace('"x":0','"x":'+value)),'outfit'),e=>e.planCode==='arguments_json');
 });

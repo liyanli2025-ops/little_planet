@@ -3,3 +3,9 @@
 .design-actions{flex-wrap:wrap;margin-top:12px}.design-history button{text-align:left}#design-studio textarea{min-height:110px}
 
 #design-studio h2{font-size:18px;margin:0 0 8px}#design-studio textarea{min-height:64px;height:64px;margin:8px 0;resize:vertical}.design-caption{margin:5px 0}.design-actions{margin-top:8px}@media(max-width:600px){#design-studio{max-height:40dvh;padding:16px}#design-studio textarea{min-height:56px;height:56px}}
+
+/* Keep the try-on model in a separate viewport, never behind the editor. */
+#design-fitting{position:fixed;z-index:119;left:18px;right:390px;top:100px;bottom:120px;touch-action:none;border-radius:32px;background:radial-gradient(ellipse at center,#f6f5e8ee,#e5ebddcc);cursor:grab}
+#design-fitting[hidden]{display:none}#design-fitting canvas{display:block;width:100%;height:100%}
+#design-studio.with-fitting{max-height:calc(100dvh - 150px);bottom:100px;backdrop-filter:none;background:#faf9eef5}
+@media(max-width:600px){#design-fitting{left:16px;right:16px;top:75px;bottom:calc(37dvh + 100px);border-radius:24px}#design-studio.with-fitting{left:16px;right:16px;width:auto;bottom:92px;max-height:37dvh;padding:12px 16px}#design-studio.with-fitting header{position:sticky;top:-12px;z-index:1;background:#faf9ee}#design-studio.with-fitting nav{margin:0}#design-studio.with-fitting footer{margin-top:4px}#design-studio.with-fitting details{margin-top:0}}

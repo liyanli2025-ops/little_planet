@@ -127,3 +127,8 @@ docker compose exec -T planet node backend/import-tencent-probe.mjs 你的登录
 腾讯 Hy3 和 Hy4-preview 按官方协议关闭 thinking，以支持指定工具调用；不自动切换付费模型。权限开通不代表免费额度，请以 TokenHub 控制台为准。家具 3D 生成接口保持原状。
 
 更新重建容器后，可执行 `sudo docker compose exec -T planet node backend/test-tencent-text.mjs`。它在内存数据库中调用真实文字接口，校验服饰工具参数；不会发起 3D 生成，也不会修改用户作品。文字请求按服务商额度计费。自动测试使用模拟服务，不能替代服务器真实 Key 的验收。
+
+
+### 装扮试穿与搭配（2026-10-02）
+
+装扮编辑使用独立的三维熊预览，手机上下分区、桌面左右分区；拖动旋转、双指或滚轮缩放，关闭即退出预览。不会移动星球原镜头。已有贝雷帽/针织帽、软底鞋/短靴、蝴蝶结/胸针通过 AI style 操作搭配；accessoryColors 可独立指定帽、鞋、配饰颜色，并沿用保存、回滚、赠送流程。这是对现有模型的自然语言搭配，不是任意新帽鞋模型生成。服饰结构仍受裁剪参数限制。

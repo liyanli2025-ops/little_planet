@@ -22,7 +22,7 @@ test('missing clothing arguments are repaired once through language service, not
  t.opts.fetcher=async(url,o)=>{const b=JSON.parse(o.body);calls.push(b);return Response.json({choices:[{message:{tool_calls:[{function:{name:'edit_object',arguments:JSON.stringify(calls.length===1?{operation:'tailor',reply:'预览'}:{operation:'tailor',tailoring,reply:'预览'})}}]}}]})};
  const s=createStudio(t.db,t.opts),j=await s.start(1,{scope:'outfit',version:0,prompt:'绿裙',requestId:randomUUID()});
  assert.equal(calls.length,2);assert.deepEqual(s.get(1,j.job).result.values.tailoring,tailoring);assert.equal(t.submits(),0);
- assert.equal(calls[0].model,'hy3');assert.deepEqual(calls[0].thinking,{type:'disabled'});const fn=calls[0].tools[0].function;assert.deepEqual(fn.parameters.properties.operation.enum,['tailor','explain']);assert.ok(fn.parameters.properties.tailoring.required.includes('patternScale'));assert.equal(calls[0].tool_choice.function.name,'edit_object');
+ assert.equal(calls[0].model,'hy3');assert.deepEqual(calls[0].thinking,{type:'disabled'});const fn=calls[0].tools[0].function;assert.deepEqual(fn.parameters.properties.operation.enum,['tailor','style','explain']);assert.ok(fn.parameters.properties.tailoring.required.includes('patternScale'));assert.equal(calls[0].tool_choice.function.name,'edit_object');
  assert.equal(t.design.current(1).version,0);t.db.close();
 });
 
@@ -38,3 +38,5 @@ test('repeated incomplete output terminates with a clear error and leaves design
  const s=createStudio(t.db,t.opts);await assert.rejects(s.start(1,{scope:'outfit',version:0,prompt:'裙子',requestId:randomUUID()}),/未能形成完整设计/);
  assert.equal(calls,2);assert.equal(s.list(1).jobs[0].status,'failed');assert.equal(t.design.current(1).version,0);assert.equal(t.submits(),0);t.db.close();
 });
+
+test('natural-language hat styling preserves dress and independently colors accessories',async()=>{const t=setup();t.set({operation:'style',outfit:{hat:'beanie',accessoryColors:{hat:'#b83737'}},reply:'红帽'});const j=await t.s.start(1,{scope:'outfit',version:0,prompt:'红帽子',requestId:randomUUID()}),p=t.s.get(1,j.job).result;assert.equal(p.values.hat,'beanie');assert.equal(p.values.accessoryColors.hat,'#b83737');assert.equal(p.values.garment,'original');t.design.accept(1,{id:p.id,version:0});assert.equal(t.design.current(1).design.outfit.accessoryColors.hat,'#b83737');assert.equal(t.submits(),0);t.db.close()});

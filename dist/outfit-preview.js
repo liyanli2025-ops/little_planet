@@ -1,8 +1,8 @@
 import {createWearableModels} from './wearable-models.js';
 import * as T from './vendor/three.module.js';
 import {createTeddy} from './teddy.js';
-export function createOutfitPreview(){
- const el=document.createElement('div');el.id='design-fitting';el.hidden=true;el.setAttribute('aria-label','装扮三维预览，拖动旋转，双指缩放');document.body.append(el);
+export function createOutfitPreview(id='design-fitting'){
+ const el=document.createElement('div');el.id=id;el.hidden=true;el.setAttribute('aria-label','装扮三维预览，拖动旋转，双指缩放');document.body.append(el);
  let conceptId=null;const conceptStates=new Map();
  let renderer,bear,scene,camera,frame,conceptModels,conceptRoot,zoom=1,rotation=.12;
  function render(){if(!renderer||el.hidden)return;const w=el.clientWidth,h=el.clientHeight;if(!w||!h)return;renderer.setSize(w,h,false);camera.aspect=w/h;camera.position.set(0,.65,2.5/zoom);camera.lookAt(0,.59,0);camera.updateProjectionMatrix();bear.avatar.rotation.y=rotation;conceptRoot.rotation.y=rotation;renderer.render(scene,camera)}

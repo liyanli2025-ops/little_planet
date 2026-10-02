@@ -1,3 +1,4 @@
+import {wardrobeCatalog,wardrobeOutfit} from '../dist/wardrobe-catalog.js';
 import {parseDesignArguments} from './studio-reply.mjs';
 import {resolveDesignEnv,designThinking} from './ai-provider.mjs';
 import {creationSchemas,creationExamples} from '../dist/creation-schema.js';
@@ -19,7 +20,9 @@ export function createDesignService(db,{env=process.env,fetcher=fetch,clock=Date
  const day=()=>new Date(clock()+8*3600000).toISOString().slice(0,10);
  const txn=fn=>{db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result}catch(e){db.exec('ROLLBACK');throw e}};
  function current(account){const row=db.prepare('SELECT * FROM account_designs WHERE account=?').get(account);return row?{version:row.version,design:validateDesign(JSON.parse(row.data))}:{version:0,design:defaultDesign()}}
- function view(account){const c=current(account);return {...c,enabled,remaining:null,partnerId:partner(account)?.id??null,gifts:gifts(account),items:db.prepare('SELECT id,scope,name FROM design_items WHERE account=? ORDER BY created DESC').all(account),history:db.prepare('SELECT version,label,created FROM design_history WHERE account=? ORDER BY version DESC LIMIT 20').all(account)}}
+ function wardrobe(account){return wardrobeCatalog(db.prepare("SELECT id,name,data FROM design_items WHERE account=? AND scope='outfit' ORDER BY created DESC").all(account).map(x=>({key:'item:'+x.id,name:x.name,values:JSON.parse(x.data)})),gifts(account).map(x=>({key:'gift:'+x.id,values:x.values})));}
+ function wardrobePreview(account,b){checkBase(account,b.version);const item=wardrobe(account).find(x=>x.key===b.key);fail(item,'衣柜里没有这件衣物',404);fail(item.wearable,'这件旧模型还未适配，暂时不能试穿',422);return make(account,'outfit',wardrobeOutfit(current(account).design.outfit,item),b.version,'wardrobe');}
+ function view(account){const c=current(account);return {...c,enabled,remaining:null,partnerId:partner(account)?.id??null,wardrobe:wardrobe(account),gifts:gifts(account),items:db.prepare('SELECT id,scope,name FROM design_items WHERE account=? ORDER BY created DESC').all(account),history:db.prepare('SELECT version,label,created FROM design_history WHERE account=? ORDER BY version DESC LIMIT 20').all(account)}}
  function checkBase(account,base){fail(Number.isInteger(base)&&base===current(account).version,'设计已在别处更新，请重新打开后再试',409)}
  function proposal(account,id){fail(typeof id==='string'&&/^[a-f0-9-]{36}$/.test(id),'方案标识不正确');const p=db.prepare('SELECT * FROM design_proposals WHERE id=? AND account=?').get(id,account);fail(p,'这个方案不存在或不属于你',404);fail(clock()-p.created<86400000||p.applied!==null,'方案已过期，请重新生成',409);p.data=JSON.stringify(validateDesign({...defaultDesign(),[p.scope]:JSON.parse(p.data)})[p.scope]);return p}
  function make(account,scope,data,base,source){const safe=validateDesignPart(scope,data),id=randomUUID();db.prepare('INSERT INTO design_proposals VALUES(?,?,?,?,?,?,?,NULL)').run(id,account,base,scope,JSON.stringify(safe),source,clock());return {id,scope,values:safe,base,source}}
@@ -56,5 +59,5 @@ export function createDesignService(db,{env=process.env,fetcher=fetch,clock=Date
  function baseOutfit(account,id){fail(designFields.outfit.garment.includes(id)&&id!=='original','款式不存在');const d=current(account).design;if(d.outfit.garment===id&&!d.outfit.creation)return;d.outfit.garment=id;d.outfit.creation=null;delete d.outfit.tailoring;write(account,d,'更换衣服')}
  // A process restart cannot leave a request permanently holding the single generation slot.
  db.prepare("UPDATE design_requests SET status='failed' WHERE status='pending'").run();
- return {current,view,generate,accept,rollback,gift,wearGift,baseOutfit,previewItem,make,proposal};
+ return {current,view,generate,accept,rollback,gift,wearGift,baseOutfit,previewItem,wardrobePreview,make,proposal};
 }

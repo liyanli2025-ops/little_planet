@@ -13,8 +13,9 @@ console.log('仅验证一次文字设计流程（失败格式最多补试一次�
 const db=new DatabaseSync(':memory:');
 try{
  const design=createDesignService(db,{env});
- const s=createStudio(db,{env,design,theme:()=>0,partner:()=>null});
- const j=await s.start(1,{scope:'outfit',version:0,prompt:'设计一条浅蓝色条纹半身裙',requestId:randomUUID()});
+ const fetcher=(url,options)=>{if(String(url)!=='https://tokenhub.tencentmaas.com/v1/chat/completions')throw Error('文字自检禁止发起 3D 生成');return fetch(url,options)};
+ const s=createStudio(db,{env,fetcher,design,theme:()=>0,partner:()=>null});
+ const j=await s.start(1,{scope:'outfit',version:0,prompt:'使用基础剪裁设计一条可随熊动作变形的浅蓝色条纹半身裙，不调用 3D 生成',requestId:randomUUID()});
  const p=s.get(1,j.job).result;
  if(!p?.values?.tailoring)throw Error('缺少服饰参数');
  console.log('通过：腾讯已返回完整服饰参数，并通过网页使用的方案校验。');

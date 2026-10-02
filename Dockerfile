@@ -1,4 +1,5 @@
 FROM node:24-bookworm-slim
+LABEL io.echoo.managed="true"
 ENV NODE_ENV=production HOST=0.0.0.0 PORT=8080 DATABASE_PATH=/data/planet.sqlite NODE_OPTIONS=--max-old-space-size=128
 WORKDIR /app
 COPY --chown=node:node backend ./backend

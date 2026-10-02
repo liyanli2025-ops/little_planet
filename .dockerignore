@@ -7,3 +7,5 @@ backups
 work
 node_modules
 tests
+
+*.bundle

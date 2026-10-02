@@ -78,3 +78,18 @@ test('queued generation resumes after service restart with no resubmit',async()=
  const restarted=createStudio(t.db,t.opts);assert.equal(restarted.list(1).jobs[0].status,'queued');
  await restarted.tick();assert.ok(restarted.get(1,j.job).result);assert.equal(t.submits(),1);t.db.close();
 });
+
+for(const kind of ['skirt','dress','top','set','hat','veil'])test('standard '+kind+' uses language parameters, saves and gifts without 3D',async()=>{
+ const t=setup(),tailoring={kind,name:'标准样式',pattern:'flower',color:'#fff4ec',accent:'#bd9091',length:.34,flare:.07,pleats:12,patternScale:.06,...(kind==='set'?{pantsColor:'#526e5c'}:{})};
+ t.set({operation:'tailor',tailoring,reply:'试穿'});
+ const j=await t.s.start(1,{scope:'outfit',outfitType:kind,version:0,prompt:'温馨小花风格',requestId:randomUUID()});
+ const p=t.s.get(1,j.job).result,head=['hat','veil'].includes(kind);assert.equal((head?p.values.headwear:p.values.tailoring).kind,kind);
+ if(['skirt','dress'].includes(kind))assert.equal(p.values.tailoring.length,.38);
+ t.design.accept(1,{id:p.id,version:0});t.design.gift(1,{id:p.id,partnerId:2});assert.equal(t.design.view(2).gifts.length,1);assert.equal(t.submits(),0);t.db.close();
+});
+test('selected type prevents accidental paid generation and missing pants blocks a set',async()=>{
+ const t=setup();t.set({operation:'asset_create',description:'帽子',wearable});
+ await assert.rejects(t.s.start(1,{scope:'outfit',outfitType:'hat',version:0,prompt:'帽子',requestId:randomUUID()}),/设计未完成/);assert.equal(t.submits(),0);
+ t.set({operation:'tailor',tailoring:{kind:'set',name:'套装',pattern:'plain',color:'#ffffff',accent:'#ffffff',length:.22,flare:.05,pleats:8,patternScale:.05}});
+ await assert.rejects(t.s.start(1,{scope:'outfit',outfitType:'set',version:0,prompt:'套装',requestId:randomUUID()}),/设计未完成/);assert.equal(t.submits(),0);t.db.close();
+});

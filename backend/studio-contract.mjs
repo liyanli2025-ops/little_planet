@@ -23,3 +23,19 @@ export function standardOutfitTool(type){
  tool.function.description='根据用户选择的标准类型设计可穿戴样式，不能生成独立3D物体';
  return tool;
 }
+
+export function standardHomeTool(type){
+ const tool=studioTool('home'),p=tool.function.parameters;
+ p.properties.operation.enum=['create','move','remove','explain'];
+ const props=p.properties.object.properties;
+ props.kind.enum=[type];
+ props.standard={type:'string',enum:[type]};
+ props.accent=color;props.shape={type:'string',enum:['round','square']};
+ props.pattern={type:'string',enum:['plain','stripe','check']};
+ if(type==='lamp')props.shape.enum=['round'];
+ if(type==='rug')props.height=number(.025,.06);
+ p.properties.object.required=Object.keys(props);
+ delete p.properties.description;
+ tool.function.description='设计可直接使用的标准家具样式和摆放位置；移动或收起现有家具需填写 target';
+ return tool;
+}

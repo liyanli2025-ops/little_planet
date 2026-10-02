@@ -93,3 +93,20 @@ test('selected type prevents accidental paid generation and missing pants blocks
  t.set({operation:'tailor',tailoring:{kind:'set',name:'套装',pattern:'plain',color:'#ffffff',accent:'#ffffff',length:.22,flare:.05,pleats:8,patternScale:.05}});
  await assert.rejects(t.s.start(1,{scope:'outfit',outfitType:'set',version:0,prompt:'套装',requestId:randomUUID()}),/设计未完成/);assert.equal(t.submits(),0);t.db.close();
 });
+
+for(const type of ['sofa','lamp','rug'])test('standard '+type+' uses text, persists and rolls back without 3D',async()=>{
+ const t=setup(),o={...sofa,standard:type,kind:type,accent:'#f4d8a2',shape:'round',pattern:'stripe',...(type==='lamp'?{x:-2.5,z:.9,width:.35,depth:.35,height:1.5}:type==='rug'?{x:0,z:0,width:2,depth:1.2,height:.035}:{})};
+ t.set({operation:'create',object:o,reply:'预览'});
+ const j=await t.s.start(1,{scope:'home',homeType:type,version:0,prompt:'温暖条纹',requestId:randomUUID()}),p=t.s.get(1,j.job).result;
+ assert.equal(t.submits(),0);assert.equal(p.values.objects[0].standard,type);assert.equal(p.values.objects[0].asset,undefined);
+ t.design.accept(1,{id:p.id,version:0});assert.equal(t.design.current(1).design.home.objects[0].standard,type);
+ t.set({operation:'move',target:p.values.objects[0].id,object:{...o,tint:'#b9aa86'},reply:'改色'});
+ const j2=await t.s.start(1,{scope:'home',homeType:type,version:1,prompt:'改成米色',requestId:randomUUID()}),p2=t.s.get(1,j2.job).result;
+ assert.equal(p2.values.objects.length,1);assert.equal(p2.values.objects[0].id,p.values.objects[0].id);assert.equal(t.submits(),0);
+ t.design.accept(1,{id:p2.id,version:1});t.design.rollback(1,{version:2,target:0});assert.equal(t.design.current(1).design.home.objects,undefined);t.db.close();
+});
+test('standard choice rejects accidental external generation and wrong type',async()=>{
+ const t=setup();t.set({operation:'regenerate',description:'new sofa',object:sofa});
+ await assert.rejects(t.s.start(1,{scope:'home',homeType:'sofa',version:0,prompt:'沙发',requestId:randomUUID()}));
+ assert.equal(t.submits(),0);assert.equal(t.design.current(1).version,0);t.db.close();
+});

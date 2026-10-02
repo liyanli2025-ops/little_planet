@@ -16,3 +16,25 @@ test('tailored garment uses actual language output, independent account and gift
 test('both original layouts retain routes; invalid furniture never changes originals',()=>{for(const l of homeLayouts){assert.doesNotThrow(()=>studioLayout(l,[],true));const before=JSON.stringify(l);assert.throws(()=>studioLayout(l,[{...sofa,kind:'decor',x:0,z:0,width:8,depth:8}],true));assert.equal(JSON.stringify(l),before)}});
 
 test('new independent furniture moves between floors and can be removed without more generation',async()=>{const t=setup();t.set({operation:'create',object:{...sofa,name:'小灯',kind:'decor',x:-2.5,z:.9,yaw:0,width:.35,height:.8,depth:.35},description:'暖色小灯'});const j=await t.s.start(1,{scope:'home',version:0,prompt:'新增灯',requestId:randomUUID()});await t.s.tick();const p=t.s.get(1,j.job).result,o=p.values.objects[0];assert.equal(o.description,'暖色小灯');t.set({operation:'move',target:o.id,object:{floor:1,x:1,z:1.5}});const j2=await t.s.start(1,{scope:'home',version:0,draft:p.id,prompt:'移到二层',requestId:randomUUID()}),p2=t.s.get(1,j2.job).result;assert.equal(p2.values.objects[0].floor,1);t.set({operation:'remove',target:o.id});const j3=await t.s.start(1,{scope:'home',version:0,draft:p2.id,prompt:'收起来',requestId:randomUUID()});assert.equal(t.s.get(1,j3.job).result.values.objects.length,0);assert.equal(t.submits(),1);t.db.close()});
+
+test('missing clothing arguments are repaired once through language service, not fabricated',async()=>{
+ const t=setup(),calls=[],tailoring={kind:'skirt',name:'绿裙',pattern:'plain',color:'#667766',accent:'#ffffff',length:.3,flare:.08,pleats:8,patternScale:.05};
+ t.opts.fetcher=async(url,o)=>{const b=JSON.parse(o.body);calls.push(b);return Response.json({choices:[{message:{tool_calls:[{function:{name:'edit_object',arguments:JSON.stringify(calls.length===1?{operation:'tailor',reply:'预览'}:{operation:'tailor',tailoring,reply:'预览'})}}]}}]})};
+ const s=createStudio(t.db,t.opts),j=await s.start(1,{scope:'outfit',version:0,prompt:'绿裙',requestId:randomUUID()});
+ assert.equal(calls.length,2);assert.deepEqual(s.get(1,j.job).result.values.tailoring,tailoring);assert.equal(t.submits(),0);
+ const fn=calls[0].tools[0].function;assert.deepEqual(fn.parameters.properties.operation.enum,['tailor','explain']);assert.ok(fn.parameters.properties.tailoring.required.includes('patternScale'));assert.equal(calls[0].tool_choice.function.name,'edit_object');
+ assert.equal(t.design.current(1).version,0);t.db.close();
+});
+
+test('unsupported design explains limitation without retry, proposal or paid generation',async()=>{
+ const t=setup();let calls=0;
+ t.opts.fetcher=async()=>{calls++;return Response.json({choices:[{message:{tool_calls:[{function:{name:'edit_object',arguments:JSON.stringify({operation:'explain',reply:'暂不支持镂空蕾丝，要试试圆点裙吗？'})}}]}}]})};
+ const s=createStudio(t.db,t.opts);await assert.rejects(s.start(1,{scope:'outfit',version:0,prompt:'蕾丝裙',requestId:randomUUID()}),/不支持镂空蕾丝/);
+ assert.equal(calls,1);assert.equal(t.submits(),0);assert.equal(t.db.prepare('SELECT count(*) n FROM design_proposals').get().n,0);assert.equal(t.design.current(1).version,0);t.db.close();
+});
+
+test('repeated incomplete output terminates with a clear error and leaves design untouched',async()=>{
+ const t=setup();let calls=0;t.opts.fetcher=async()=>{calls++;return Response.json({choices:[{message:{tool_calls:[{function:{name:'edit_object',arguments:'{"operation":"tailor","tailoring":null}'}}]}}]})};
+ const s=createStudio(t.db,t.opts);await assert.rejects(s.start(1,{scope:'outfit',version:0,prompt:'裙子',requestId:randomUUID()}),/未能形成完整设计/);
+ assert.equal(calls,2);assert.equal(s.list(1).jobs[0].status,'failed');assert.equal(t.design.current(1).version,0);assert.equal(t.submits(),0);t.db.close();
+});

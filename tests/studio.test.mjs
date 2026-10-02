@@ -47,3 +47,13 @@ test('complex clothing is generated as a concept instead of rejected or substitu
 test('invalid accessory fit is blocked before a paid generation',async()=>{const t=setup();t.set({operation:'asset_create',wearable:{...wearable,width:900},description:'帽子',reply:'预览'});await assert.rejects(t.s.start(1,{scope:'outfit',version:0,prompt:'帽子',requestId:randomUUID()}),/参数/);assert.equal(t.submits(),0);t.db.close()});
 
 test('clarification persists and short reply carries original request, private and version bound',async()=>{const t=setup(),requests=[];let answer={operation:'explain',reply:'先做头纱，还是先做裙子？'};t.opts.fetcher=async(url,o)=>{requests.push(JSON.parse(o.body));return Response.json({choices:[{message:{tool_calls:[{function:{name:'edit_object',arguments:JSON.stringify(answer)}}]}}]})};const s=createStudio(t.db,t.opts),j=await s.start(1,{scope:'outfit',version:0,prompt:'加头纱和蕾丝裙',requestId:randomUUID()});assert.equal(s.get(1,j.job).reply,'先做头纱，还是先做裙子？');assert.equal(t.submits(),0);await assert.rejects(s.start(2,{scope:'outfit',version:0,prompt:'先裙子',replyTo:j.job,requestId:randomUUID()}),/过期/);answer={operation:'style',outfit:{hat:'beanie'},reply:'预览'};const resumed=createStudio(t.db,t.opts);const next=await resumed.start(1,{scope:'outfit',version:0,prompt:'改成针织帽吧',replyTo:j.job,requestId:randomUUID()});const messages=requests.at(-1).messages;assert.equal(messages[1].content,'加头纱和蕾丝裙');assert.equal(messages[2].content,'先做头纱，还是先做裙子？');assert.equal(messages[3].content,'改成针织帽吧');t.design.accept(1,{id:resumed.get(1,next.job).result.id,version:0});assert.ok(!resumed.list(1).jobs.some(x=>x.id===j.job));await assert.rejects(resumed.start(1,{scope:'outfit',version:1,prompt:'好的',replyTo:j.job,requestId:randomUUID()}),/过期/);t.db.close()});
+
+test('malformed tool arguments are supplied to the single text repair with no 3D submission',async()=>{
+ const t=setup(),calls=[],bad='{"operation":"explain","reply":"先做头纱",BROKEN}';
+ t.opts.fetcher=async(url,o)=>{const b=JSON.parse(o.body);calls.push(b);return Response.json({choices:[{finish_reason:'stop',message:{tool_calls:[{function:{name:'edit_object',arguments:calls.length===1?bad:JSON.stringify({operation:'explain',reply:'先做头纱吗？'})}}]}}]})};
+ const s=createStudio(t.db,t.opts),j=await s.start(1,{scope:'outfit',version:0,prompt:'头纱和裙子',requestId:randomUUID()});
+ assert.equal(calls.length,2);assert.ok(calls[1].messages.some(m=>m.role==='assistant'&&m.content.includes(bad)));
+ assert.equal(s.get(1,j.job).status,'awaiting_input');assert.equal(t.submits(),0);
+ const data=JSON.parse(t.db.prepare('SELECT data FROM studio_diagnostics').get().data);
+ assert.equal(data.reason,'arguments_json');assert.equal(data.syntax,'invalid_token');assert.ok(!JSON.stringify(data).includes('头纱'));t.db.close();
+});

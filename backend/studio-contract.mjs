@@ -1,4 +1,4 @@
-import {wearableFields} from '../dist/wearable-schema.js';
+import {wearableFields,validateWearables} from '../dist/wearable-schema.js';
 import {designFields,validateDesignPart,defaultDesign} from '../dist/design-schema.js';
 import {validateTailoring} from '../dist/studio-schema.js';
 const number=(minimum,maximum)=>({type:'number',minimum,maximum});
@@ -8,6 +8,6 @@ export function studioTool(scope){return {type:'function',function:{name:'edit_o
 export function checkStudioPlan(p,scope){
  if(!p||typeof p!=='object')throw Error('缺少设计');
  if(p.operation==='explain'){if(typeof p.reply!=='string'||!p.reply.trim())throw Error('缺少说明');return;}
- if(scope==='outfit'){if(['asset_create','asset_regenerate','asset_fit','asset_remove'].includes(p.operation))return;if(p.outfit)validateDesignPart('outfit',{...defaultDesign().outfit,...p.outfit});if(p.operation==='style'&&p.outfit&&Object.keys(p.outfit).length)return;if(p.operation!=='tailor'||!validateTailoring(p.tailoring))throw Error('缺少完整服饰');return;}
+ if(scope==='outfit'){if(['asset_create','asset_regenerate','asset_fit','asset_remove'].includes(p.operation)){if(p.operation!=='asset_create'&&(typeof p.target!=='string'||!p.target))throw Error('缺少目标作品');if(['asset_create','asset_regenerate'].includes(p.operation)&&(typeof p.description!=='string'||!p.description.trim()))throw Error('缺少生成描述');if(p.operation==='asset_create'){const id='11111111-1111-4111-8111-111111111111';validateWearables([{...p.wearable,id,asset:id,description:p.description}]);}return;}if(p.outfit)validateDesignPart('outfit',{...defaultDesign().outfit,...p.outfit});if(p.operation==='style'&&p.outfit&&Object.keys(p.outfit).length)return;if(p.operation!=='tailor'||!validateTailoring(p.tailoring))throw Error('缺少完整服饰');return;}
  if(!['create','regenerate','move','remove'].includes(p.operation))throw Error('家具操作不正确');
 }

@@ -35,8 +35,8 @@ test('unsupported design explains limitation without retry, proposal or paid gen
 
 test('repeated incomplete output terminates with a clear error and leaves design untouched',async()=>{
  const t=setup();let calls=0;t.opts.fetcher=async()=>{calls++;return Response.json({choices:[{message:{tool_calls:[{function:{name:'edit_object',arguments:'{"operation":"tailor","tailoring":null}'}}]}}]})};
- const s=createStudio(t.db,t.opts);await assert.rejects(s.start(1,{scope:'outfit',version:0,prompt:'裙子',requestId:randomUUID()}),/未能形成完整设计/);
- assert.equal(calls,2);assert.equal(s.list(1).jobs[0].status,'failed');assert.equal(t.design.current(1).version,0);assert.equal(t.submits(),0);t.db.close();
+ const s=createStudio(t.db,t.opts);await assert.rejects(s.start(1,{scope:'outfit',version:0,prompt:'裙子',requestId:randomUUID()}),/设计未完成/);
+ assert.equal(calls,2);const diagnostics=t.db.prepare('SELECT data FROM studio_diagnostics').all();assert.equal(diagnostics.length,2);assert.equal(JSON.parse(diagnostics[0].data).reason,'invalid_plan');assert.equal(s.list(1).jobs[0].status,'failed');assert.equal(t.design.current(1).version,0);assert.equal(t.submits(),0);t.db.close();
 });
 
 test('natural-language hat styling preserves dress and independently colors accessories',async()=>{const t=setup();t.set({operation:'style',outfit:{hat:'beanie',accessoryColors:{hat:'#b83737'}},reply:'红帽'});const j=await t.s.start(1,{scope:'outfit',version:0,prompt:'红帽子',requestId:randomUUID()}),p=t.s.get(1,j.job).result;assert.equal(p.values.hat,'beanie');assert.equal(p.values.accessoryColors.hat,'#b83737');assert.equal(p.values.garment,'original');t.design.accept(1,{id:p.id,version:0});assert.equal(t.design.current(1).design.outfit.accessoryColors.hat,'#b83737');assert.equal(t.submits(),0);t.db.close()});

@@ -1,0 +1,90 @@
+{
+  "source": "https://tinytreats.itch.io/baked-goods",
+  "license": "CC0-1.0",
+  "status": "integrated into public seaside cafe",
+  "menu": [
+    {
+      "id": "strawberry",
+      "name": "草莓蛋糕",
+      "display": "cake_strawberry",
+      "serving": "cake_strawberry_slice"
+    },
+    {
+      "id": "chocolate",
+      "name": "巧克力蛋糕",
+      "display": "cake_chocolate",
+      "serving": "cake_chocolate_slice"
+    },
+    {
+      "id": "cherry",
+      "name": "樱桃派",
+      "display": "pie_cherry",
+      "serving": "pie_cherry_slice"
+    },
+    {
+      "id": "cupcake",
+      "name": "草莓纸杯蛋糕",
+      "display": "cupcake",
+      "serving": "cupcake"
+    },
+    {
+      "id": "cinnamon",
+      "name": "肉桂卷",
+      "display": "cinnamon_roll",
+      "serving": "cinnamon_roll"
+    },
+    {
+      "id": "waffle",
+      "name": "奶油华夫饼",
+      "display": "waffle_stacked",
+      "serving": "waffle_stacked"
+    }
+  ],
+  "assets": [
+    {
+      "file": "cake_strawberry.glb",
+      "triangles": 2336,
+      "bytes": 99776
+    },
+    {
+      "file": "cake_strawberry_slice.glb",
+      "triangles": 764,
+      "bytes": 46900
+    },
+    {
+      "file": "cake_chocolate.glb",
+      "triangles": 2252,
+      "bytes": 93896
+    },
+    {
+      "file": "cake_chocolate_slice.glb",
+      "triangles": 380,
+      "bytes": 35860
+    },
+    {
+      "file": "pie_cherry.glb",
+      "triangles": 769,
+      "bytes": 42460
+    },
+    {
+      "file": "pie_cherry_slice.glb",
+      "triangles": 387,
+      "bytes": 33564
+    },
+    {
+      "file": "cupcake.glb",
+      "triangles": 778,
+      "bytes": 49144
+    },
+    {
+      "file": "cinnamon_roll.glb",
+      "triangles": 558,
+      "bytes": 39296
+    },
+    {
+      "file": "waffle_stacked.glb",
+      "triangles": 1144,
+      "bytes": 59136
+    }
+  ]
+}

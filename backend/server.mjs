@@ -1,3 +1,4 @@
+import {createCafe} from './cafe.mjs';
 import {studioLayout} from '../dist/studio-layout.js';
 import {createStudio} from './studio.mjs';
 import {createPhotos} from './photos.mjs';
@@ -33,6 +34,7 @@ const designService=createDesignService(db,{partner:id=>hub.partner(hub.account(
 const studio=createStudio(db,{design:designService,theme:id=>{const u=hub.account(id);return hub.space(u.space).store.read().state.worlds[u.slot].theme},partner:id=>hub.partner(hub.account(id))});
 setInterval(()=>void studio.tick(),10000).unref();
 const presence=createPresence(),social=createSocial();
+const cafe=createCafe(db,{partner:u=>hub.partner(u),profile:u=>{const {wearables,...appearance}=designService.current(u.id).design.outfit;return {outfit:hub.space(u.space).store.read().state.worlds[u.slot].life?.outfit||'plain',appearance}},deliver(u,item,id){const target=hub.space(u.space).store,row=target.read(),fridge=row.state.worlds[u.slot].fridge;const found=fridge.find(f=>f.food===item.id&&!f.event&&f.qty<999);if(found)found.qty++;else{fail(fridge.length<190,'冰箱满了，先整理一下再带走',409);fridge.push({id,food:item.id,qty:1})}target.db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state))}});
 const ttl=7*86400000;
 const rates=new Map();
 function rate(req,kind,max=20){
@@ -78,7 +80,7 @@ function registrationInfo(){return {first:db.prepare('SELECT COUNT(*) AS n FROM 
 function identity(u){const p=hub.partner(u),avatars=[0,1];avatars[u.slot]=u.avatar;if(p)avatars[1-u.slot]=p.avatar;return {authenticated:true,secure,accountId:u.id,legacyActor:db.prepare('SELECT slot FROM users WHERE username=?').get(u.username)?.slot,space:u.space,actor:u.slot,username:u.username,nickname:u.nickname||u.username,displayNames:hub.displayNames(u),partnerNickname:p?.nickname||p?.username||null,csrf:u.csrf,partner:p?.username||null,paired:!!p,avatars,invitationExpires:db.prepare('SELECT expires FROM account_invites WHERE account=?').get(u.id)?.expires||null,registration:registrationInfo()}}
 async function api(req,res,p){
  const current=session(req),services=current?hub.space(current.space):null,store=services?.store,mediaService=services?.mediaService,musicService=services?.musicService,weatherService=services?.weatherService;
- if(p!=='/api/presence')store?.expireMeals();
+ if(p!=='/api/presence'&&p!=='/api/cafe')store?.expireMeals();
  if(req.method==='GET'&&p==='/api/health')return json(res,200,{ok:true});
  if(req.method==='GET'&&p==='/api/session'){
   const u=session(req);return json(res,200,u?identity(u):{authenticated:false,secure,registration:registrationInfo()});
@@ -126,9 +128,10 @@ async function api(req,res,p){
  fail(req.headers['x-csrf-token']===u.csrf,'会话验证失败，请刷新页面',403);
  fail(String(u.space)===req.headers['x-planet-space'],'账号或配对状态已更新，请刷新页面后重试',409);
 
+ if(p==='/api/cafe'){fail(b&&typeof b==='object','操作无效');fail(!travelService.active(u.id)||b.action==='leave','小熊正在旅行，回来后再来咖啡馆',409);if(b.action==='join')presence.update(u,{hidden:true});return json(res,200,cafe.update(u,b))}
  if(p==='/api/studio'){rate(req,'studio',30);return json(res,200,await studio.start(u.id,b))}
  if(p==='/api/design'){fail(b&&['generate','accept','rollback','gift','wearGift','previewItem','wardrobePreview'].includes(b.action),'设计操作不存在');return json(res,200,await designService[b.action](u.id,b))}
- if(p==='/api/presence'){fail(b&&typeof b==='object','位置不正确');const peer=hub.partner(u);fail(b.hidden===true||b.world===u.slot||peer,'请先配对再访问对方',403);presence.update(u,travelService.active(u.id)?{hidden:true}:b);let live=null,resident=null;if(peer&&!travelService.active(peer.id)){live=presence.peer(u,peer);if(!live){const owner=hub.account(peer.id),environment=JSON.parse(store.db.prepare('SELECT value FROM settings WHERE key=?').get('environment:'+owner.slot)?.value||'{}');resident=residentPresence(owner,environment,store.read().state.worlds[owner.slot].life.outfit)}}return json(res,200,{peer:live,resident,social:social.peek(u)})}
+ if(p==='/api/presence'){fail(b&&typeof b==='object','位置不正确');const peer=hub.partner(u);fail(b.hidden===true||b.world===u.slot||peer,'请先配对再访问对方',403);presence.update(u,travelService.active(u.id)||cafe.has(u.id)?{hidden:true}:b);let live=null,resident=null;if(peer&&!travelService.active(peer.id)&&!cafe.has(peer.id)){live=presence.peer(u,peer);if(!live){const owner=hub.account(peer.id),environment=JSON.parse(store.db.prepare('SELECT value FROM settings WHERE key=?').get('environment:'+owner.slot)?.value||'{}');resident=residentPresence(owner,environment,store.read().state.worlds[owner.slot].life.outfit)}}return json(res,200,{peer:live,resident,social:social.peek(u)})}
  if(p==='/api/photos'){rate(req,'photos',120);if(b.action==='save')return json(res,200,{photo:photos.save(u.id,b)});if(b.action==='share'&&b.shared)fail(hub.partner(u),'请先连接对方',403);return json(res,200,photos.change(u.id,b))}
  if(p==='/api/travel'){rate(req,'travel',40);fail(['depart','collect'].includes(b.action),'旅行操作不存在');return json(res,200,b.action==='depart'?travelService.depart(u.id,u.avatar):travelService.collect(u.id))}
  if(p==='/api/account/profile'){rate(req,'profile',30);hub.profile(u.id,b.nickname);return json(res,200,identity({...u,...hub.account(u.id)}))}

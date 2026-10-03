@@ -1,3 +1,4 @@
+import {cafeMenu} from './cafe-catalog.js';
 import {recipes} from './recipe-catalog.js';
 // Shared by inventory validation, stocking UI and the 3D food models.
 const rows=[
@@ -13,6 +14,7 @@ const rows=[
 ];
 export const foodCatalog=Object.fromEntries(rows.map(([id,name,emoji,category,shape,color,ready=true])=>[id,{id,name,emoji,category,shape,color,ready,zone:category==='冷冻食品'?'freezer':'chill'}]));
 for(const r of Object.values(recipes))foodCatalog['cooked_'+r.id]={id:'cooked_'+r.id,name:r.name,emoji:r.icon,category:'做好的饭菜',shape:r.model,ready:true,zone:'chill',recipe:r.id};
+for(const f of cafeMenu)foodCatalog[f.id]={id:f.id,name:f.name,emoji:f.kind==='dessert'?'🍰':'☕',category:'海边咖啡馆',shape:'cafe',color:f.color||0xe8cdb0,ready:true,zone:'chill'};
 export const foodCategories=[...new Set(rows.map(r=>r[3]))];
 export const foodLabels=Object.fromEntries(Object.values(foodCatalog).map(f=>[f.id,[f.name,f.emoji]]));
 

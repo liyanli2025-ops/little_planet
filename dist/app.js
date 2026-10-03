@@ -1,3 +1,4 @@
+import {createCafeUI} from './cafe-ui.js';
 import {createPhotoUI} from './photo-ui.js';
 import {expireVaseFlowers} from './vase-expiry.js';
 import {createLightUI} from './light-ui.js';
@@ -38,6 +39,7 @@ function initial(){return {version:1,actor:0,worlds:[0,1].map(i=>({weather:i?'ra
 let state;if(cloud){state=cloud.state}else try{let raw=JSON.parse(localStorage.getItem(key));state=raw?.version===1&&raw.worlds?.length===2&&Array.isArray(raw.events)&&Array.isArray(raw.notes)&&raw.bags&&raw.favorites?raw:initial()}catch{state=initial()}
 state.worlds.forEach(w=>w.life??=freshLife());if(!cloud)migrateStorage(state,uid);
 let actor=state.actor===1?1:0,world=actor,inside=false,visual=null,currentPanel='',journalTab='personal',recipe='omelet',recipient='self',toastTimer,game=null;
+let cafeUI=null;
 let environment=null,pendingCookSource=null,travelUI=null,designUI=null,calendarUI=null;
 let modelView=null,selectedFood=null,selectedMeal=null,mealPage=0,cookStage=0,mealDraft='';
 function dropModel(){const old=modelView;modelView=null;old?.dispose()}
@@ -205,7 +207,7 @@ window.planetArrival.finish();
 
 const sleepRoutine=createSleepRoutine();
 function checkSleepRoutine(){
- if(document.hidden||!visual||!environment||travelUI?.away)return;
+ if(document.hidden||!visual||!environment||travelUI?.away||cafeUI?.active)return;
  const time=environment.ownerTime(),sceneState=visual.readState();
  const busy=!!document.querySelector('dialog[open]')||sceneState.moving||sceneState.stairs||sceneState.kitchen?.active||sceneState.leisure?.gardenBusy||document.querySelector('#planet-arrival:not([hidden])')?.getAttribute('aria-busy')==='true';
  const decision=sleepRoutine.decide({now:Date.now(),hour:Number(time.text.split(':')[0]),date:time.date,sleeping:sceneState.sleeping,busy});
@@ -222,7 +224,7 @@ setInterval(checkSleepRoutine,15000);setTimeout(checkSleepRoutine,1800);
 
 travelUI=createTravelUI({cloud,context:()=>({world,actor,visual,state,paired:cloud?cloud.paired:true,date:environment?.ownerTime().date||today()}),modal,close,handlers,toast,words:()=>wordCards.open(),onDepart:()=>{endOutdoor();world=actor;inside=false;visual?.enter(false);refresh()}});
 
-if(cloud)connectPresence({cloud,snapshot:()=>visual?{...visual.presence(),outfit:state.worlds[actor].life?.outfit||'plain'}:null,receive:p=>visual?.peer(p),interact:c=>visual?.social(c)});
+if(cloud)connectPresence({cloud,snapshot:()=>cafeUI?.active?{hidden:true}:visual?{...visual.presence(),outfit:state.worlds[actor].life?.outfit||'plain'}:null,receive:p=>visual?.peer(p),interact:c=>visual?.social(c)});
 
 designUI=createDesignUI({cloud,context:()=>({actor,world,visual}),closePanel:close,handlers,toast,onPreviewCreation(){enter();visual?.enter(false);visual?.enter(true)},onWardrobe(){enter();visual?.request('wardrobe')},onScope(scope){if(scope==='home'&&!inside)enter();if(scope==='planet'&&inside){endOutdoor();inside=false;visual?.enter(false);refresh()}}});
 
@@ -234,3 +236,5 @@ document.addEventListener('pointerdown',e=>{if(!peerActions.contains(e.target))p
 peerActions.onclick=e=>{const b=e.target.closest('[data-kind]');if(!b)return;peerActions.hidden=true;handlers['peer-'+b.dataset.kind]?.()};
 
 const photoUI=visual?createPhotoUI({visual,cloud,toast,onAlbum:()=>travelUI.openAlbum(false,'daily')}):null;
+
+cafeUI=createCafeUI({cloud,toast,beforeOpen(){close();closeDaybook();endOutdoor();designUI?.close();peerActions.hidden=true;visual?.stand()},onClose(){refresh()}});

@@ -95,6 +95,7 @@ export async function connectCloud(){
   async radioTrack(id){return api('/api/fm/track?id='+encodeURIComponent(id))},
   async radio(data){return this.life(data,'/api/fm')},
   async mediaView(){return api('/api/media')},
+  async cafe(data){return api('/api/cafe',data,session.csrf)},
   async studio(data){return api('/api/studio',data,session.csrf)},
     async studioJob(id){return api('/api/studio/jobs/'+encodeURIComponent(id))},
     async design(data){return api('/api/design',data,session.csrf)},

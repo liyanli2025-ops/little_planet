@@ -133,3 +133,21 @@ for(const variant of ['monstera','pothos','sansevieria','yucca','zzplant','cactu
  const edit=await t.s.start(1,{scope:'home',homeType:'plant',version:1,prompt:'换成灰色素盆虎尾兰',requestId:randomUUID()}),q=t.s.get(1,edit.job).result;
  assert.equal(q.values.objects[0].id,p.values.objects[0].id);assert.equal(q.values.objects[0].variant,'sansevieria');assert.equal(q.values.objects[0].planter,'ceramic');assert.equal(t.submits(),0);t.db.close();
 });
+for(const theme of [0,1])test('reply directly replaces built-in sofa in theme '+theme+' and survives save/restart/rollback',async()=>{
+ const t=setup();t.opts.theme=()=>theme;const calls=[],fetcher=t.opts.fetcher;t.opts.fetcher=async(url,o)=>{if(String(url).includes('chat/completions'))calls.push(JSON.parse(o.body));return fetcher(url,o)};const s=createStudio(t.db,t.opts);
+ t.set({operation:'explain',reply:'把窗边原沙发换成带蓝色靠枕的吗？'});
+ const question=await s.start(1,{scope:'home',homeType:'sofa',version:0,prompt:'奶油沙发配蓝色靠枕',requestId:randomUUID()});
+ const object={...sofa,standard:'sofa',variant:'classic',mount:'floor',shape:'round',pattern:'plain',accent:'#5075ad',floor:1,x:0,z:0,yaw:0};
+ t.set({operation:'move',target:'lower.sofa',object,reply:'替换预览'});
+ const reply=await s.start(1,{scope:'home',homeType:'sofa',version:0,replyTo:question.job,prompt:'直接换',requestId:randomUUID()}),p=s.get(1,reply.job).result,o=p.values.objects[0],base=homeLayouts[theme];
+ assert.equal(o.floor,0);assert.equal(o.x,base.lower.sofa[0]);assert.equal(o.z,base.lower.sofa[1]);assert.equal(o.yaw,base.sit[3]);assert.equal(o.accent,'#5075ad');assert.equal(p.values.objects.length,1);assert.equal(t.design.current(1).version,0);assert.ok(calls[1].messages.some(m=>m.content==='奶油沙发配蓝色靠枕'));assert.equal(calls[1].messages.at(-1).content,'直接换');assert.match(calls[1].messages[0].content,/首次替换用create/);
+ t.design.accept(1,{id:p.id,version:0});const restarted=createStudio(t.db,t.opts);assert.equal(restarted.get(1,reply.job).result.values.objects[0].id,o.id);
+ t.set({operation:'move',target:'builtin:sofa',object:{...object,accent:'#c28391'}});const edit=await restarted.start(1,{scope:'home',homeType:'sofa',version:1,prompt:'靠枕换成粉色',requestId:randomUUID()}),q=restarted.get(1,edit.job).result;
+ assert.equal(q.values.objects.length,1);assert.equal(q.values.objects[0].id,o.id);assert.equal(q.values.objects[0].accent,'#c28391');t.design.accept(1,{id:q.id,version:1});t.design.rollback(1,{version:2,target:0});assert.equal(t.design.current(1).design.home.objects,undefined);assert.equal(t.submits(),0);t.db.close();
+});
+
+test('sofa create ignores spurious target; unknown move ids never redirect to the built-in sofa',async()=>{
+ const t=setup(),object={...sofa,standard:'sofa',variant:'classic',mount:'floor',shape:'round',pattern:'plain',accent:'#5075ad'};
+ t.set({operation:'move',target:randomUUID(),object});await assert.rejects(t.s.start(1,{scope:'home',homeType:'sofa',version:0,prompt:'直接换',requestId:randomUUID()}),/没有找到要修改的家具/);assert.equal(t.design.current(1).version,0);
+ t.set({operation:'create',target:'original-sofa',object});const j=await t.s.start(1,{scope:'home',homeType:'sofa',version:0,prompt:'替换窗边沙发',requestId:randomUUID()});assert.equal(t.s.get(1,j.job).result.values.objects.length,1);assert.equal(t.submits(),0);t.db.close();
+});

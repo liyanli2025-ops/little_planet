@@ -31,6 +31,7 @@ export function standardHomeTool(type){
  const props=p.properties.object.properties;
  const c=furnitureCatalog[type];if(!c)throw Error("家具类型不正确");props.kind.enum=[standardKind(type)];
  props.standard={type:'string',enum:[type]};
+ if(type==='sofa')p.properties.target.description='已有替换沙发使用当前objects中的id；原有窗边沙发使用builtin:sofa。首次替换也可用create并省略target。不能另放第二张沙发。';
  props.accent=color;props.shape={type:'string',enum:['round','square']};
  props.pattern={type:'string',enum:['plain','stripe','check']};
  if(!c.mounts.includes('floor'))props.depth=number(.02,1.3);

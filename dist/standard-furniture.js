@@ -1,7 +1,9 @@
+import {isModelPlant} from './furniture-catalog.js';
 import {buildFurnitureDetails} from './furniture-details.js';
 import * as T from './vendor/three.module.js';
 // Dimensions are built directly in room units; no external model or network fetch.
 export function buildStandardFurniture(o){
+ if(isModelPlant(o))throw Error('真实植物需要异步加载');
  const detail=buildFurnitureDetails(o);if(detail)return detail;
  const root=new T.Group(),W=o.width,D=o.depth,H=o.height;
  const fabric=new T.MeshStandardMaterial({color:o.tint,roughness:.96}),accent=new T.MeshStandardMaterial({color:o.accent,roughness:.92}),wood=new T.MeshStandardMaterial({color:0x8b7052,roughness:.7});

@@ -124,3 +124,12 @@ test('moving a supported plant to the floor removes its previous tabletop elevat
  const t=setup(),object={name:'盆栽',standard:'plant',kind:'decor',variant:'leaf',mount:'table',width:.22,height:.45,depth:.22,seat:.55,tint:'#b4bda6',accent:'#788c69',shape:'round',pattern:'plain',floor:0,x:0,z:0,yaw:0};t.set({operation:'create',object});const j=await t.s.start(1,{scope:'home',homeType:'plant',version:0,prompt:'桌上盆栽',requestId:randomUUID()}),p=t.s.get(1,j.job).result;
  t.set({operation:'move',target:p.values.objects[0].id,object:{...p.values.objects[0],mount:'floor',x:-2.5,z:.9}});const moved=await t.s.start(1,{scope:'home',homeType:'plant',homeMount:'floor',version:0,draft:p.id,prompt:'放地上',requestId:randomUUID()});assert.equal(t.s.get(1,moved.job).result.values.objects[0].y,undefined);t.db.close();
 });
+
+for(const variant of ['monstera','pothos','sansevieria','yucca','zzplant','cactus','succulent'])test('real plant '+variant+' persists and changes species without paid 3D',async()=>{
+ const t=setup(),object={name:variant,standard:'plant',kind:'decor',variant,mount:'table',width:.28,height:.45,depth:.28,seat:.55,tint:'#ffffff',accent:'#ffffff',shape:'round',pattern:'plain',floor:0,x:0,z:0,yaw:0};
+ t.set({operation:'create',object});const j=await t.s.start(1,{scope:'home',homeType:'plant',version:0,prompt:'放一盆'+variant,requestId:randomUUID()}),p=t.s.get(1,j.job).result;
+ t.design.accept(1,{id:p.id,version:0});assert.equal(t.design.current(1).design.home.objects[0].variant,variant);
+ t.set({operation:'move',target:p.values.objects[0].id,object:{...object,variant:'sansevieria',planter:'ceramic'}});
+ const edit=await t.s.start(1,{scope:'home',homeType:'plant',version:1,prompt:'换成灰色素盆虎尾兰',requestId:randomUUID()}),q=t.s.get(1,edit.job).result;
+ assert.equal(q.values.objects[0].id,p.values.objects[0].id);assert.equal(q.values.objects[0].variant,'sansevieria');assert.equal(q.values.objects[0].planter,'ceramic');assert.equal(t.submits(),0);t.db.close();
+});

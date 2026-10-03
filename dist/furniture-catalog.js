@@ -1,3 +1,5 @@
+export const plantSpecies={monstera:'龟背竹',pothos:'绿萝',sansevieria:'虎尾兰',yucca:'丝兰',zzplant:'金钱树',cactus:'仙人掌',succulent:'多肉'};
+export const isModelPlant=o=>['plant','floorPlant','hangingPlant'].includes(o.standard)&&Object.hasOwn(plantSpecies,o.variant);
 // Shared catalogue: the renderer, text tool and placement validator use the same types.
 export const furnitureGroups={furniture:'家具',textile:'软装',decor:'装饰',plant:'植物'};
 const item=(label,group,variants,mounts,size)=>({label,group,variants,mounts,size});
@@ -18,8 +20,8 @@ export const furnitureCatalog={
  sculpture:item('小摆件','decor',['bird','pebble'],['table','desk'],[.22,.24,.18]),
  wallArt:item('挂画','decor',['landscape','abstract'],['wall'],[.65,.5,.04]),
  clock:item('挂钟','decor',['round','pendulum'],['wall'],[.35,.5,.08]),
- plant:item('盆栽','plant',['leaf','flower'],['table','desk','floor'],[.25,.5,.25]),
- floorPlant:item('大型绿植','plant',['palm','ficus'],['floor'],[.5,1.1,.5]),
- hangingPlant:item('垂吊绿植','plant',['basket','ceramic'],['wall'],[.35,.65,.3])
+ plant:item('盆栽','plant',[...Object.keys(plantSpecies),'leaf','flower'],['table','desk','floor'],[.25,.5,.25]),
+ floorPlant:item('大型绿植','plant',[...Object.keys(plantSpecies),'palm','ficus'],['floor'],[.5,1.1,.5]),
+ hangingPlant:item('垂吊绿植','plant',['pothos','basket','ceramic'],['wall'],[.35,.65,.3])
 };
 export const standardKind=type=>type==='stool'?'seat':['sofa','lamp','rug'].includes(type)?type:'decor';

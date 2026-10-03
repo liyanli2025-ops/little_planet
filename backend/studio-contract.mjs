@@ -37,6 +37,7 @@ export function standardHomeTool(type){
  props.variant={type:'string',enum:c.variants};props.mount={type:'string',enum:c.mounts};
  if(['tray','wallArt','clock'].includes(type))props.height=number(.025,.85);
  if(type==='lamp')props.shape.enum=['round'];
+ if(c.group==='plant'){props.planter={type:'string',enum:['terracotta','ceramic']};props.shape.enum=['round'];}
  if(type==='rug')props.height=number(.025,.06);
  p.properties.object.required=Object.keys(props);
  delete p.properties.description;

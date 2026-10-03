@@ -1,0 +1,77 @@
+{
+  "source": "https://tinytreats.itch.io/house-plants",
+  "author": "Isa Lousberg",
+  "license": "CC0-1.0",
+  "assets": [
+    {
+      "file": "monstera_plant_small.glb",
+      "bytes": 54600,
+      "triangles": 940
+    },
+    {
+      "file": "monstera_plant_large.glb",
+      "bytes": 200112,
+      "triangles": 5612
+    },
+    {
+      "file": "pothos_plant_small.glb",
+      "bytes": 85140,
+      "triangles": 1624
+    },
+    {
+      "file": "pothos_plant_large.glb",
+      "bytes": 275268,
+      "triangles": 6576
+    },
+    {
+      "file": "sansevieria_plant_small.glb",
+      "bytes": 34144,
+      "triangles": 276
+    },
+    {
+      "file": "sansevieria_plant_large.glb",
+      "bytes": 68924,
+      "triangles": 1096
+    },
+    {
+      "file": "yucca_plant_small.glb",
+      "bytes": 90032,
+      "triangles": 1576
+    },
+    {
+      "file": "yucca_plant_large.glb",
+      "bytes": 232740,
+      "triangles": 5040
+    },
+    {
+      "file": "zzplant_plant_small.glb",
+      "bytes": 69524,
+      "triangles": 1080
+    },
+    {
+      "file": "zzplant_plant_large.glb",
+      "bytes": 330440,
+      "triangles": 7488
+    },
+    {
+      "file": "pot_A_small.glb",
+      "bytes": 33220,
+      "triangles": 216
+    },
+    {
+      "file": "pot_B_small.glb",
+      "bytes": 29036,
+      "triangles": 168
+    },
+    {
+      "file": "cactus_A.glb",
+      "bytes": 32744,
+      "triangles": 224
+    },
+    {
+      "file": "succulent_A.glb",
+      "bytes": 65240,
+      "triangles": 924
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import * as T from './vendor/three.module.js';
+import {buildCoast} from './cafe-coast.js';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import {loadPlantModel} from './plant-models.js';
 import {makeCafeFood,disposeCafeObject} from './cafe-food.js';
@@ -17,7 +18,7 @@ export function buildCafe(root,pick,isDisposed){
  function tube(p,c,points,r=.025){return mesh(p,new T.TubeGeometry(new T.CatmullRomCurve3(points.map(v=>new T.Vector3(...v))),Math.max(20,points.length*3),r,8,false),c)}
  function texture(kind){const c=document.createElement('canvas');c.width=c.height=512;const q=c.getContext('2d');let seed=7;const rand=()=>((seed=seed*16807%2147483647)/2147483647);q.fillStyle=kind==='wood'?'#bfa582':'#d6c5a3';q.fillRect(0,0,512,512);if(kind==='wood'){for(let i=0;i<80;i++){q.strokeStyle=`rgba(65,40,20,${.018+rand()*.06})`;q.lineWidth=.5+rand();q.beginPath();const y=rand()*512;for(let x=0;x<=512;x+=32)q.lineTo(x,y+Math.sin(x*.012+i)*3);q.stroke()}for(let i=0;i<8;i++){q.fillStyle='#69533d';q.globalAlpha=.16;q.fillRect(0,i*64,512,2)}q.globalAlpha=1;}else{for(let i=0;i<512;i+=3){q.strokeStyle=i%2?'#b2a38c':'#e6d8ba';q.lineWidth=.6;q.beginPath();q.moveTo(i,0);q.lineTo(i,512);q.stroke();q.beginPath();q.moveTo(0,i);q.lineTo(512,i);q.stroke()}}const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(kind==='wood'?4:3,kind==='wood'?4:3);return t}
  const timber=new T.MeshStandardMaterial({map:texture('wood'),roughness:.87}),woven=new T.MeshStandardMaterial({map:texture('fabric'),color:0xe5d5b4,roughness:1});
- const seaMat=new T.MeshStandardMaterial({color:0x7fb7b5,roughness:.32,metalness:.08});mesh(root,new T.SphereGeometry(17.8,80,48),seaMat,0,-18.25,0);ell(root,0xd3c5a7,0,-1.02,0,9.8,1.05,8.4);ell(root,0xe9dcc0,0,-.33,.5,9.3,.43,7.7);
+ const seaMat=new T.MeshStandardMaterial({color:0x7fb7b5,roughness:.32,metalness:.08});mesh(root,new T.SphereGeometry(17.8,80,48),seaMat,0,-18.25,0);ell(root,0xd3c5a7,0,-1.02,0,9.8,1.05,8.4);ell(root,0xe9dcc0,0,-.33,1.0,9.7,.43,8.3);
  const ocean=mesh(horizon,new T.PlaneGeometry(180,180),seaMat,0,-.48,0);ocean.rotation.x=-Math.PI/2;
  for(let i=0;i<36;i++)box(horizon,new T.MeshBasicMaterial({color:0xd8e7d6,transparent:true,opacity:.13}),Math.sin(i*1.7)*34,-.466,-10-i*1.8,4+i%6*2,.006,.035);
  for(let j=0;j<3;j++){const pts=[];for(let i=0;i<=120;i++){const a=i/120*Math.PI*2;pts.push(new T.Vector3(Math.cos(a)*(9.65+j*.23),-.36-j*.07,Math.sin(a)*(8.2+j*.23)))}const l=new T.Line(new T.BufferGeometry().setFromPoints(pts),new T.LineBasicMaterial({color:0xe8efdc,transparent:true,opacity:.25}));root.add(l);shore.push(l)}
@@ -84,8 +85,9 @@ export function buildCafe(root,pick,isDisposed){
  for(const [x,z]of [[-8,1],[7.8,-2],[-7,-5]]){const trunk=cyl(root,0x9f8968,x,.8,z,.10,1.65,.07);trunk.rotation.z=.13;for(let i=0;i<7;i++){const a=i/7*Math.PI*2,leaf=ell(root,0x7d926d,x+Math.sin(a)*.44,1.65,z+Math.cos(a)*.44,.17,.055,.70);leaf.rotation.y=a;leaf.rotation.x=.25}}
  for(let i=0;i<18;i++){const a=i*.79,x=Math.cos(a)*8.5,z=Math.sin(a)*7.1;for(let j=0;j<3;j++){const stem=ell(decor,0xa3aa7e,x+(j-1)*.05,.14,z,.026,.25,.03);stem.rotation.z=(j-1)*.3}}
  pick(box(root,new T.MeshBasicMaterial({visible:false}),0,1.4,4.15,2.3,2.6,.1),'enter');const ground=slab(root,floorShape,.198,.003,new T.MeshBasicMaterial({visible:false}));pick(ground,'ground');pick(box(root,new T.MeshBasicMaterial({visible:false}),0,.19,5.2,3.2,.01,2.8),'ground');
+ const {planet,coast,awning}=buildCoast({root,roof,furniture,pick,box,cyl,ell,rounded,tube,timber,lamps});
  // Batch opaque static decoration; keep interactive targets and curtains separate.
  function batch(group){group.updateWorldMatrix(true,true);const byMat=new Map();for(const o of [...group.children]){if(!o.isMesh||o.material.transparent||o.userData.pick)continue;const list=byMat.get(o.material)||[];list.push(o);byMat.set(o.material,list)}for(const [material,list]of byMat){if(list.length<3)continue;const geos=list.map(o=>(o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone()).applyMatrix4(o.matrix));const combined=mergeGeometries(geos,false);if(combined){const m=new T.Mesh(combined,material);m.castShadow=m.receiveShadow=true;group.add(m);for(const o of list){group.remove(o);o.geometry.dispose()}}geos.forEach(g=>g.dispose())}}
- batch(decor);batch(furniture);
- return {roof,front,furniture,horizon,shore,seaMat,ready,lamps,mesh,box};
+ batch(decor);batch(furniture);batch(coast);
+ return {planet,awning,roof,front,furniture,horizon,shore,seaMat,ready,lamps,mesh,box};
 }

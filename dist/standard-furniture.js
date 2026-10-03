@@ -35,6 +35,6 @@ export function buildStandardFurniture(o){
    if(o.pattern==='check'){const l=o.shape==='round'?D*Math.sqrt(1-(i/4)**2)*.92:D*.94;mesh(new T.BoxGeometry(.018,.002,l),accent,i*W/8,H+.018,0).castShadow=false;}
   }
  }
- root.traverse(m=>{if(m.isMesh){m.userData.action=o.standard==='sofa'?'sit':o.standard==='lamp'?'studio-lamp-'+o.id:'design-open';}});
+ root.traverse(m=>{if(m.isMesh){m.userData.action=o.standard==='sofa'?'sit':o.standard==='lamp'?'lighting':'design-open';}});
  return root;
 }

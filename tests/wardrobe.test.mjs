@@ -11,5 +11,5 @@ test('saved garments and gifted headwear appear by category; preview is private 
  const catalog=s.view(1).wardrobe;assert.equal(catalog.filter(i=>i.name==='蓝色裙子').length,1);assert.equal(catalog.find(i=>i.name==='蓝色裙子').category,'dress');assert.equal(catalog.find(i=>i.name==='小帽子').category,'accessory');assert.ok(s.view(2).wardrobe.some(i=>i.name==='小帽子'));
  const chosen=catalog.find(i=>i.key==='base:cream'),preview=s.wardrobePreview(1,{key:chosen.key,version:2});assert.equal(s.current(1).design.outfit.tailoring.name,'蓝色裙子');assert.equal(preview.values.headwear.name,'小帽子');assert.equal(preview.values.tailoring,null);
  assert.throws(()=>s.wardrobePreview(3,{key:catalog.find(i=>i.name==='蓝色裙子').key,version:0}),/衣柜/);
- s.accept(1,{id:preview.id,version:2});assert.equal(s.current(1).design.outfit.garment,'cream');assert.equal(s.current(1).design.outfit.headwear.name,'小帽子');db.close();
+ const combined=s.wardrobePreview(1,{key:catalog.find(i=>i.name==='小帽子').key,version:2,preview:preview.id});assert.equal(combined.values.garment,'cream');assert.equal(combined.values.tailoring,null);assert.throws(()=>s.wardrobePreview(2,{key:'base:cream',version:0,preview:preview.id}));s.accept(1,{id:combined.id,version:2});assert.equal(s.current(1).design.outfit.garment,'cream');assert.equal(s.current(1).design.outfit.headwear.name,'小帽子');db.close();
 });

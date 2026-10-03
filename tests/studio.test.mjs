@@ -151,3 +151,37 @@ test('sofa create ignores spurious target; unknown move ids never redirect to th
  t.set({operation:'move',target:randomUUID(),object});await assert.rejects(t.s.start(1,{scope:'home',homeType:'sofa',version:0,prompt:'直接换',requestId:randomUUID()}),/没有找到要修改的家具/);assert.equal(t.design.current(1).version,0);
  t.set({operation:'create',target:'original-sofa',object});const j=await t.s.start(1,{scope:'home',homeType:'sofa',version:0,prompt:'替换窗边沙发',requestId:randomUUID()});assert.equal(t.s.get(1,j.job).result.values.objects.length,1);assert.equal(t.submits(),0);t.db.close();
 });
+const standardSofa=()=>({...sofa,standard:'sofa',variant:'classic',mount:'floor',shape:'round',pattern:'plain',accent:'#5075ad'});
+test('successful preview carries history, limits edits to declared fields, and restores clarification draft',async()=>{
+ const t=setup(),calls=[],f=t.opts.fetcher;t.opts.fetcher=async(u,o)=>{if(String(u).includes('chat/completions'))calls.push(JSON.parse(o.body));return f(u,o)};const s=createStudio(t.db,t.opts);
+ t.set({operation:'create',object:standardSofa()});const first=await s.start(1,{scope:'home',homeType:'sofa',version:0,prompt:'奶油色沙发配蓝色靠枕',requestId:randomUUID()}),p=s.get(1,first.job).result;
+ t.set({operation:'move',target:p.values.objects[0].id,changedFields:['width'],object:{...standardSofa(),width:1.8,tint:'#ff0000',accent:'#000000'}});
+ const second=await s.start(1,{scope:'home',homeType:'sofa',version:0,draft:p.id,prompt:'只窄一点',requestId:randomUUID()}),q=s.get(1,second.job).result;
+ assert.equal(q.values.objects[0].width,1.8);assert.equal(q.values.objects[0].tint,sofa.tint);assert.equal(q.values.objects[0].accent,'#5075ad');assert.ok(calls[1].messages.some(m=>m.content==='奶油色沙发配蓝色靠枕'));assert.ok(!s.list(1).jobs.some(j=>j.id===first.job));
+ t.set({operation:'explain',reply:'靠枕想改成什么颜色？'});const question=await s.start(1,{scope:'home',homeType:'sofa',version:0,draft:q.id,prompt:'换个靠枕颜色',requestId:randomUUID()});const restarted=createStudio(t.db,t.opts),j=restarted.get(1,question.job);assert.deepEqual(j.draftResult.values,q.values);assert.equal(j.selection.homeType,'sofa');assert.equal(j.selection.requestKey,undefined);
+ await assert.rejects(restarted.start(1,{scope:'home',homeType:'lamp',version:0,replyTo:question.job,prompt:'蓝色',requestId:randomUUID()}),/切换设计类型/);
+ await restarted.start(1,{action:'dismiss',job:question.job});assert.ok(!restarted.list(1).jobs.some(j=>['ready','awaiting_input'].includes(j.status)));assert.equal(t.design.current(1).version,0);assert.equal(t.submits(),0);t.db.close();
+});
+for(const kind of ['skirt','dress','top','set','hat','veil'])test('narrow '+kind+' edit preserves all other clothing properties',async()=>{
+ const t=setup(),tailoring={kind,name:'蓝色小花',pattern:'flower',color:'#6688aa',accent:'#eeccaa',length:.22,flare:.07,pleats:8,patternScale:.06,...(kind==='set'?{pantsColor:'#777777'}:{})};t.set({operation:'tailor',tailoring});const b={scope:'outfit',outfitType:kind,version:0,requestId:randomUUID(),prompt:'蓝色小花'},a=await t.s.start(1,b),p=t.s.get(1,a.job).result;
+ t.set({operation:'tailor',changedFields:['color'],tailoring:{...tailoring,color:'#dd8899',pattern:'plain',accent:'#000000',pleats:0}});const j=await t.s.start(1,{...b,requestId:randomUUID(),draft:p.id,prompt:'只换成粉色'}),q=t.s.get(1,j.job).result,v=['hat','veil'].includes(kind)?q.values.headwear:q.values.tailoring;assert.equal(v.color,'#dd8899');assert.equal(v.pattern,'flower');assert.equal(v.accent,'#eeccaa');assert.equal(v.pleats,8);assert.equal(t.submits(),0);t.db.close();
+});
+test('request id is bound to content and cannot replay another request or account',async()=>{
+ const t=setup();t.set({operation:'create',object:standardSofa()});const b={scope:'home',homeType:'sofa',version:0,prompt:'沙发',requestId:randomUUID()},j=await t.s.start(1,b);assert.deepEqual(await t.s.start(1,b),j);await assert.rejects(t.s.start(1,{...b,prompt:'灯'}),/内容已改变/);await assert.rejects(t.s.start(2,{action:'dismiss',job:j.job}),/任务不存在/);assert.equal(t.s.list(1).jobs[0].request,b.requestId);t.db.close();
+});
+test('pending request excludes a concurrent second submission and returns same task on retry',async()=>{
+ const t=setup();let release,count=0;const wait=new Promise(r=>release=r);t.opts.fetcher=async()=>{count++;await wait;return Response.json({choices:[{message:{tool_calls:[{function:{name:'edit_object',arguments:JSON.stringify({operation:'create',object:standardSofa()})}}]}}]})};const s=createStudio(t.db,t.opts),b={scope:'home',homeType:'sofa',version:0,prompt:'沙发',requestId:randomUUID()},first=s.start(1,b);const duplicate=await s.start(1,b);await assert.rejects(s.start(1,{...b,requestId:randomUUID()}),/已有任务/);await assert.rejects(s.start(1,{action:'dismiss',job:duplicate.job}),/仍在处理中/);release();assert.deepEqual(await first,duplicate);assert.equal(count,1);t.db.close();
+});
+test('invalid edit mask never mutates the preview or saved design',async()=>{
+ const t=setup();t.set({operation:'create',object:standardSofa()});const j=await t.s.start(1,{scope:'home',homeType:'sofa',version:0,prompt:'沙发',requestId:randomUUID()}),p=t.s.get(1,j.job).result;
+ for(const changedFields of [[],['asset'],['tint','tint'],['missing']]){t.set({operation:'move',target:p.values.objects[0].id,object:standardSofa(),changedFields});await assert.rejects(t.s.start(1,{scope:'home',homeType:'sofa',version:0,draft:p.id,prompt:'改一点',requestId:randomUUID()}),/修改内容不完整/)}assert.equal(t.design.current(1).version,0);assert.deepEqual(t.s.get(1,j.job).result,p);t.db.close();
+});
+test('standard tool cannot silently change other outfit pieces or promise unrendered furniture patterns',async()=>{
+ const t=setup(),tailoring={kind:'top',name:'上衣',pattern:'plain',color:'#6688aa',accent:'#ffffff',length:.22,flare:.06,pleats:8,patternScale:.06};
+ t.set({operation:'tailor',tailoring,outfit:{hat:'beanie'}});await assert.rejects(t.s.start(1,{scope:'outfit',outfitType:'top',version:0,prompt:'蓝色上衣',requestId:randomUUID()}),/超出当前类型/);
+ t.set({operation:'create',object:{...standardSofa(),standard:'plant',kind:'decor',variant:'monstera',pattern:'check'}});await assert.rejects(t.s.start(1,{scope:'home',homeType:'plant',version:0,prompt:'植物',requestId:randomUUID()}),/超出当前类型/);assert.equal(t.design.current(1).version,0);assert.equal(t.submits(),0);t.db.close();
+});
+test('natural language can move a plant off the table despite the old UI mount selection',async()=>{
+ const t=setup(),object={name:'盆栽',standard:'plant',kind:'decor',variant:'monstera',mount:'table',width:.22,height:.45,depth:.22,seat:.55,tint:'#ffffff',accent:'#ffffff',shape:'round',pattern:'plain',floor:0,x:0,z:0,yaw:0};t.set({operation:'create',object});const b={scope:'home',homeType:'plant',homeMount:'table',version:0,prompt:'桌上盆栽',requestId:randomUUID()},j=await t.s.start(1,b),p=t.s.get(1,j.job).result;
+ t.set({operation:'move',target:p.values.objects[0].id,changedFields:['mount','x','z'],object:{...object,mount:'floor',x:-2.5,z:.9}});const q=await t.s.start(1,{...b,draft:p.id,prompt:'放到地上',requestId:randomUUID()}),o=t.s.get(1,q.job).result.values.objects[0];assert.equal(o.mount,'floor');assert.equal(o.y,undefined);assert.equal(o.variant,'monstera');t.db.close();
+});

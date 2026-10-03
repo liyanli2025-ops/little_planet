@@ -1,3 +1,4 @@
+import {homeEditFields,outfitEditFields,patternedFurniture} from '../dist/design-capabilities.js';
 import {furnitureCatalog,standardKind} from '../dist/furniture-catalog.js';
 import {wearableFields,validateWearables} from '../dist/wearable-schema.js';
 import {designFields,validateDesignPart,defaultDesign} from '../dist/design-schema.js';
@@ -15,6 +16,7 @@ export function checkStudioPlan(p,scope){
 
 export function standardOutfitTool(type){
  const tool=studioTool('outfit'),p=tool.function.parameters;
+ p.properties.changedFields={type:'array',items:{type:'string',enum:outfitEditFields},minItems:1,uniqueItems:true,description:'修改已有同类服饰时，只列本轮明确需要改变的字段；首次创作省略'};
  p.properties.operation.enum=['tailor','explain'];
  p.properties.tailoring=structuredClone(p.properties.tailoring);
  p.properties.tailoring.properties.kind.enum=[type];
@@ -27,13 +29,14 @@ export function standardOutfitTool(type){
 
 export function standardHomeTool(type){
  const tool=studioTool('home'),p=tool.function.parameters;
+ p.properties.changedFields={type:'array',items:{type:'string',enum:homeEditFields},minItems:1,uniqueItems:true,description:'move时只列本轮需要改变的字段；其余字段由服务器保留；create省略'};
  p.properties.operation.enum=['create','move','remove','explain'];
  const props=p.properties.object.properties;
  const c=furnitureCatalog[type];if(!c)throw Error("家具类型不正确");props.kind.enum=[standardKind(type)];
  props.standard={type:'string',enum:[type]};
  if(type==='sofa')p.properties.target.description='已有替换沙发使用当前objects中的id；原有窗边沙发使用builtin:sofa。首次替换也可用create并省略target。不能另放第二张沙发。';
  props.accent=color;props.shape={type:'string',enum:['round','square']};
- props.pattern={type:'string',enum:['plain','stripe','check']};
+ props.pattern={type:'string',enum:patternedFurniture.includes(type)?['plain','stripe','check']:['plain']};
  if(!c.mounts.includes('floor'))props.depth=number(.02,1.3);
  props.variant={type:'string',enum:c.variants};props.mount={type:'string',enum:c.mounts};
  if(['tray','wallArt','clock'].includes(type))props.height=number(.025,.85);

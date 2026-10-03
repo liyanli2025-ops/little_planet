@@ -10,7 +10,8 @@ export function createLifeUI({context,replace,save,refresh,cloud,modal,close,toa
  const gardenUI=createGardenUI({context,action,close,toast});
  function garden(){if((c().state.worlds[c().world].theme??c().world)!==0)return toast('这个星球没有花园。');gardenUI.open()}
  function vase(){const flowers=c().state.worlds[c().world].life?.vase||[],bag=c().state.worlds[c().actor].life?.flowers||{},available=Object.entries(crops).filter(([id,v])=>v.flower&&bag[id]>0);modal('vase','','插花',`<div class="vase-stems">${flowers.map(f=>`<img src="assets/flowers/${f}.png" alt="${crops[f].name}">`).join('')}</div><div class="flower-choices">${available.map(([id,v])=>`<button data-do="life-vase" data-crop="${id}" ${flowers.length>=8?'disabled':''}><img src="assets/flowers/${id}.png" alt=""><span>${v.name}</span></button>`).join('')}</div>${!available.length?'<p class="subtle">去花园摘几朵花吧。</p>':flowers.length>=8?'<p class="subtle">花瓶已满</p>':''}`)}
- const wardrobeUI=createWardrobeUI({context,cloud,toast,onOutfit,wearBase:wear,dock});
+ const wardrobeUI=createWardrobeUI({context,cloud,toast,onOutfit,wearBase:wear,dock,onDesign:()=>handlers['design-clothes']?.()});
+ document.addEventListener('wardrobe-design-closed',()=>{if(c().world===c().actor)wardrobe()});
  function wardrobe(){close();c().visual?.wardrobe(true);setMode('wardrobe');dock('');void wardrobeUI.open();}
  async function wear(id){if(!Object.hasOwn(outfits,id)||busy||(c().visual?.readState().outfit===id&&!c().visual?.readState().createdOutfit))return;const visual=c().visual;if(!visual?.changeOutfit(id))return;dock('<span>'+outfits[id].name+'</span>');const ok=await action({type:'outfit',outfit:id});try{if(ok)await onOutfit()}catch(e){toast(e.message)}finally{visual.finishOutfit(ok)}}
  function desk(index){close();if(!c().visual?.deskSit(index))return;setMode('desk');dock('');if(c().world===c().actor)handlers['design-open']?.()}

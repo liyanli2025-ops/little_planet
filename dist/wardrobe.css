@@ -5,3 +5,5 @@
 #wardrobe-confirm button:disabled{opacity:.5}
 #wardrobe-fitting[hidden],#wardrobe-confirm[hidden]{display:none}
 #wardrobe-confirm p{width:auto}
+
+#wardrobe-design{position:fixed;z-index:124;left:30%;bottom:165px;transform:translateX(-50%);border:0;border-radius:24px;padding:11px 20px;background:#f7f7e9;color:#405d4c;font:inherit;font-size:14px;box-shadow:0 2px 10px #324c3010}#wardrobe-design[hidden]{display:none}

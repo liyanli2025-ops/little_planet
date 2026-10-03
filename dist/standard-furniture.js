@@ -1,6 +1,8 @@
+import {buildFurnitureDetails} from './furniture-details.js';
 import * as T from './vendor/three.module.js';
 // Dimensions are built directly in room units; no external model or network fetch.
 export function buildStandardFurniture(o){
+ const detail=buildFurnitureDetails(o);if(detail)return detail;
  const root=new T.Group(),W=o.width,D=o.depth,H=o.height;
  const fabric=new T.MeshStandardMaterial({color:o.tint,roughness:.96}),accent=new T.MeshStandardMaterial({color:o.accent,roughness:.92}),wood=new T.MeshStandardMaterial({color:0x8b7052,roughness:.7});
  function mesh(geo,mat,x,y,z){const m=new T.Mesh(geo,mat);m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;root.add(m);return m;}

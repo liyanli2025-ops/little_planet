@@ -110,3 +110,17 @@ test('standard choice rejects accidental external generation and wrong type',asy
  await assert.rejects(t.s.start(1,{scope:'home',homeType:'sofa',version:0,prompt:'沙发',requestId:randomUUID()}));
  assert.equal(t.submits(),0);assert.equal(t.design.current(1).version,0);t.db.close();
 });
+
+// Exercise every exposed home category through the same backend used by the webpage.
+for(const type of ['sofa','lamp','rug','table','sideTable','nightstand','stool','cushion','blanket','curtain','vase','tray','frame','sculpture','wallArt','clock','plant','floorPlant','hangingPlant'])test('expanded home '+type+' previews, saves and restores without 3D calls',async()=>{
+ const {furnitureCatalog,standardKind}=await import('../dist/furniture-catalog.js');const t=setup(),c=furnitureCatalog[type],[width,height,depth]=c.size;
+ const object={name:c.label,standard:type,kind:standardKind(type),variant:c.variants[0],mount:c.mounts[0],width,height,depth,seat:type==='stool'?height:.55,tint:'#b4bda6',accent:'#788c69',shape:'round',pattern:'plain',floor:0,x:-2.4,z:.9,yaw:0};if(type==='sofa')Object.assign(object,{x:2.8,z:.95,yaw:-Math.PI/2});
+ t.set({operation:'create',reply:'预览',object});const j=await t.s.start(1,{scope:'home',homeType:type,homeMount:c.mounts[0],version:0,prompt:'自然风格的'+c.label,requestId:randomUUID()});const p=t.s.get(1,j.job).result;assert.equal(p.values.objects[0].standard,type);assert.equal(t.submits(),0);assert.equal(t.design.current(1).version,0);t.design.accept(1,{id:p.id,version:0});assert.equal(t.design.current(1).design.home.objects[0].standard,type);
+ t.set({operation:'move',target:p.values.objects[0].id,object:{...p.values.objects[0],tint:'#ccddee'},reply:'改色'});const edit=await t.s.start(1,{scope:'home',homeType:type,version:1,prompt:'改成蓝色',requestId:randomUUID()});assert.equal(t.s.get(1,edit.job).result.values.objects[0].tint,'#ccddee');assert.equal(t.submits(),0);
+ t.design.rollback(1,{version:1,target:0});assert.equal(t.design.current(1).design.home.objects,undefined);t.db.close();
+});
+
+test('moving a supported plant to the floor removes its previous tabletop elevation',async()=>{
+ const t=setup(),object={name:'盆栽',standard:'plant',kind:'decor',variant:'leaf',mount:'table',width:.22,height:.45,depth:.22,seat:.55,tint:'#b4bda6',accent:'#788c69',shape:'round',pattern:'plain',floor:0,x:0,z:0,yaw:0};t.set({operation:'create',object});const j=await t.s.start(1,{scope:'home',homeType:'plant',version:0,prompt:'桌上盆栽',requestId:randomUUID()}),p=t.s.get(1,j.job).result;
+ t.set({operation:'move',target:p.values.objects[0].id,object:{...p.values.objects[0],mount:'floor',x:-2.5,z:.9}});const moved=await t.s.start(1,{scope:'home',homeType:'plant',homeMount:'floor',version:0,draft:p.id,prompt:'放地上',requestId:randomUUID()});assert.equal(t.s.get(1,moved.job).result.values.objects[0].y,undefined);t.db.close();
+});

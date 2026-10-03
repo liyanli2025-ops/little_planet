@@ -1,5 +1,6 @@
+import {validateFurnitureSupport} from './furniture-placement.js';
 import {homeFree,homeRoute} from './home-layout.js';
-export function studioLayout(base,objects=[],check=false){const l=structuredClone(base);for(const o of objects){const layer=o.floor?l.upper:l.lower;const halfX=(Math.abs(Math.cos(o.yaw))*o.width+Math.abs(Math.sin(o.yaw))*o.depth)/2,halfZ=(Math.abs(Math.sin(o.yaw))*o.width+Math.abs(Math.cos(o.yaw))*o.depth)/2;
+export function studioLayout(base,objects=[],check=false){const l=structuredClone(base);for(const o of objects){if(o.mount&&o.mount!=='floor'){validateFurnitureSupport(base,o);continue;}const layer=o.floor?l.upper:l.lower;const halfX=(Math.abs(Math.cos(o.yaw))*o.width+Math.abs(Math.sin(o.yaw))*o.depth)/2,halfZ=(Math.abs(Math.sin(o.yaw))*o.width+Math.abs(Math.cos(o.yaw))*o.depth)/2;
  const replacement=o.kind==='sofa'&&o.floor===0&&Math.hypot(o.x-base.lower.sofa[0],o.z-base.lower.sofa[1])<.02;
  if(replacement){if(o.width>2.1||o.depth>.9||Math.abs(o.yaw-base.sit[3])>.02)throw Error('窗边沙发超出原座位范围');const pose=[base.sit[0],o.seat-.17,base.sit[2],base.sit[3]];l.sit=pose;layer.seats.sit={pose,stand:base.stand};continue}
  if(o.kind==='sofa')throw Error('双人沙发请放在窗边原座位区');
@@ -8,4 +9,14 @@ export function studioLayout(base,objects=[],check=false){const l=structuredClon
  if(o.standard==='rug')continue;layer.rects.push(rect);
  if(o.kind==='seat'){if(o.floor!==0)throw Error('新增座椅暂放一层');const id='sit-ai-'+o.id,stand=[o.x+Math.sin(o.yaw)*(o.depth/2+.55),o.z+Math.cos(o.yaw)*(o.depth/2+.55)];layer.stops[id]=stand;layer.seats[id]={pose:[o.x,o.seat-.17,o.z,o.yaw],stand}}
  }
- if(check)for(const f of [0,1]){const layer=f?l.upper:l.lower,start=layer.stops.stairs;for(const p of Object.values(layer.stops)){if(!homeFree(l,f,...p)||!homeRoute(l,f,{x:start[0],z:start[1]},...p).length&&Math.hypot(p[0]-start[0],p[1]-start[1])>.1)throw Error('摆放会挡住通道或家具入口，请换个位置')}}return l}
+ if(check){const mounts=new Set();for(const o of objects){if(o.mount&&o.mount!=='floor'){const key=o.floor+':'+o.mount+(o.mount==='sofa'?':'+o.standard:'');if(mounts.has(key))throw Error('这个位置已有作品，请修改或收起原来的作品');mounts.add(key)}}}if(check)for(const f of [0,1]){const layer=f?l.upper:l.lower,start=layer.stops.stairs;for(const p of Object.values(layer.stops)){if(!homeFree(l,f,...p)||!homeRoute(l,f,{x:start[0],z:start[1]},...p).length&&Math.hypot(p[0]-start[0],p[1]-start[1])>.1)throw Error('摆放会挡住通道或家具入口，请换个位置')}}return l}
+
+export function placeNewFurniture(base,objects,o){
+ try{studioLayout(base,[...objects,o],true);return o}catch(error){
+  if(!o.standard||o.mount!=='floor'||['sofa','rug'].includes(o.standard))throw error;
+  const candidates=[];for(let x=-base.width/2+.6;x<base.width/2-.4;x+=.4)for(let z=-base.depth/2+.6;z<base.depth/2-.4;z+=.4)candidates.push({x,z});
+  candidates.sort((a,b)=>(a.x-o.x)**2+(a.z-o.z)**2-((b.x-o.x)**2+(b.z-o.z)**2));
+  for(const p of candidates){const next={...o,x:Math.round(p.x*100)/100,z:Math.round(p.z*100)/100};try{studioLayout(base,[...objects,next],true);return next}catch{}}
+  throw Error('房间里没有合适的空位，请缩小尺寸或先收起一件家具');
+ }
+}

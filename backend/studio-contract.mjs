@@ -1,3 +1,4 @@
+import {furnitureCatalog,standardKind} from '../dist/furniture-catalog.js';
 import {wearableFields,validateWearables} from '../dist/wearable-schema.js';
 import {designFields,validateDesignPart,defaultDesign} from '../dist/design-schema.js';
 import {validateTailoring} from '../dist/studio-schema.js';
@@ -28,10 +29,13 @@ export function standardHomeTool(type){
  const tool=studioTool('home'),p=tool.function.parameters;
  p.properties.operation.enum=['create','move','remove','explain'];
  const props=p.properties.object.properties;
- props.kind.enum=[type];
+ const c=furnitureCatalog[type];if(!c)throw Error("家具类型不正确");props.kind.enum=[standardKind(type)];
  props.standard={type:'string',enum:[type]};
  props.accent=color;props.shape={type:'string',enum:['round','square']};
  props.pattern={type:'string',enum:['plain','stripe','check']};
+ if(!c.mounts.includes('floor'))props.depth=number(.02,1.3);
+ props.variant={type:'string',enum:c.variants};props.mount={type:'string',enum:c.mounts};
+ if(['tray','wallArt','clock'].includes(type))props.height=number(.025,.85);
  if(type==='lamp')props.shape.enum=['round'];
  if(type==='rug')props.height=number(.025,.06);
  p.properties.object.required=Object.keys(props);

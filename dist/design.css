@@ -13,3 +13,9 @@
 #design-studio{display:flex;flex-direction:column;overflow:hidden}#design-studio[hidden]{display:none}#design-studio header{flex:none}#design-studio .design-scroll{min-height:0;overflow:auto;flex:1}#design-studio .design-composer{flex:none;padding-top:8px;background:#faf9ee;border-top:1px solid #71857118}#design-studio .design-send{display:flex;align-items:end;gap:8px}#design-studio .design-send textarea{flex:1;min-width:0;resize:none;margin:0;height:62px;min-height:62px}#design-studio .design-send button{flex:none;padding:10px 14px}#design-studio .design-reply{margin:0 0 8px;font-size:14px;line-height:1.55;max-height:90px;overflow:auto;color:#354f43}#design-studio .design-message{max-height:70px;overflow:auto;margin-bottom:6px}#design-studio.with-fitting{background:#faf9eefc}#design-studio.with-fitting header{position:static}
 
 .design-types{display:flex;gap:4px;overflow-x:auto;padding:4px 0 14px;flex-shrink:0}#design-studio .design-types button{white-space:nowrap;padding:8px 8px;font-size:13px;flex:0 0 auto}#design-studio .design-types [aria-pressed="true"]{background:#40644e;color:#fff}
+
+/* The home editor leaves the room visible, including on a narrow phone. */
+#design-studio:not(.with-fitting){backdrop-filter:none;background:#faf9eef5;max-height:56dvh}
+#design-studio .design-groups{padding-bottom:6px;border-bottom:1px solid #71857120;margin-bottom:5px}
+#design-studio .design-furniture-types{flex-wrap:wrap;overflow:visible;gap:5px;padding-bottom:8px}
+#design-studio .design-groups button{flex:1}

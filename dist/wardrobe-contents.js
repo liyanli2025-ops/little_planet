@@ -6,7 +6,7 @@ import {releaseModel} from './studio-models.js';
 export function createWardrobeContents(parent,w){
  const root=new T.Group();root.userData.dynamic=true;parent.add(root);let rows=wardrobeCatalog(),signature='',pages={},fits=[];
  const refresh=()=>{for(const fit of fits)fit();root.traverse(o=>o.layers.enable(1));};if(typeof document!=='undefined')document.addEventListener('studio-model-state',refresh);
- const zones={dress:{x:-w*.23,y:1.68,width:w*.43},top:{x:w*.24,y:1.68,width:w*.40},set:{x:-w*.23,y:.76,width:w*.43},accessory:{x:w*.24,y:.72,width:w*.40}};
+ const zones={dress:{x:-w*.23,y:1.68,width:w*.43},top:{x:w*.24,y:1.68,width:w*.40},set:{x:-w*.23,y:.85,width:w*.43},accessory:{x:w*.24,y:.72,width:w*.40}};
  function mesh(p,geo,color,x,y,z,action){const m=new T.Mesh(geo,new T.MeshStandardMaterial({color,roughness:.94}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;if(action)m.userData.action=action;p.add(m);return m;}
  function label(text,x,y,width,action){if(typeof document==='undefined')return;const canvas=document.createElement('canvas');canvas.width=512;canvas.height=96;const c=canvas.getContext('2d');c.fillStyle='#e8ddc6';c.fillRect(0,0,512,96);c.fillStyle='#536352';c.textAlign='center';c.font='42px sans-serif';c.fillText(text,256,63);const tex=new T.CanvasTexture(canvas);tex.colorSpace=T.SRGBColorSpace;const m=new T.Mesh(new T.PlaneGeometry(width,.065),new T.MeshBasicMaterial({map:tex}));m.position.set(x,y,.31);m.userData.action=action;root.add(m);}
  function garment(parent,row,width,height,action,top){
@@ -42,7 +42,7 @@ export function createWardrobeContents(parent,w){
      garment(cloth,r,.55,h,action,-.10);
      const hit=mesh(slot,new T.BoxGeometry(z.width/4*.92,h,.37),col,0,-h/2,.02,action);hit.material.transparent=true;hit.material.opacity=0;hit.material.depthWrite=false;hit.material.colorWrite=false;
     }else{
-     const height=category==='set'?.42:.30,width=z.width/capacity*.88;
+     const height=category==='set'?.50:.30,width=category==='set'?Math.min(.48,z.width*.80):z.width/capacity*.88;
      garment(slot,r,width,height,action,-.02);
      const hit=mesh(slot,new T.BoxGeometry(z.width/capacity*.94,height,.35),col,0,-height/2,.02,action);hit.material.transparent=true;hit.material.opacity=0;hit.material.depthWrite=false;hit.material.colorWrite=false;
     }

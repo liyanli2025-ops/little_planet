@@ -57,7 +57,7 @@ export function createTeddy(parent,identity=0){
  const rainGear=createRainGear({body,head,arms});let rainy=false,currentIdentity=identity;
  function setIdentity(i){currentIdentity=i;const white=i===0;fur.color.set(white?0xf3f2ed:0x70432f);earMat.color.set(white?0xe0ddd6:0x753c28);muzzleMat.color.set(white?0xf3f2ed:0xf3e9d9);nose.scale.set(white?.041:.032,white?.032:.026,white?.028:.023);torso.scale.x=white?1.02:1;avatar.userData.identity=i}
  const scarf=new T.Group();body.add(scarf);scarf.visible=false;const cloth=new T.MeshStandardMaterial({color:0x82b3a0,roughness:1});const collar=new T.Mesh(new T.TorusGeometry(.282,.037,12,40),cloth);collar.rotation.x=Math.PI/2;collar.scale.y=.81;collar.position.y=.69;scarf.add(collar);for(const x of [.07,.14]){const tail=new T.Mesh(new T.BoxGeometry(.055,.19,.027),cloth);tail.position.set(x,.60,.245);tail.rotation.z=x===.07?-.12:.15;scarf.add(tail)}
- const wearables=createWearableModels(body,head);const standardHeadwear=createStandardHeadwear(head);const tailoring=createTailoring(body,legs,arms);const generatedSkirt=createGeneratedSkirt(body,legs);const clothing=createClothing(body,arms),accessories=createDesignAccessories(body,head,legs);
+ const wearables=createWearableModels(body,head);const standardHeadwear=createStandardHeadwear(head);const tailoring=createTailoring(body,legs,arms);const generatedSkirt=createGeneratedSkirt(body,legs);const clothing=createClothing(body,arms,legs),accessories=createDesignAccessories(body,head,legs);
  setIdentity(identity);
  let design=defaultDesign().outfit,lastOutfit='plain';
  const effective=()=>design.garment&&design.garment!=='original'?design.garment:lastOutfit;

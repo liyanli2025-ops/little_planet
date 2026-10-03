@@ -34,20 +34,20 @@ export function createWardrobeContents(parent,w){
   mesh(root,new T.BoxGeometry(.025,1.51,.47),0xb59a71,0,1.08,-.025);
   mesh(root,new T.BoxGeometry(w*.47,.025,.5),0xb59a71,w*.24,.82,0);
   for(const [category,z]of Object.entries(zones)){
-   const capacity=category==='set'?1:category==='accessory'?2:4;
+   const capacity=category==='set'?3:category==='accessory'?2:4;
    const all=rows.map((r,i)=>({...r,index:i})).filter(r=>r.category===category),count=Math.max(1,Math.ceil(all.length/capacity)),page=(pages[category]||0)%count;pages[category]=page;
    label(wardrobeCategories[category]+(count>1?' '+(page+1)+'/'+count:''),z.x,z.y+.12,z.width*.64,'outfit-page-'+category);
    if(count>1){label('‹',z.x-z.width*.43,z.y+.12,z.width*.17,'outfit-prev-'+category);label('›',z.x+z.width*.43,z.y+.12,z.width*.17,'outfit-page-'+category);}
-   if(['dress','top'].includes(category)){const rail=mesh(root,new T.CylinderGeometry(.009,.009,z.width,16),0x8c826b,z.x,z.y,0);rail.rotation.z=Math.PI/2;}
+   if(['dress','top','set'].includes(category)){const rail=mesh(root,new T.CylinderGeometry(.009,.009,z.width,16),0x8c826b,z.x,z.y,0);rail.rotation.z=Math.PI/2;}
    for(const [j,r]of all.slice(page*capacity,page*capacity+capacity).entries()){
     const slot=new T.Group();slot.position.set(z.x+(j-(capacity-1)/2)*z.width/capacity,z.y,0);root.add(slot);const action='outfit-pick-'+r.index,col=r.look.color||'#b7aa8f';
-    if(['dress','top'].includes(category)){
+    if(['dress','top','set'].includes(category)){
      const cloth=new T.Group();cloth.rotation.y=Math.PI*.40;slot.add(cloth);
      const hook=mesh(cloth,new T.TorusGeometry(.023,.004,6,20,Math.PI*1.7),0x948a70,0,-.03,0);hook.rotation.z=.3;
      const hanger=new T.Shape();hanger.moveTo(0,-.055);hanger.lineTo(-.12,-.13);hanger.lineTo(.12,-.13);hanger.closePath();mesh(cloth,new T.ExtrudeGeometry(hanger,{depth:.008,bevelEnabled:true,bevelSize:.004,bevelThickness:.004,bevelSegments:2}),0xb49669,0,0,0);
-     const h=category==='dress'?.78:.53;
-     garment(cloth,r,.55,h,action,-.10);
-     const hit=mesh(slot,new T.BoxGeometry(z.width/4*.92,h,.37),col,0,-h/2,.02,action);hit.material.transparent=true;hit.material.opacity=0;hit.material.depthWrite=false;hit.material.colorWrite=false;
+     const h=category==='dress'?.78:category==='set'?.45:.53;
+     garment(cloth,r,category==='set'?.48:.55,h,action,-.10);
+     const hit=mesh(slot,new T.BoxGeometry(z.width/capacity*.92,h,.37),col,0,-h/2,.02,action);hit.material.transparent=true;hit.material.opacity=0;hit.material.depthWrite=false;hit.material.colorWrite=false;
     }else{
      const height=category==='set'?.50:.30,width=category==='set'?Math.min(.48,z.width*.80):z.width/capacity*.88;
      garment(slot,r,width,height,action,-.02);

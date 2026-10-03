@@ -1,8 +1,7 @@
-import {createOutfitPreview} from './outfit-preview.js';
 import {wardrobeCatalog,wardrobeOutfit} from './wardrobe-catalog.js';
 import {defaultDesign} from './design-schema.js';
 export function createWardrobeUI({context,cloud,toast,onOutfit,wearBase,dock}){
- const fitting=createOutfitPreview('wardrobe-fitting'),bar=document.createElement('section');bar.id='wardrobe-confirm';bar.hidden=true;
+ const fitting={show(values){context().visual?.wardrobePreview(values)},hide(){context().visual?.wardrobePreview(null)}},bar=document.createElement('section');bar.id='wardrobe-confirm';bar.hidden=true;
  const title=document.createElement('p'),back=document.createElement('button'),confirm=document.createElement('button');back.textContent='取消';confirm.textContent='确定换装';bar.append(title,back,confirm);document.body.append(bar);
  const css=document.createElement('link');css.rel='stylesheet';css.href='/wardrobe.css';document.head.append(css);
  let catalog=wardrobeCatalog(),data=null,proposal=null,selected=null,busy=false,epoch=0;

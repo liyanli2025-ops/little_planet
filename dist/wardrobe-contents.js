@@ -1,3 +1,5 @@
+import {clothSurface} from './cloth-surface.js';
+import {designColors} from './design-schema.js';
 import {createTeddy} from './teddy.js';
 import {defaultDesign} from './design-schema.js';
 import * as T from './vendor/three.module.js';
@@ -11,6 +13,11 @@ export function createWardrobeContents(parent,w){
  function label(text,x,y,width,action){if(typeof document==='undefined')return;const canvas=document.createElement('canvas');canvas.width=512;canvas.height=96;const c=canvas.getContext('2d');c.fillStyle='#e8ddc6';c.fillRect(0,0,512,96);c.fillStyle='#536352';c.textAlign='center';c.font='42px sans-serif';c.fillText(text,256,63);const tex=new T.CanvasTexture(canvas);tex.colorSpace=T.SRGBColorSpace;const m=new T.Mesh(new T.PlaneGeometry(width,.065),new T.MeshBasicMaterial({map:tex}));m.position.set(x,y,.31);m.userData.action=action;root.add(m);}
  function garment(parent,row,width,height,action,top){
   if(typeof document==='undefined')return;
+  if(row.look.kind==='scarf'){
+   const color=designColors[row.patch.primary]||row.look.color,material=new T.MeshPhysicalMaterial({color,roughness:.98,sheen:.7,side:T.DoubleSide});
+   const folded=new T.Mesh(clothSurface((u,v)=>[(u-.5)*width*.65,top-v*height*.85,.04+.016*Math.sin(v*Math.PI*2)+.006*Math.cos(u*Math.PI*4)],18,30),material);folded.userData.action=action;parent.add(folded);
+   const back=folded.clone();back.position.set(width*.08,.015,-.02);parent.add(back);return;
+  }
   const holder=new T.Group(),bear=createTeddy(holder),base=[];
   bear.avatar.traverseVisible(o=>{if(o.isMesh)base.push(o)});
   bear.design(wardrobeOutfit(defaultDesign().outfit,row));

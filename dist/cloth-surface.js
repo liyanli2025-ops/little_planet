@@ -1,0 +1,4 @@
+import * as T from './vendor/three.module.js';
+export function clothSurface(sample,cols=48,rows=24){const p=[],uv=[],idx=[];for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){p.push(...sample(i/cols,j/rows));uv.push(i/cols,j/rows)}for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){const a=j*(cols+1)+i,b=a+cols+1;idx.push(a,b,a+1,b,b+1,a+1)}const g=new T.BufferGeometry();g.setAttribute('position',new T.Float32BufferAttribute(p,3));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));g.setIndex(idx);g.computeVertexNormals();return g;}
+export function scarfGeometry(){return clothSurface((u,v)=>{const a=u*Math.PI*2,y=.65+v*.10+.008*Math.sin(a*2),r=.30-.025*v+.005*Math.sin(v*Math.PI*5);return [Math.sin(a)*r,y,Math.cos(a)*r*.86]},80,18)}
+export function scarfTail(side){return clothSurface((u,v)=>{const x=.07+side*.045+(u-.5)*.08+side*.032*v,y=.695-v*(side>0?.27:.32),z=.26+.054*Math.sin(v*Math.PI*.85)+.009*Math.cos(u*Math.PI*4)*Math.sin(v*Math.PI);return [x,y,z]},18,32)}

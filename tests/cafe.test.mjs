@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
 import {createCafe} from '../backend/cafe.mjs';
-import {cafeMenu,islandSky} from '../dist/cafe-catalog.js';
+import {cafeMenu,islandSky,cafeSeats,cafeWalkable} from '../dist/cafe-catalog.js';
 function setup(){const db=new DatabaseSync(':memory:');let time=Date.parse('2026-10-03T04:00:00Z'),delivered=[];const cafe=createCafe(db,{now:()=>time,partner:u=>u.id<3?({id:u.id===1?2:1}):null,deliver:(u,item,id)=>delivered.push({account:u.id,item:item.id,id})});const user=id=>({id,nickname:'熊'+id,avatar:id%2});return {db,cafe,user,delivered,advance:ms=>time+=ms}}
 test('public visitors see strangers but expose no private account records',()=>{const f=setup();try{f.cafe.update(f.user(1),{action:'join'});const r=f.cafe.update(f.user(2),{action:'join'});assert.equal(r.guests.length,2);assert.equal(r.room,1);assert.equal(r.guests[0].space,undefined);assert.equal(r.guests[0].username,undefined);assert.deepEqual(r.sky,f.cafe.view(f.user(1)).sky)}finally{f.db.close()}});
 test('seat claims are exclusive, leave and stale connections release them',()=>{const f=setup();try{for(const id of [1,2])f.cafe.update(f.user(id),{action:'join'});f.cafe.update(f.user(1),{action:'seat',seat:'t0-0'});assert.throws(()=>f.cafe.update(f.user(2),{action:'seat',seat:'t0-0'}),/已经有人/);f.cafe.update(f.user(2),{action:'seat',seat:'t0-1'});f.cafe.update(f.user(1),{action:'leave'});assert.doesNotThrow(()=>f.cafe.update(f.user(2),{action:'seat',seat:'t0-0'}));f.advance(21000);assert.equal(f.cafe.has(2),false);assert.equal(f.cafe.update(f.user(3),{action:'join'}).guests.length,1)}finally{f.db.close()}});
@@ -13,3 +13,10 @@ test('invalid orders and coordinates cannot enter state; rooms are bounded',()=>
 test('island day and night follow Beijing time independently of visitor timezone',()=>{assert.equal(islandSky(Date.parse('2026-10-03T04:00:00Z')).hour,12);assert.equal(islandSky(Date.parse('2026-10-03T14:00:00Z')).night,true)});
 
 test('a full partner room is reported instead of silently separating the pair',()=>{const f=setup();try{for(const id of [1,3,4,5,6,7,8,9])f.cafe.update(f.user(id),{action:'join'});assert.throws(()=>f.cafe.update(f.user(2),{action:'join'}),/对方所在.*已满/);f.cafe.update(f.user(3),{action:'leave'});assert.equal(f.cafe.update(f.user(2),{action:'join'}).room,1)}finally{f.db.close()}});
+
+test('expanded curved pavilion keeps seat approaches walkable and excludes sea corners',()=>{
+ for(const seat of cafeSeats)assert.equal(cafeWalkable(seat.x,seat.z+.58),true,seat.id);
+ assert.equal(cafeWalkable(0,5.8),true);
+ assert.equal(cafeWalkable(6.4,4),false);
+ assert.equal(cafeWalkable(0,7),false);
+});

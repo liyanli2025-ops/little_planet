@@ -9,7 +9,7 @@ export function createCafe(db,{partner=()=>null,deliver=()=>{},profile=u=>({outf
   fail(!peer||[...guests.values()].filter(g=>g.room===room).length<8,'对方所在的咖啡馆已满，稍后再来一起坐吧',409);
   while([...guests.values()].filter(g=>g.room===room).length>=8)room++;
   const count=[...guests.values()].filter(g=>g.room===room).length;
-  g={id:u.id,name:u.nickname||u.username,avatar:u.avatar,room,x:-1.4+(count%4)*.9,z:4.15+Math.floor(count/4)*.8,yaw:Math.PI,seat:null,seen:now(),held:null,...profile(u)};guests.set(u.id,g);return g;
+  g={id:u.id,name:u.nickname||u.username,avatar:u.avatar,room,x:-.9+(count%3)*.9,z:4.5+Math.floor(count/3)*.7,yaw:Math.PI,seat:null,seen:now(),held:null,...profile(u)};guests.set(u.id,g);return g;
  }
  function view(u){clean();const own=guests.get(u.id);return {self:own?.id,room:own?.room,sky:islandSky(now()),guests:own?[...guests.values()].filter(g=>g.room===own.room).map(({seen,...g})=>g):[]}}
  function update(u,b){fail(b&&typeof b==='object','操作无效');clean();
@@ -17,7 +17,7 @@ export function createCafe(db,{partner=()=>null,deliver=()=>{},profile=u=>({outf
   if(b.action==='join'){join(u);return view(u)}
   const g=guests.get(u.id);fail(g,'请重新进入咖啡馆',409);g.seen=now();
   if(b.action==='sync'){
-   if(!g.seat&&[b.x,b.z,b.yaw].every(Number.isFinite)){g.x=Math.max(-5,Math.min(5,b.x));g.z=Math.max(-2.5,Math.min(6,b.z));g.yaw=b.yaw%(Math.PI*2)}
+   if(!g.seat&&[b.x,b.z,b.yaw].every(Number.isFinite)){g.x=Math.max(-6.5,Math.min(6.5,b.x));g.z=Math.max(-4,Math.min(6.2,b.z));g.yaw=b.yaw%(Math.PI*2)}
   }else if(b.action==='seat'){
    const s=cafeSeats.find(s=>s.id===b.seat);fail(s,'座位不存在');fail(![...guests.values()].some(o=>o.id!==u.id&&o.room===g.room&&o.seat===s.id),'这里已经有人坐了',409);Object.assign(g,{seat:s.id,x:s.x,z:s.z,yaw:s.yaw});
   }else if(b.action==='stand'){g.seat=null;g.z+=.58;

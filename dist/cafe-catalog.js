@@ -13,9 +13,22 @@ export const cafeMenu=[
  {id:'cafe_cinnamon',name:'肉桂卷',kind:'dessert',display:'cinnamon_roll',serving:'cinnamon_roll'},
  {id:'cafe_waffle',name:'奶油华夫饼',kind:'dessert',display:'waffle_stacked',serving:'waffle_stacked'}
 ];
-export const cafeTables=[[-2.75,1.95],[0,1.95],[2.75,1.95],[-3.0,-.5],[3.0,-.5]];
+export const cafeOutline=[[-7,0],[-6.6,-3.2],[-4.8,-4.7],[-1.3,-4.4],[1.2,-5],[4.3,-4.4],[6.7,-3.2],[7,0],[6.4,3.2],[4.6,4.6],[1.8,4.8],[0,3.9],[-2.4,4.8],[-5.8,4],[-7,1.6]];
+export const cafeTables=[[-4.9,.1],[-3.9,3],[0,2.5],[4,3],[5.35,-.65]];
 export const cafeSeats=cafeTables.flatMap(([x,z],table)=>[-1,1].map((side,i)=>({id:`t${table}-${i}`,table,x:x+side*.78,z,y:.68,yaw:side<0?Math.PI/2:-Math.PI/2})));
 export function islandSky(now=Date.now()){
  const hour=((now/3600000+8)%24+24)%24,slot=Math.floor(now/10800000),wet=((slot*17+13)%19+19)%19<3;
  return {time:now,timezone:'Asia/Shanghai',hour,weather:wet?'rain':'sun',night:hour<6||hour>=18.5,temperature:wet?24:27};
+}
+
+// Keep walking inside the inset pavilion footprint, including the arrival deck.
+export function cafeWalkable(x,z){
+ if(!Number.isFinite(x)||!Number.isFinite(z))return false;
+ if(Math.abs(x)<1.25&&z>=3.5&&z<=6.2)return true;
+ let inside=false;
+ for(let i=0,j=cafeOutline.length-1;i<cafeOutline.length;j=i++){
+  const [ax,az]=cafeOutline[i],[bx,bz]=cafeOutline[j];
+  if((az>z)!==(bz>z)&&x<(bx-ax)*(z-az)/(bz-az)+ax)inside=!inside;
+ }
+ return inside&&Math.abs(x)<6.45&&z<4.05&&z>-3.8;
 }

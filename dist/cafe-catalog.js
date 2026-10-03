@@ -14,9 +14,9 @@ export const cafeMenu=[
  {id:'cafe_waffle',name:'奶油华夫饼',kind:'dessert',display:'waffle_stacked',serving:'waffle_stacked'}
 ];
 export const cafeOutline=[[-7,0],[-6.6,-3.2],[-4.8,-4.7],[-1.3,-4.4],[1.2,-5],[4.3,-4.4],[6.7,-3.2],[7,0],[6.4,3.2],[4.6,4.6],[1.8,4.8],[0,3.9],[-2.4,4.8],[-5.8,4],[-7,1.6]];
-export const cafeTables=[[-4.9,.1],[-3.9,3],[0,2.5],[3.2,.9],[5.35,-.65]];
+export const cafeTables=[[-3.4,-.2],[-2.8,2.3],[0,2.5],[3.2,.9],[5.35,-.65]];
 export const cafeSeats=cafeTables.flatMap(([x,z],table)=>[-1,1].map((side,i)=>({id:`t${table}-${i}`,table,x:x+side*.78,z,y:.68,yaw:side<0?Math.PI/2:-Math.PI/2}))).concat(
- [2.4,3.5,4.6].map((x,i)=>({id:`window-${i}`,table:5,zone:'window',x,z:3.65,y:.68,yaw:0,approachZ:3.07})),
+ [[-5.95,.6,-1.57],[-5.72,1.75,-1.30],[-5.1,2.85,-.95]].map(([x,z,yaw],i)=>({id:`window-${i}`,table:5,zone:'window',x,z,y:.68,yaw,approachX:x-Math.sin(yaw)*.65,approachZ:z-Math.cos(yaw)*.65})),
  [2.8,4.2,5.6].map((x,i)=>({id:`terrace-${i}`,table:6,zone:'terrace',x,z:6.15,y:.68,yaw:0,approachZ:5.57}))
 );
 export function islandSky(now=Date.now()){

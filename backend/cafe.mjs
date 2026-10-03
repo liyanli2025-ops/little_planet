@@ -20,7 +20,7 @@ export function createCafe(db,{partner=()=>null,deliver=()=>{},profile=u=>({outf
    if(!g.seat&&[b.x,b.z,b.yaw].every(Number.isFinite)){g.x=Math.max(-6.5,Math.min(6.9,b.x));g.z=Math.max(-4,Math.min(7.15,b.z));g.yaw=b.yaw%(Math.PI*2)}
   }else if(b.action==='seat'){
    const s=cafeSeats.find(s=>s.id===b.seat);fail(s,'座位不存在');fail(![...guests.values()].some(o=>o.id!==u.id&&o.room===g.room&&o.seat===s.id),'这里已经有人坐了',409);Object.assign(g,{seat:s.id,x:s.x,z:s.z,yaw:s.yaw});
-  }else if(b.action==='stand'){const s=cafeSeats.find(s=>s.id===g.seat);g.seat=null;g.z=s?.approachZ??g.z+.58;
+  }else if(b.action==='stand'){const s=cafeSeats.find(s=>s.id===g.seat);g.seat=null;g.x=s?.approachX??g.x;g.z=s?.approachZ??g.z+.58;
   }else if(b.action==='eat'){fail(g.held&&g.held.readyAt<=now(),'还在制作中',409);g.held=null;
   }else if(b.action==='order'){
    const item=cafeMenu.find(i=>i.id===b.item);fail(item,'菜单中没有这款');fail(['here','takeaway'].includes(b.mode),'请选择在这吃或带走');fail(typeof b.command==='string'&&/^[a-zA-Z0-9_-]{8,80}$/.test(b.command),'订单编号无效');

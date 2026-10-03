@@ -15,10 +15,10 @@ test('island day and night follow Beijing time independently of visitor timezone
 test('a full partner room is reported instead of silently separating the pair',()=>{const f=setup();try{for(const id of [1,3,4,5,6,7,8,9])f.cafe.update(f.user(id),{action:'join'});assert.throws(()=>f.cafe.update(f.user(2),{action:'join'}),/对方所在.*已满/);f.cafe.update(f.user(3),{action:'leave'});assert.equal(f.cafe.update(f.user(2),{action:'join'}).room,1)}finally{f.db.close()}});
 
 test('expanded curved pavilion keeps seat approaches walkable and excludes sea corners',()=>{
- for(const seat of cafeSeats)assert.equal(cafeWalkable(seat.x,seat.approachZ??seat.z+.58),true,seat.id);
+ for(const seat of cafeSeats)assert.equal(cafeWalkable(seat.approachX??seat.x,seat.approachZ??seat.z+.58),true,seat.id);
  assert.equal(cafeWalkable(0,5.8),true);
  assert.equal(cafeWalkable(6.4,4),false);
  assert.equal(cafeWalkable(0,7),false);
 });
 
-test('window and terrace seats face the sea and stand back into their aisle',()=>{const f=setup();try{const u=f.user(1);f.cafe.update(u,{action:'join'});for(const id of ['window-1','terrace-1']){const seated=f.cafe.update(u,{action:'seat',seat:id}).guests[0];assert.equal(seated.yaw,0);const standing=f.cafe.update(u,{action:'stand'}).guests[0];assert.equal(standing.z,cafeSeats.find(s=>s.id===id).approachZ);assert.ok(cafeWalkable(standing.x,standing.z));}}finally{f.db.close()}});
+test('window and terrace seats face the sea and stand back into their aisle',()=>{const f=setup();try{const u=f.user(1);f.cafe.update(u,{action:'join'});for(const id of ['window-1','terrace-1']){const seated=f.cafe.update(u,{action:'seat',seat:id}).guests[0];assert.equal(seated.yaw,cafeSeats.find(s=>s.id===id).yaw);const standing=f.cafe.update(u,{action:'stand'}).guests[0];assert.equal(standing.z,cafeSeats.find(s=>s.id===id).approachZ);assert.ok(cafeWalkable(standing.x,standing.z));}}finally{f.db.close()}});

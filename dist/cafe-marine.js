@@ -1,0 +1,42 @@
+import * as T from './vendor/three.module.js';
+import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
+
+export function buildMarine(root,seaMat){
+ const R=17.8,cy=-18.25,group=new T.Group();root.add(group);
+ const height=r=>cy+Math.sqrt(Math.max(0,R*R-r*r));
+ const edge=a=>13.65+1.05*Math.sin(a*3+.5)+.55*Math.sin(a*5);
+ const point=(a,r,lift=0)=>new T.Vector3(Math.cos(a)*r,height(r)+lift,Math.sin(a)*r);
+ // Broad sand coast slopes continuously from the cafe plateau into the water.
+ const positions=[],colors=[],indices=[],sand=new T.Color(),N=160,M=24;
+ for(let j=0;j<=M;j++)for(let i=0;i<=N;i++){const a=i/N*Math.PI*2,t=j/M,r=8.15+(edge(a)-8.15)*t;const y=T.MathUtils.lerp(-.14,height(r)+.06,Math.pow(t,.78));positions.push(Math.cos(a)*r,y,Math.sin(a)*r);sand.set(0xe4cf9e).lerp(new T.Color(0xb6a887),T.MathUtils.smoothstep(t,.68,1));sand.multiplyScalar(1+.025*Math.sin(i*13+j*7));colors.push(sand.r,sand.g,sand.b);if(j<M&&i<N){const k=j*(N+1)+i;indices.push(k,k+N+1,k+1,k+1,k+N+1,k+N+2)}}
+ const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(positions,3));geo.setAttribute('color',new T.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();const beach=new T.Mesh(geo,new T.MeshStandardMaterial({vertexColors:true,roughness:1,side:T.DoubleSide}));beach.receiveShadow=true;group.add(beach);
+ // Small dune plants, smooth coastal stones and wind marks break up the sand.
+ const sandY=(a,r)=>T.MathUtils.lerp(-.14,height(r)+.06,Math.pow(T.MathUtils.clamp((r-8.15)/(edge(a)-8.15),0,1),.78));
+ for(let i=0;i<19;i++){const a=i*2.399,r=9.4+(i%4)*.65,x=Math.cos(a)*r,z=Math.sin(a)*r,y=sandY(a,r),g=new T.Group();g.userData.dune=true;g.position.set(x,y+.05,z);g.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),new T.Vector3(x*.7,14,z*.7).normalize());group.add(g);for(let j=0;j<3;j++){const rock=new T.Mesh(new T.SphereGeometry(1,20,12),new T.MeshStandardMaterial({color:i%3===0?0xa4a890:0xc6b899,roughness:1}));rock.position.set((j-1)*.20,.09,Math.sin(j)*.1);rock.scale.set(.19+j*.035,.14,.22);g.add(rock)}if(i%2===0)for(let j=0;j<5;j++){const leaf=new T.Mesh(new T.SphereGeometry(1,12,8),new T.MeshStandardMaterial({color:0xa5ab79,roughness:1}));leaf.position.set(Math.sin(j)*.13,.26,Math.cos(j)*.13);leaf.scale.set(.035,.32,.035);leaf.rotation.z=Math.sin(j)*.5;g.add(leaf)}}
+ const wind=[];for(let j=0;j<26;j++){const a=j*.71,r=10+(j%4)*.55;for(let k=0;k<5;k++){for(const d of [k,k+1]){const aa=a+(d-2.5)*.015,rr=r+Math.sin(d*.7)*.05;wind.push(Math.cos(aa)*rr,sandY(aa,rr)+.02,Math.sin(aa)*rr)}}}const wg=new T.BufferGeometry();wg.setAttribute('position',new T.Float32BufferAttribute(wind,3));group.add(new T.LineSegments(wg,new T.LineBasicMaterial({color:0xb49f76,transparent:true,opacity:.22})));
+ group.updateMatrixWorld(true);const batches=new Map();for(const g of group.children.filter(g=>g.userData.dune)){for(const m of g.children){const key=m.material.color.getHex(),entry=batches.get(key)||{material:m.material,geos:[]};entry.geos.push(m.geometry.clone().applyMatrix4(m.matrixWorld));batches.set(key,entry);}group.remove(g);for(const m of g.children){m.geometry.dispose();if(batches.get(m.material.color.getHex()).material!==m.material)m.material.dispose();}}
+ for(const {material,geos}of batches.values()){const merged=mergeGeometries(geos);geos.forEach(g=>g.dispose());const mesh=new T.Mesh(merged,material);mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);}
+ // Translucent shallow-water rim with travelling foam bands that wash uphill.
+ const surf=[];
+ for(let b=0;b<3;b++){const g=new T.BufferGeometry(),p=new Float32Array((N+1)*2*3),idx=[];g.setAttribute('position',new T.BufferAttribute(p,3));for(let i=0;i<N;i++){const k=i*2;idx.push(k,k+1,k+2,k+1,k+3,k+2)}g.setIndex(idx);const mat=new T.MeshBasicMaterial({color:b===0?0xa8ddd4:0xf0f7dc,transparent:true,opacity:.5,side:T.DoubleSide,depthWrite:false});const m=new T.Mesh(g,mat);group.add(m);surf.push({g,p,mat})}
+ const uniform={value:0};seaMat.roughness=.38;seaMat.metalness=.03;
+ seaMat.onBeforeCompile=shader=>{shader.uniforms.coastTime=uniform;shader.vertexShader='varying vec3 coastPosition;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ncoastPosition=position;');shader.fragmentShader='uniform float coastTime;varying vec3 coastPosition;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_begin>',`#include <normal_fragment_begin>
+ float w1=sin(coastPosition.x*6.0+coastPosition.z*4.3+coastTime*1.3);
+ float w2=sin(coastPosition.y*7.7-coastPosition.z*5.1+coastTime*.8);
+ normal=normalize(normal+vec3(w1*.045,w2*.035,0.0));`);shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+ float rip=sin(coastPosition.x*5.0+coastPosition.z*3.1+coastTime)*sin(coastPosition.y*5.6-coastPosition.z*4.1-coastTime*.7);
+ diffuseColor.rgb*=.93+.10*rip;
+ diffuseColor.rgb+=vec3(.025,.045,.045)*pow(max(0.0,rip),12.0);`)};
+ const animals=[];
+ function dolphin(){const g=new T.Group(),skin=new T.MeshStandardMaterial({color:0x728e99,roughness:.34}),belly=new T.MeshStandardMaterial({color:0xd3dfda,roughness:.45});
+  const ell=(material,x,y,z,a,b,c)=>{const o=new T.Mesh(new T.SphereGeometry(1,32,20),material);o.position.set(x,y,z);o.scale.set(a,b,c);o.castShadow=true;g.add(o);return o};
+  ell(skin,0,0,0,.29,.32,.95);ell(belly,0,-.18,.13,.24,.15,.70);ell(skin,0,.025,.78,.23,.24,.34);ell(skin,0,-.045,1.11,.12,.10,.30);ell(skin,0,-.02,-.88,.13,.15,.33);
+  for(const side of [-1,1]){const fluke=ell(skin,side*.27,-.03,-1.10,.37,.055,.17);fluke.rotation.y=side*.30;const fin=ell(skin,side*.33,-.14,.02,.35,.045,.15);fin.rotation.y=side*.55;fin.rotation.z=side*-.22;ell(new T.MeshStandardMaterial({color:0x18282a}),side*.188,.08,.88,.03,.03,.03)}
+  const shape=new T.Shape();shape.moveTo(0,-.30);shape.quadraticCurveTo(.42,-.35,.46,.20);shape.quadraticCurveTo(.20,.04,0,.20);shape.closePath();const fin=new T.Mesh(new T.ExtrudeGeometry(shape,{depth:.06,bevelEnabled:true,bevelSize:.025,bevelThickness:.025,bevelSegments:3,curveSegments:16}),skin);fin.rotation.y=-Math.PI/2;fin.position.set(.03,.24,-.10);g.add(fin);return g;
+ }
+ for(const [i,a]of [1.0,2.20,3.75].entries()){const r=16.25,base=point(a,r),normal=base.clone().sub(new T.Vector3(0,cy,0)).normalize(),anchor=new T.Group();anchor.position.copy(base);anchor.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),normal);group.add(anchor);const d=dolphin();anchor.add(d);d.scale.setScalar(i===1?1.2:.9);const rings=[];for(let j=0;j<2;j++){const m=new T.Mesh(new T.RingGeometry(.7,.77,64),new T.MeshBasicMaterial({color:0xe3f3e9,transparent:true,opacity:0,side:T.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.y=.025;anchor.add(m);rings.push(m)}const droplets=[];for(let j=0;j<14;j++){const m=new T.Mesh(new T.SphereGeometry(.04,8,6),new T.MeshBasicMaterial({color:0xd8eee9,transparent:true,opacity:.7}));anchor.add(m);droplets.push(m)}animals.push({d,rings,droplets,phase:i*4.4,period:15+i*2});}
+ function tick(t){uniform.value=t;surf.forEach(({g,p,mat},b)=>{const phase=(t*.18+b/3)%1,inrush=Math.sin(phase*Math.PI),width=b===0?.38:.075;mat.opacity=(b===0?.24:.65)*Math.sin(phase*Math.PI);for(let i=0;i<=N;i++){const a=i/N*Math.PI*2,r=edge(a)+.60-inrush*.75;for(let j=0;j<2;j++){const rr=r+j*width,v=point(a,rr,.05);if(rr<edge(a)){const t=T.MathUtils.clamp((rr-8.15)/(edge(a)-8.15),0,1);v.y=Math.max(v.y,T.MathUtils.lerp(-.14,height(rr)+.06,Math.pow(t,.78))+.04);}const k=(i*2+j)*3;p[k]=v.x;p[k+1]=v.y;p[k+2]=v.z}}g.attributes.position.needsUpdate=true;g.computeBoundingSphere()});
+  animals.forEach(({d,rings,droplets,phase,period})=>{const q=(t+phase)%period,u=q/4;d.visible=q<4;if(d.visible){d.position.set(0,-.65+Math.sin(u*Math.PI)*2.85,(u-.5)*3.7);d.rotation.x=-Math.atan2(Math.cos(u*Math.PI)*2.85*Math.PI,3.7);d.rotation.z=Math.sin(u*Math.PI*2)*.20;}const splash=q<1?q:q>3.1&&q<4.5?q-3.1:-1;rings.forEach((m,i)=>{m.visible=splash>=0;m.material.opacity=splash>=0?Math.max(0,.6-splash*.43):0;m.scale.setScalar(.5+Math.max(0,splash)*1.8+i*.3);m.position.z=q<1?-1.6:1.6});droplets.forEach((m,j)=>{m.visible=splash>=0&&splash<1;const a=j/14*Math.PI*2;m.position.set(Math.cos(a)*splash*.8,Math.max(0,Math.sin(splash*Math.PI)*(1+j%3*.2)),(q<1?-1.6:1.6)+Math.sin(a)*splash*.8)})});
+ }
+ return {tick,group};
+}

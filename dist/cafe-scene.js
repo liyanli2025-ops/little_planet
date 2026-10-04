@@ -7,7 +7,7 @@ import {createTeddy} from './teddy.js';
 import {cafeMenu,cafeSeats,cafeTables,cafeWalkable} from './cafe-catalog.js';
 import {makeCafeFood,disposeCafeObject} from './cafe-food.js';
 
-export function createCafeScene(host,{onPick,onMove,onError,onHostPoint}={}){
+export function createCafeScene(host,{onPick,onMove,onError,onHostPoint,onEnvironment}={}){
  const renderer=new T.WebGLRenderer({antialias:true,alpha:false,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.02;host.append(renderer.domElement);
  const scene=new T.Scene(),camera=new T.PerspectiveCamera(38,1,.1,1800),root=new T.Group();scene.add(root);const hits=[],guests=new Map();let menuOpen=false,overview=false,sipItem=null,sipUntil=0,frameMode="exterior",disposed=false,frame=0,last=performance.now(),self=null,sky=null,inside=false,az=.34,polar=.97,distance=21,desiredDistance=21,target=new T.Vector3(0,.5,0),path=[],arrive=null,moving=false,clockOffset=0,lastRepath=0;
  function pick(o,type,value){o.userData.pick={type,value};hits.push(o);return o}
@@ -31,7 +31,7 @@ export function createCafeScene(host,{onPick,onMove,onError,onHostPoint}={}){
   if(!found){onError?.('这里暂时走不过去');return false}const points=[];for(let p=found;p;p=prev.get(key(...p)))points.push(new T.Vector3(p[0]*step,.22,p[1]*step));path=points.reverse().slice(1);arrive=done;moving=true;return true;
  }
  const frames=new Map();
- function focus(kind){if(frameMode===kind)return;frames.set(frameMode,{target:target.clone(),az,polar,distance:desiredDistance});const globe=kind==='island',outside=['island','exterior','terrace'].includes(kind);inside=!outside;building.scale.setScalar(globe?.65:1);roof.visible=outside;awning.visible=outside;front.visible=outside;furniture.visible=kind!=='desserts';overview=globe;frameMode=kind;horizon.visible=!globe;planet.visible=true;
+ function focus(kind){if(frameMode===kind)return;frames.set(frameMode,{target:target.clone(),az,polar,distance:desiredDistance});const globe=kind==='island',outside=['island','exterior','terrace'].includes(kind);inside=!outside;onEnvironment?.(inside);building.scale.setScalar(globe?.65:1);roof.visible=outside;awning.visible=outside;front.visible=outside;furniture.visible=kind!=='desserts';overview=globe;frameMode=kind;horizon.visible=!globe;planet.visible=true;
  desiredDistance=globe?Math.max(76,43/(.69*camera.aspect)):kind==='terrace'?Math.max(16,11/(.69*camera.aspect)):kind==='exterior'?Math.max(33,21/(.69*camera.aspect)):kind==='desserts'?Math.max(6.5,4.2/(.69*camera.aspect)):kind==='bar'?Math.max(8,4.8/(.69*camera.aspect)):Math.max(16,8.0/(.69*camera.aspect));
  target.set(kind==='desserts'?2.9:kind==='terrace'?3.3:kind==='bar'?-.8:0,globe?-18.25:kind==='desserts'?1.75:kind==='bar'?1.35:.75,kind==='desserts'?-3.1:kind==='terrace'?4.4:kind==='bar'?-2.2:1.6);polar=globe?1.08:kind==='desserts'?1.18:outside?1.03:1.02;az=kind==='desserts'?.1:kind==='terrace'?.55:.34;const prior=frames.get(kind);if(prior){target.copy(prior.target);az=prior.az;polar=prior.polar;desiredDistance=prior.distance}}
  const pointers=new Map();let drag=false,origin=null,gesture=null;const canvas=renderer.domElement;canvas.style.touchAction='none';canvas.tabIndex=0;

@@ -1,0 +1,19 @@
+// Independent ambience bus: never changes the music player or media session.
+export function createCafeAmbience({host=window,doc=document,load=fetch}={}){
+ let context,gain,buffer,loading,source,active=false,indoor=false;
+ const url=new URL('./assets/audio/cafe-waves.mp3',import.meta.url);
+ function level(){if(!gain)return;const t=context.currentTime;gain.gain.cancelScheduledValues(t);gain.gain.setTargetAtTime(active&&!doc.hidden?(indoor?.10:.32):0,t,.45)}
+ function start(){if(!active||doc.hidden||!buffer||source)return;source=context.createBufferSource();source.buffer=buffer;source.loop=true;source.connect(gain);source.start();level()}
+ function unlock(){
+  if(!context){const Audio=host.AudioContext||host.webkitAudioContext;if(!Audio)return;context=new Audio();gain=context.createGain();gain.gain.value=0;gain.connect(context.destination)}
+  // Called directly from the visit click, before network awaits (mobile autoplay).
+  if(context.state!=='running')void context.resume().catch(()=>{});
+  if(!buffer&&!loading)loading=(async()=>{const r=await load(url);if(!r.ok)throw Error('Wave audio unavailable');buffer=await context.decodeAudioData(await r.arrayBuffer());start()})().catch(()=>{}).finally(()=>{loading=null});
+  start();
+ }
+ function stop(){active=false;if(source){source.stop();source.disconnect();source=null}level()}
+ function visibility(){if(doc.hidden){if(context)void context.suspend().catch(()=>{})}else if(active){unlock();level()}}
+ function gesture(){if(active)unlock()}
+ doc.addEventListener('pointerdown',gesture,{passive:true});doc.addEventListener('keydown',gesture);doc.addEventListener('visibilitychange',visibility);host.addEventListener('pagehide',stop);
+ return {unlock,play(){active=true;unlock();level()},room(value){indoor=!!value;level()},stop,dispose(){stop();doc.removeEventListener('pointerdown',gesture);doc.removeEventListener('keydown',gesture);doc.removeEventListener('visibilitychange',visibility);host.removeEventListener('pagehide',stop);if(context)void context.close().catch(()=>{})}};
+}

@@ -51,3 +51,5 @@ Selected assets live under `dist/assets/coast/`: Akshat’s skinned Dolphin Anim
 Validation: coast geometry joins the ocean sphere at 360 sampled angles; sand radial deviation stays below 4.5 cm across the cap; all glTF dependencies are local; optimized palm buffer bounds checked. Browser QA uses Chrome/Playwright (Browser plugin not available): desktop/mobile render, 20 animation samples, console errors, plus existing two-visitor seating/order/takeaway regression. Physical-phone frame rate has not been measured.
 
 Roundness correction: removed the raised foundation blend and floating legacy trees/stepping stones; added supported entrance steps. Rotation screenshots verify the outline from multiple bearings.
+
+Overview proportion: the building, deck and bears render at 65% scale only in the island overview; other views use the original scale and seating coordinates. Ground ray hits convert from world to building coordinates. Two bays bring water closer to the terrace and curved window seats; the opposite sandy coast remains broad. Terrain and water shader share the same bay formula.

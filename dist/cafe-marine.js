@@ -3,7 +3,8 @@ import {GLTFLoader} from './vendor/GLTFLoader.js';
 import {disposeCafeObject} from './cafe-food.js';
 
 // Coordinates are angular around the actual planet, never a flat island lid.
-export const coastEdge=a=>1.27+.16*Math.sin(a*3+.5)+.10*Math.sin(a*5)-.16*Math.cos(a-.4);
+const angleDistance=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
+export const coastEdge=a=>Math.max(.50,1.27+.16*Math.sin(a*3+.5)+.10*Math.sin(a*5)-.16*Math.cos(a-.4)-.40*Math.exp(-Math.pow(angleDistance(a,1.25)/.62,2))-.80*Math.exp(-Math.pow(angleDistance(a,2.85)/.50,2)));
 export function coastPoint(a,theta,lift=0){
  const edge=coastEdge(a),shore=T.MathUtils.smoothstep(theta,edge-.16,edge);
  const radius=17.8+.045*(1-shore),r=Math.sin(theta)*radius;
@@ -64,7 +65,8 @@ export function buildMarine(root,seaMat,isDisposed=()=>false){
   shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
    float a=atan(coastPosition.z,coastPosition.x);
    float theta=acos(clamp(coastPosition.y/17.8,-1.,1.));
-   float edge=1.27+.16*sin(a*3.+.5)+.10*sin(a*5.)-.16*cos(a-.4);
+   float d1=atan(sin(a-1.25),cos(a-1.25)),d2=atan(sin(a-2.85),cos(a-2.85));
+   float edge=max(.50,1.27+.16*sin(a*3.+.5)+.10*sin(a*5.)-.16*cos(a-.4)-.40*exp(-pow(d1/.62,2.))-.80*exp(-pow(d2/.50,2.)));
    float shallow=1.-smoothstep(0.,.26,theta-edge);
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.20,.65,.57),shallow*.65);
    float caustic=pow(max(0.,coastNoise(coastPosition*5.+vec3(coastTime*.3))),12.);

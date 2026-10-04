@@ -16,3 +16,7 @@ test('all selected nature model dependencies are shipped locally',()=>{
 test('extracted palm geometry buffers stay within the shipped GLB',()=>{
  const b=fs.readFileSync(new URL('../dist/assets/coast/palm.glb',import.meta.url));assert.equal(b.readUInt32LE(8),b.length);assert.ok(b.length<200000);const n=b.readUInt32LE(12),g=JSON.parse(b.subarray(20,20+n).toString());assert.equal(g.meshes.length,2);for(const v of g.bufferViews)assert.ok(v.byteOffset+v.byteLength<=g.buffers[0].byteLength);
 });
+
+test('sea-facing bays approach the cafe while the opposite beach remains broad',()=>{
+ assert.ok(coastEdge(1.25)<.70);assert.ok(coastEdge(2.85)<.85);assert.ok(coastEdge(4.5)>1.1);
+});

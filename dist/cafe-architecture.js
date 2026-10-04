@@ -7,7 +7,8 @@ import {makeCafeFood,disposeCafeObject} from './cafe-food.js';
 import {cafeOutline,cafeMenu,cafeSeats,cafeTables} from './cafe-catalog.js';
 
 // Coastal reading room: rounded bays, a recessed entry and a walnut service core.
-export function buildCafe(root,pick,isDisposed){
+export function buildCafe(worldRoot,pick,isDisposed){
+ const root=new T.Group();root.name="Cafe building";worldRoot.add(root);
  const mats=new Map(),front=new T.Group(),furniture=new T.Group(),roof=new T.Group(),horizon=new T.Group(),decor=new T.Group();root.add(front,furniture,roof,horizon,decor);horizon.visible=false;
  const ready=[],lamps=[],shore=[];
  const mat=(c,r=.8)=>{const key=c+':'+r;if(!mats.has(key))mats.set(key,new T.MeshStandardMaterial({color:c,roughness:r}));return mats.get(key)};
@@ -19,7 +20,7 @@ export function buildCafe(root,pick,isDisposed){
  function tube(p,c,points,r=.025){return mesh(p,new T.TubeGeometry(new T.CatmullRomCurve3(points.map(v=>new T.Vector3(...v))),Math.max(20,points.length*3),r,8,false),c)}
  function texture(kind){const c=document.createElement('canvas');c.width=c.height=512;const q=c.getContext('2d');let seed=7;const rand=()=>((seed=seed*16807%2147483647)/2147483647);q.fillStyle=kind==='wood'?'#bfa582':'#d6c5a3';q.fillRect(0,0,512,512);if(kind==='wood'){for(let i=0;i<80;i++){q.strokeStyle=`rgba(65,40,20,${.018+rand()*.06})`;q.lineWidth=.5+rand();q.beginPath();const y=rand()*512;for(let x=0;x<=512;x+=32)q.lineTo(x,y+Math.sin(x*.012+i)*3);q.stroke()}for(let i=0;i<8;i++){q.fillStyle='#69533d';q.globalAlpha=.16;q.fillRect(0,i*64,512,2)}q.globalAlpha=1;}else{for(let i=0;i<512;i+=3){q.strokeStyle=i%2?'#b2a38c':'#e6d8ba';q.lineWidth=.6;q.beginPath();q.moveTo(i,0);q.lineTo(i,512);q.stroke();q.beginPath();q.moveTo(0,i);q.lineTo(512,i);q.stroke()}}const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.wrapS=t.wrapT=T.RepeatWrapping;t.repeat.set(kind==='wood'?4:3,kind==='wood'?4:3);return t}
  const timber=new T.MeshStandardMaterial({map:texture('wood'),roughness:.87}),woven=new T.MeshStandardMaterial({map:texture('fabric'),color:0xe5d5b4,roughness:1});
- const seaMat=new T.MeshStandardMaterial({color:0x7fb7b5,roughness:.32,metalness:.08});mesh(root,new T.SphereGeometry(17.8,80,48),seaMat,0,-18.25,0);
+ const seaMat=new T.MeshStandardMaterial({color:0x7fb7b5,roughness:.32,metalness:.08});mesh(worldRoot,new T.SphereGeometry(17.8,80,48),seaMat,0,-18.25,0);
  const ocean=mesh(horizon,new T.PlaneGeometry(180,180),seaMat,0,-.48,0);ocean.rotation.x=-Math.PI/2;
  for(let i=0;i<36;i++)box(horizon,new T.MeshBasicMaterial({color:0xd8e7d6,transparent:true,opacity:.13}),Math.sin(i*1.7)*34,-.466,-10-i*1.8,4+i%6*2,.006,.035);
  const curve=new T.CatmullRomCurve3(cafeOutline.map(([x,z])=>new T.Vector3(x,0,z)),true,'centripetal'),outline=curve.getPoints(140),floorShape=new T.Shape(outline.map(v=>new T.Vector2(v.x,-v.z)));
@@ -85,6 +86,6 @@ export function buildCafe(root,pick,isDisposed){
  const {planet,coast,awning}=buildCoast({root,roof,furniture,pick,box,cyl,ell,rounded,tube,timber,lamps});
  // Batch opaque static decoration; keep interactive targets and curtains separate.
  function batch(group){group.updateWorldMatrix(true,true);const byMat=new Map();for(const o of [...group.children]){if(!o.isMesh||o.material.transparent||o.userData.pick)continue;const list=byMat.get(o.material)||[];list.push(o);byMat.set(o.material,list)}for(const [material,list]of byMat){if(list.length<3)continue;const geos=list.map(o=>(o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone()).applyMatrix4(o.matrix));const combined=mergeGeometries(geos,false);if(combined){const m=new T.Mesh(combined,material);m.castShadow=m.receiveShadow=true;group.add(m);for(const o of list){group.remove(o);o.geometry.dispose()}}geos.forEach(g=>g.dispose())}}
- batch(decor);batch(furniture);batch(coast);const marine=buildMarine(root,seaMat,isDisposed);ready.push(marine.ready);
- return {marine,planet,awning,roof,front,furniture,horizon,shore,seaMat,ready,lamps,mesh,box};
+ batch(decor);batch(furniture);batch(coast);const marine=buildMarine(worldRoot,seaMat,isDisposed);ready.push(marine.ready);
+ return {building:root,marine,planet,awning,roof,front,furniture,horizon,shore,seaMat,ready,lamps,mesh,box};
 }

@@ -9,3 +9,9 @@ https://polyhaven.com/a/coast_sand_01
 
 CC BY 4.0 license: https://creativecommons.org/licenses/by/4.0/
 Source textures recolored and resized for the coastal palette.
+
+WaterThreeJS — mohamedachrefelouafi, MIT (2026).
+https://github.com/achrefelouafi/WaterThreeJS
+Source revision: 4f85f4a557da80a1dd24b9243869177f30c604c7
+Adapted wave/foam/refraction shaders for curved coast, globe view, shared solar lighting and mobile quality.
+Full license: ../../vendor/water-threejs/LICENSE

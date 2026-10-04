@@ -1,3 +1,4 @@
+import {detailBeachY} from './cafe-water-surface.js';
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 import {disposeCafeObject} from './cafe-food.js';
@@ -12,7 +13,7 @@ export function coastPoint(a,theta,lift=0){
  return new T.Vector3(Math.cos(a)*r,y+lift,Math.sin(a)*r);
 }
 export function buildMarine(root,seaMat,isDisposed=()=>false){
- const group=new T.Group();group.name='Spherical coast';root.add(group);
+ let detail=false;const anchors=[];const group=new T.Group();group.name='Spherical coast';root.add(group);
  const loader=new GLTFLoader(),url='./assets/coast/',ready=[],animals=[];
  const textureLoader=new T.TextureLoader();
  const texture=(file,color=false)=>{const t=textureLoader.load(url+file);t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=4;if(color)t.colorSpace=T.SRGBColorSpace;return t};
@@ -27,7 +28,7 @@ export function buildMarine(root,seaMat,isDisposed=()=>false){
  }
  const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(positions,3));geo.setAttribute('color',new T.Float32BufferAttribute(colors,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));geo.setIndex(indices);geo.computeVertexNormals();
  const beach=new T.Mesh(geo,sandMaterial);beach.name='Continuous spherical beach';beach.receiveShadow=true;group.add(beach);
- function anchor(a,theta){const g=new T.Group(),p=coastPoint(a,theta,.015);g.position.copy(p);g.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),p.clone().sub(new T.Vector3(0,-18.25,0)).normalize());group.add(g);return g}
+ function anchor(a,theta){const g=new T.Group(),p=coastPoint(a,theta,.015);g.position.copy(p);g.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),p.clone().sub(new T.Vector3(0,-18.25,0)).normalize());g.userData.coastPose={p:g.position.clone(),q:g.quaternion.clone(),water:false};anchors.push(g);if(detail){g.position.y=detailBeachY(g.position.x,g.position.z)+.015;g.quaternion.identity()}group.add(g);return g}
  function normalize(g,size){g.updateMatrixWorld(true);const b=new T.Box3().setFromObject(g),s=b.getSize(new T.Vector3()),c=b.getCenter(new T.Vector3());const wrap=new T.Group();wrap.add(g);g.position.sub(new T.Vector3(c.x,b.min.y,c.z));wrap.scale.setScalar(size/Math.max(s.x,s.y,s.z));g.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true}});return wrap}
  function load(file,apply){const task=loader.loadAsync(url+file).then(g=>{if(isDisposed()){disposeCafeObject(g.scene);return}apply(g)}).catch(e=>{group.userData.loadFailed=true;console.warn('Coast asset failed:',file,e.message)});ready.push(task)}
  const names=['Rock_Medium_1','Rock_Medium_2','Rock_Medium_3','Grass_Common_Short','Grass_Wispy_Tall','Bush_Common','Fern_1'];
@@ -77,17 +78,19 @@ export function buildMarine(root,seaMat,isDisposed=()=>false){
  for(let b=0;b<3;b++){
   const g=new T.BufferGeometry(),p=new Float32Array((N+1)*2*3),ix=[];
   g.setAttribute('position',new T.BufferAttribute(p,3));for(let i=0;i<N;i++){const k=i*2;ix.push(k,k+1,k+2,k+1,k+3,k+2)}g.setIndex(ix);
-  const mat=new T.MeshBasicMaterial({color:b===0?0xa0d9c4:0xf5f8e9,transparent:true,opacity:.5,side:T.DoubleSide,depthWrite:false});group.add(new T.Mesh(g,mat));surf.push({g,p,mat});
+  const mat=new T.MeshBasicMaterial({color:b===0?0xa0d9c4:0xf5f8e9,transparent:true,opacity:.5,side:T.DoubleSide,depthWrite:false});const mesh=new T.Mesh(g,mat);group.add(mesh);surf.push({g,p,mat,mesh});
  }
  for(let i=0;i<3;i++){
   const a=[.75,2.05,3.75][i],theta=coastEdge(a)+.19,p=new T.Vector3(Math.sin(theta)*Math.cos(a),Math.cos(theta),Math.sin(theta)*Math.sin(a));
-  const base=new T.Group();base.position.copy(p).multiplyScalar(17.8).add(new T.Vector3(0,-18.25,0));base.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),p);group.add(base);
+  const base=new T.Group();base.position.copy(p).multiplyScalar(17.8).add(new T.Vector3(0,-18.25,0));base.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),p);base.userData.coastPose={p:base.position.clone(),q:base.quaternion.clone(),water:true};anchors.push(base);group.add(base);
   const d=new T.Group();base.add(d);const rings=[];
   for(let j=0;j<2;j++){const ring=new T.Mesh(new T.RingGeometry(.6,.65,48),new T.MeshBasicMaterial({color:0xf0fff5,transparent:true,opacity:0,side:T.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.04;base.add(ring);rings.push(ring)}
   const dropsGeo=new T.BufferGeometry();dropsGeo.setAttribute('position',new T.Float32BufferAttribute(new Float32Array(18*3),3));const drops=new T.Points(dropsGeo,new T.PointsMaterial({color:0xe5fff7,size:.075,transparent:true,opacity:.75,depthWrite:false}));base.add(drops);
   const animal={d,rings,drops,phase:i*4.4,period:15+i*2,mixer:null};animals.push(animal);
   load('dolphin_animated.glb',g=>{const model=normalize(g.scene,2.5);d.add(model);animal.mixer=new T.AnimationMixer(g.scene);for(const clip of g.animations)animal.mixer.clipAction(clip).play()});
  }
+ const sphereBeach=Float32Array.from(geo.attributes.position.array);
+ function setDetail(value){if(value===detail)return;detail=value;const attr=geo.attributes.position;for(let i=0;i<attr.count;i++){const x=sphereBeach[i*3],z=sphereBeach[i*3+2];attr.setY(i,detail?detailBeachY(x,z):sphereBeach[i*3+1])}attr.needsUpdate=true;geo.computeVertexNormals();geo.computeBoundingSphere();for(const g of anchors){const pose=g.userData.coastPose;g.position.copy(pose.p);g.quaternion.copy(pose.q);if(detail){g.position.y=pose.water?-1.8:detailBeachY(g.position.x,g.position.z)+.015;g.quaternion.identity()}}surf.forEach(s=>s.mesh.visible=!detail)}
  function tick(t){
   time.value=t;
   surf.forEach(({g,p,mat},b)=>{
@@ -106,5 +109,5 @@ export function buildMarine(root,seaMat,isDisposed=()=>false){
    rings.forEach((m,i)=>{m.visible=splash>=0;m.material.opacity=Math.max(0,.65-splash*.45);m.scale.setScalar(.5+Math.max(0,splash)*2+i*.3);m.position.z=q<1?-1.5:1.5});
   }
  }
- return {tick,group,ready:Promise.all(ready)};
+ return {tick,setDetail,group,ready:Promise.all(ready)};
 }

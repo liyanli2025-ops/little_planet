@@ -83,3 +83,10 @@ The menu exposes coffee, cocktails and all six desserts, with thumbnails rendere
 - `cafe_orders.collected` 区分下单和领取，旧回执按已领取处理；新增 `cafe_pockets` 持久化未取订单与堂食托盘。订单与两件物品领取使用同一数据库事务，重复领取不重复发放，刷新或服务器重启可恢复。座位占用仍是临时在线状态。
 - 旋转改为与私人星球相同的方向与灵敏度；双指按屏幕方向平移、围绕手指中心缩放；全景始终以星球球心旋转。松开一根手指后续接手势，不误判点击。滚轮速度同步私人星球；Shift＋拖动可平移。各区域记住自己的视角；菜单在手机上打开时调整画面构图让主理熊留在菜单上方。
 - 验证：真实浏览器走完进店 → 到吧台 → 双餐选择 → 制作 → 主动取盘 → 自选座位 → 享用；Chrome DevTools 触摸事件验证旋转、双指缩放平移、抬指续接、无误走路、视角记忆及地板高度限制。桌面和手机尺寸截图检查通过，实体 iPhone 操作仍需部署后体验。
+
+
+## WaterThreeJS ocean
+
+MIT source is vendored under `dist/vendor/water-threejs` at revision `4f85f4a557da80a1dd24b9243869177f30c604c7`. No runtime CDN or paid API. Keeps Three.js r170 and existing sky/solar clock with one final tone-map pass. HDR/depth prepass supports refraction. Detail view uses a level ocean and lowers the beach into a gentle island, preserving shoreline XZ coordinates; anchored palms/rocks/dolphins are remapped with it. Globe view restores the original spherical beach and anchor orientations.
+
+Coarse-pointer/small initial viewports use 128x80 rings, 10 wave components, 70% refraction resolution and no screen-space reflection. Desktop uses 192x112, 16 components and sky reflections. Targets resize and dispose with the cafe. Browser-tested, not physical-device performance certification. Shore foam is depth-driven, not a full fluid solver.

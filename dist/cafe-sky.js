@@ -8,7 +8,7 @@ export function createCafeSky(scene,horizon,sun,ambient){
  #include <tonemapping_fragment>
  #include <colorspace_fragment>
  }`}));dome.name='Spatial sky dome';dome.frustumCulled=false;scene.add(dome);
- const disc=new T.Mesh(new T.SphereGeometry(8,28,18),new T.MeshBasicMaterial({color:0xffeed0,toneMapped:false}));disc.name='Sun';scene.add(disc);
+ const disc=new T.Mesh(new T.SphereGeometry(12,28,18),new T.MeshBasicMaterial({color:0xffeed0,toneMapped:false}));disc.name='Sun';scene.add(disc);
  const cloudMat=new T.MeshStandardMaterial({color:0xffffff,roughness:1});
  const clouds=new T.InstancedMesh(new T.SphereGeometry(1,12,8),cloudMat,72);clouds.name='Volumetric cloud lobes';clouds.frustumCulled=false;scene.add(clouds);const transform=new T.Object3D();
  const dayTop=new T.Color(0x72b8d6),dayEdge=new T.Color(0xa8d6dd),nightTop=new T.Color(0x101e35),nightEdge=new T.Color(0x344c64),orange=new T.Color(0xeeb38b),rainTop=new T.Color(0x718895),rainEdge=new T.Color(0xb0bdc0);

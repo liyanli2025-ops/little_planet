@@ -37,3 +37,5 @@
 .photo-mode #cafe>:not(.cafe-stage){visibility:hidden!important;pointer-events:none!important}
 
 .in-cafe #travel-album{z-index:97}
+
+#cafe .cafe-top .cafe-sun{padding:0;width:28px;height:28px;background:transparent;color:#ac803a;font-size:20px;vertical-align:middle;pointer-events:auto}#cafe .cafe-time{display:inline}#cafe .cafe-top small{display:block;margin-top:4px}

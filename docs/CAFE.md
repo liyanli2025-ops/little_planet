@@ -109,3 +109,10 @@ Coarse-pointer/small initial viewports use 128x80 rings, 10 wave components, 70%
 - Door, outdoor floor and sea/beach clicks exit. Empty window scenery clicks use an outdoor ground projection as fallback.
 - The shared camera captures the active cafe renderer at the current view, saves into the existing account photo album, and does not move the camera. Cafe photo mode currently supports the current pose.
 - Music reuses the existing player and its mini controls; no second player and no stop on arrival. Wave ambience remains independent.
+
+
+Host and daylight follow-up:
+- 泊舟 is a fictional AI host with a consistent harbor-bakery/old-radio/postcard background. Private conversational memory is recent-session only, not permanent personal memory.
+- `place_cafe_order` is the sole chat tool, constrained to catalog IDs and one drink plus one dessert. The existing cafe service validates presence, queue and ownership. Stable per-message receipt IDs prevent duplicate orders. UI syncs after tool success so the existing preparation motion runs.
+- Requests for recommendations must stay conversational; only explicit ordering or acceptance of a specific recommendation triggers the tool. No live paid-model call was made during local QA.
+- Detail camera can tilt toward the sky without moving under the floor. The weather sun icon looks toward the real world-space sun. Sun position still follows the shared island clock; rain/night hide it. A sunny day does not put the sun in every camera direction.

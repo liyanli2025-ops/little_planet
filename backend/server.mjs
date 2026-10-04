@@ -1,3 +1,4 @@
+import {createCafeChat} from './cafe-chat.mjs';
 import {createCafe} from './cafe.mjs';
 import {studioLayout} from '../dist/studio-layout.js';
 import {createStudio} from './studio.mjs';
@@ -35,6 +36,7 @@ const studio=createStudio(db,{design:designService,theme:id=>{const u=hub.accoun
 setInterval(()=>void studio.tick(),10000).unref();
 const presence=createPresence(),social=createSocial();
 const cafe=createCafe(db,{partner:u=>hub.partner(u),profile:u=>{const {wearables,...appearance}=designService.current(u.id).design.outfit;return {outfit:hub.space(u.space).store.read().state.worlds[u.slot].life?.outfit||'plain',appearance}},deliver(u,item,id){const target=hub.space(u.space).store,row=target.read(),fridge=row.state.worlds[u.slot].fridge;const found=fridge.find(f=>f.food===item.id&&!f.event&&f.qty<999);if(found)found.qty++;else{fail(fridge.length<190,'冰箱满了，先整理一下再带走',409);fridge.push({id,food:item.id,qty:1})}target.db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state))}});
+const cafeChat=createCafeChat({cafe});
 const ttl=7*86400000;
 const rates=new Map();
 function rate(req,kind,max=20){
@@ -128,6 +130,7 @@ async function api(req,res,p){
  fail(req.headers['x-csrf-token']===u.csrf,'会话验证失败，请刷新页面',403);
  fail(String(u.space)===req.headers['x-planet-space'],'账号或配对状态已更新，请刷新页面后重试',409);
 
+ if(p==='/api/cafe/chat'){fail(!travelService.active(u.id),'小熊正在旅行',409);return json(res,200,await cafeChat.send(u,b))}
  if(p==='/api/cafe'){fail(b&&typeof b==='object','操作无效');fail(!travelService.active(u.id)||b.action==='leave','小熊正在旅行，回来后再来咖啡馆',409);if(b.action==='join')presence.update(u,{hidden:true});return json(res,200,cafe.update(u,b))}
  if(p==='/api/studio'){rate(req,'studio',30);return json(res,200,await studio.start(u.id,b))}
  if(p==='/api/design'){fail(b&&['generate','accept','rollback','gift','wearGift','previewItem','wardrobePreview'].includes(b.action),'设计操作不存在');return json(res,200,await designService[b.action](u.id,b))}

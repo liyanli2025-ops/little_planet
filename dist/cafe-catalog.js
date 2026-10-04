@@ -17,6 +17,7 @@ export const cafeOutline=[[-7,0],[-6.6,-3.2],[-4.8,-4.7],[-1.3,-4.4],[1.2,-5],[4
 export const cafeTables=[[-3.4,-.2],[-2.8,2.3],[0,2.5],[3.2,.9],[5.35,-.65]];
 export const cafeSeats=cafeTables.flatMap(([x,z],table)=>[-1,1].map((side,i)=>({id:`t${table}-${i}`,table,x:x+side*.78,z,y:.68,yaw:side<0?Math.PI/2:-Math.PI/2}))).concat(
  [[-5.95,.6,-1.57],[-5.72,1.75,-1.30],[-5.1,2.85,-.95]].map(([x,z,yaw],i)=>({id:`window-${i}`,table:5,zone:'window',x,z,y:.68,yaw,approachX:x-Math.sin(yaw)*.65,approachZ:z-Math.cos(yaw)*.65})),
+ [-3.65,-2.25,-.85].map((x,i)=>({id:`bar-${i}`,table:7,zone:'bar',x,z:-1.8,y:.95,avatarY:.79,yaw:Math.PI,approachX:x,approachZ:-1.05})),
  [2.8,4.2,5.6].map((x,i)=>({id:`terrace-${i}`,table:6,zone:'terrace',x,z:6.15,y:.68,yaw:0,approachZ:5.57}))
 );
 export function islandSky(now=Date.now()){

@@ -59,3 +59,11 @@ Overview proportion: the building, deck and bears render at 65% scale only in th
 Entry now opens the island overview. Its orbit target is the planet center (0, -18.25, 0), and two-finger zoom never shifts that pivot. Interior gestures keep a higher minimum elevation; foreground window sections, nearby hanging lights and extremely close chairs use a camera-dependent cutaway. A planar distant-ocean backdrop is enabled only in interior/detail views to supply a visible horizon where the small planet curves away. This is a scenic projection, not extra walkable water.
 
 The menu exposes coffee, cocktails and all six desserts, with thumbnails rendered from the actual food models. Scoped navigation layout contains all five buttons at mobile widths. Ordering walks the bear to the counter before submission, with duplicate clicks blocked and pending approach cancelled on exit. Shared server service timestamps drive host preparation, pouring/plating; ready food transfers to the guest. Sitting eases into the cushion and consuming plays a short raise-cup/food motion before the existing eat action. Takeaway still uses the existing transactional delivery to the home fridge; its preparation is visual, not a new delivery queue.
+
+
+## 吧台与主理熊聊天
+吧台前新增 3 个朝向主理人的高靠背座位，点击走近后落座。坐在吧台时出现“和主理熊聊聊”，离座收起。对话通过鉴权和 CSRF 保护的 `/api/cafe/chat` 使用现有 `resolveDesignEnv` 文字模型配置（腾讯优先），不调用 3D 模型。菜单推荐与聊天不能直接下单。
+
+聊天不进入公共访客状态，不共享给其他玩家；服务器仅内存保留最近 6 轮，闲置 30 分钟后清理，重启不保留。单条上限 600 字，每人同时 1 次，全服同时 4 次，45 秒超时；成功消息编号重试不会重复调用。页面离开不会取消已经提交的文字请求。
+
+验证：20 项相关单元测试通过；本地 Chromium 实测走到吧台落座、手机与桌面聊天面板及离座隐藏。浏览器聊天使用模拟回复，本地未携带线上腾讯密钥，因此真实模型连通性需部署后验证。

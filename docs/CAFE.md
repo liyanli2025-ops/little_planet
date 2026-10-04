@@ -40,3 +40,12 @@
 室内三个单人位移到左侧弧形窗湾，长桌沿窗弯曲，每把椅子朝向对应海面，离座回到椅背后的通道。右侧室外露台保持原位，两排不再前后遮挡。窗湾第二个座位在默认视角可能被前座遮挡，可拖动旋转看清后点击；命中区域已缩小到座椅本体。
 
 动画以本地渲染时间驱动，天气和访客仍使用服务器共享状态。手机实体设备帧率尚未验证。
+
+
+## Spherical coast and imported assets (2026-10-04)
+
+The coastline is an angular contour on the radius-17.8 ocean sphere. A small level cafe foundation blends into the curved sand; the broad beach continues to the sides of the planet. Wet sand, shallow-water coloring and surf use the same contour. Sea ripples use a lightweight animated material, not a physical fluid simulation.
+
+Selected assets live under `dist/assets/coast/`: Akshat’s skinned Dolphin Animated (with its existing swim clip plus runtime breaching trajectory and splash), two palm meshes extracted from Jefbud’s beach scene, seven Quaternius rock/grass/bush/fern models, and resized Poly Haven sand color/height maps. Source credits and modification notices are accessible through the cafe’s discreet attribution link. The OBJ animals were not imported because that archive contains no animation. Sand remains scenery: this change does not extend the multiplayer walking bounds into the beach or sea.
+
+Validation: coast geometry joins the ocean sphere at 360 sampled angles; cafe foundation remains level; all glTF dependencies are local; optimized palm buffer bounds checked. Browser QA uses Chrome/Playwright (Browser plugin not available): desktop/mobile render, 20 animation samples, console errors, plus existing two-visitor seating/order/takeaway regression. Physical-phone frame rate has not been measured.

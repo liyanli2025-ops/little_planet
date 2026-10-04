@@ -40,13 +40,7 @@ export function buildCoast({root,roof,furniture,pick,box,cyl,ell,rounded,tube,ti
  for(let i=0;i<10;i++){const geo=new T.ConeGeometry(1,.37,1,1,true,i*Math.PI/5,Math.PI/5);const m=new T.Mesh(geo,new T.MeshStandardMaterial({color:i%2?0xe7d9b9:0x94a797,side:T.DoubleSide,roughness:1}));m.position.y=1.66;m.castShadow=true;parasol.add(m)}
  const towel=box(coast,0xe2c19f,-6.4,.10,5.8,.8,.016,1.5);towel.rotation.y=-.35;
  for(const x of [-.9,.9]){cyl(coast,wood,x,.25,6.55,.065,.6);const light=ell(coast,new T.MeshStandardMaterial({color:0xffdfab,emissive:0xffc88c,emissiveIntensity:.6}),x,.63,6.55,.09,.13,.09);lamps.push(light)}
- // Boats and foam are tangent to the spherical sea, visible in the planet view.
- const planet=new T.Group();root.add(planet);const radius=17.83;
- function surface(x,z){const y=Math.sqrt(radius*radius-x*x-z*z),g=new T.Group();g.position.set(x,y-18.25,z);g.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),new T.Vector3(x,y,z).normalize());planet.add(g);return g}
- for(const [x,z,angle]of [[-11,12,.3],[14,-8,-.7]]){const boat=surface(x,z);boat.rotation.y+=angle;ell(boat,0xe0d2ae,0,.12,0,.35,.19,.80);ell(boat,0x776047,0,.24,0,.25,.03,.61);cyl(boat,wood,0,.95,0,.023,1.5);const sailShape=new T.Shape();sailShape.moveTo(.02,.1);sailShape.lineTo(.02,1.5);sailShape.lineTo(.78,.2);sailShape.closePath();const sail=new T.Mesh(new T.ShapeGeometry(sailShape),new T.MeshStandardMaterial({color:0xf1dfb9,side:T.DoubleSide,roughness:1}));sail.position.y=.3;boat.add(sail)}
- for(let i=0;i<52;i++){const a=i*2.399,r=11+(i%5)*1.05,x=Math.sin(a)*r,z=Math.cos(a)*r,g=surface(x,z);const line=new T.Line(new T.BufferGeometry().setFromPoints([new T.Vector3(-.24,.015,0),new T.Vector3(0,.025,-.03),new T.Vector3(.24,.015,0)]),new T.LineBasicMaterial({color:0xd4eee0,transparent:true,opacity:.35}));g.add(line)}
- const foam=[];
- for(let i=0;i<170;i++){const y=1-2*(i+.5)/170,a=i*2.399963,r=Math.sqrt(1-y*y),normal=new T.Vector3(Math.cos(a)*r,y,Math.sin(a)*r);if(y>.82)continue;const tangent=new T.Vector3().crossVectors(normal,new T.Vector3(0,1,0)).normalize(),across=new T.Vector3().crossVectors(normal,tangent);const point=t=>normal.clone().multiplyScalar(radius).addScaledVector(tangent,t).addScaledVector(across,Math.sin(t*5)*.035).normalize().multiplyScalar(radius+.025).add(new T.Vector3(0,-18.25,0));for(let j=0;j<4;j++){const a=point(-.3+j*.15),b=point(-.15+j*.15);foam.push(a.x,a.y,a.z,b.x,b.y,b.z)}}
- const foamGeometry=new T.BufferGeometry();foamGeometry.setAttribute('position',new T.Float32BufferAttribute(foam,3));planet.add(new T.LineSegments(foamGeometry,new T.LineBasicMaterial({color:0xd4eee0,transparent:true,opacity:.28})));
+ // Ocean motion and wildlife are owned by the spherical coast renderer.
+ const planet=new T.Group();root.add(planet);
  return {planet,coast,awning};
 }

@@ -6,7 +6,7 @@ import {makeCafeFood,disposeCafeObject} from './cafe-food.js';
 
 export function createCafeScene(host,{onPick,onMove,onError}={}){
  const renderer=new T.WebGLRenderer({antialias:true,alpha:false,preserveDrawingBuffer:true});renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.02;host.append(renderer.domElement);
- const scene=new T.Scene(),camera=new T.PerspectiveCamera(38,1,.1,100),root=new T.Group();scene.add(root);const hits=[],guests=new Map();let disposed=false,frame=0,last=performance.now(),self=null,sky=null,inside=false,az=.34,polar=.97,distance=21,desiredDistance=21,target=new T.Vector3(0,.5,0),path=[],arrive=null,moving=false,clockOffset=0,lastRepath=0;
+ const scene=new T.Scene(),camera=new T.PerspectiveCamera(38,1,.1,240),root=new T.Group();scene.add(root);const hits=[],guests=new Map();let disposed=false,frame=0,last=performance.now(),self=null,sky=null,inside=false,az=.34,polar=.97,distance=21,desiredDistance=21,target=new T.Vector3(0,.5,0),path=[],arrive=null,moving=false,clockOffset=0,lastRepath=0;
  function pick(o,type,value){o.userData.pick={type,value};hits.push(o);return o}
  const {marine,planet,awning,roof,front,furniture,horizon,shore,seaMat,ready,lamps,box}=buildCafe(root,pick,()=>disposed);
  const ambient=new T.HemisphereLight(0xfff4dd,0x759088,2.2),sun=new T.DirectionalLight(0xffe4b9,3);sun.position.set(-7,12,9);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);Object.assign(sun.shadow.camera,{left:-11,right:11,top:11,bottom:-11,near:.5,far:35});sun.shadow.bias=-.0008;scene.add(ambient,sun);

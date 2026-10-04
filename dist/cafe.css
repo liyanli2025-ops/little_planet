@@ -2,3 +2,4 @@
 
 #cafe .cafe-top{border:0;background:none;padding:0;width:auto;height:auto;max-width:none}
 #cafe.cafe-night .cafe-top>div{color:#eee4cd}#cafe.cafe-night .cafe-note{color:#eee4cd;text-shadow:0 1px 5px #000}
+.cafe-credits{position:absolute;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));font-size:10px;color:#48685e;opacity:.65;text-decoration:none;z-index:2}.cafe-night .cafe-credits{color:#d6e1da}

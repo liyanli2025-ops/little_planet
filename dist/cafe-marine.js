@@ -1,42 +1,111 @@
 import * as T from './vendor/three.module.js';
-import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
+import {GLTFLoader} from './vendor/GLTFLoader.js';
+import {disposeCafeObject} from './cafe-food.js';
 
-export function buildMarine(root,seaMat){
- const R=17.8,cy=-18.25,group=new T.Group();root.add(group);
- const height=r=>cy+Math.sqrt(Math.max(0,R*R-r*r));
- const edge=a=>13.65+1.05*Math.sin(a*3+.5)+.55*Math.sin(a*5);
- const point=(a,r,lift=0)=>new T.Vector3(Math.cos(a)*r,height(r)+lift,Math.sin(a)*r);
- // Broad sand coast slopes continuously from the cafe plateau into the water.
- const positions=[],colors=[],indices=[],sand=new T.Color(),N=160,M=24;
- for(let j=0;j<=M;j++)for(let i=0;i<=N;i++){const a=i/N*Math.PI*2,t=j/M,r=8.15+(edge(a)-8.15)*t;const y=T.MathUtils.lerp(-.14,height(r)+.06,Math.pow(t,.78));positions.push(Math.cos(a)*r,y,Math.sin(a)*r);sand.set(0xe4cf9e).lerp(new T.Color(0xb6a887),T.MathUtils.smoothstep(t,.68,1));sand.multiplyScalar(1+.025*Math.sin(i*13+j*7));colors.push(sand.r,sand.g,sand.b);if(j<M&&i<N){const k=j*(N+1)+i;indices.push(k,k+N+1,k+1,k+1,k+N+1,k+N+2)}}
- const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(positions,3));geo.setAttribute('color',new T.Float32BufferAttribute(colors,3));geo.setIndex(indices);geo.computeVertexNormals();const beach=new T.Mesh(geo,new T.MeshStandardMaterial({vertexColors:true,roughness:1,side:T.DoubleSide}));beach.receiveShadow=true;group.add(beach);
- // Small dune plants, smooth coastal stones and wind marks break up the sand.
- const sandY=(a,r)=>T.MathUtils.lerp(-.14,height(r)+.06,Math.pow(T.MathUtils.clamp((r-8.15)/(edge(a)-8.15),0,1),.78));
- for(let i=0;i<19;i++){const a=i*2.399,r=9.4+(i%4)*.65,x=Math.cos(a)*r,z=Math.sin(a)*r,y=sandY(a,r),g=new T.Group();g.userData.dune=true;g.position.set(x,y+.05,z);g.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),new T.Vector3(x*.7,14,z*.7).normalize());group.add(g);for(let j=0;j<3;j++){const rock=new T.Mesh(new T.SphereGeometry(1,20,12),new T.MeshStandardMaterial({color:i%3===0?0xa4a890:0xc6b899,roughness:1}));rock.position.set((j-1)*.20,.09,Math.sin(j)*.1);rock.scale.set(.19+j*.035,.14,.22);g.add(rock)}if(i%2===0)for(let j=0;j<5;j++){const leaf=new T.Mesh(new T.SphereGeometry(1,12,8),new T.MeshStandardMaterial({color:0xa5ab79,roughness:1}));leaf.position.set(Math.sin(j)*.13,.26,Math.cos(j)*.13);leaf.scale.set(.035,.32,.035);leaf.rotation.z=Math.sin(j)*.5;g.add(leaf)}}
- const wind=[];for(let j=0;j<26;j++){const a=j*.71,r=10+(j%4)*.55;for(let k=0;k<5;k++){for(const d of [k,k+1]){const aa=a+(d-2.5)*.015,rr=r+Math.sin(d*.7)*.05;wind.push(Math.cos(aa)*rr,sandY(aa,rr)+.02,Math.sin(aa)*rr)}}}const wg=new T.BufferGeometry();wg.setAttribute('position',new T.Float32BufferAttribute(wind,3));group.add(new T.LineSegments(wg,new T.LineBasicMaterial({color:0xb49f76,transparent:true,opacity:.22})));
- group.updateMatrixWorld(true);const batches=new Map();for(const g of group.children.filter(g=>g.userData.dune)){for(const m of g.children){const key=m.material.color.getHex(),entry=batches.get(key)||{material:m.material,geos:[]};entry.geos.push(m.geometry.clone().applyMatrix4(m.matrixWorld));batches.set(key,entry);}group.remove(g);for(const m of g.children){m.geometry.dispose();if(batches.get(m.material.color.getHex()).material!==m.material)m.material.dispose();}}
- for(const {material,geos}of batches.values()){const merged=mergeGeometries(geos);geos.forEach(g=>g.dispose());const mesh=new T.Mesh(merged,material);mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);}
- // Translucent shallow-water rim with travelling foam bands that wash uphill.
+// Coordinates are angular around the actual planet, never a flat island lid.
+export const coastEdge=a=>1.27+.16*Math.sin(a*3+.5)+.10*Math.sin(a*5)-.16*Math.cos(a-.4);
+export function coastPoint(a,theta,lift=0){
+ const edge=coastEdge(a),shore=T.MathUtils.smoothstep(theta,edge-.16,edge);
+ const radius=17.8+.36*(1-shore),r=Math.sin(theta)*radius;
+ let y=-18.25+Math.cos(theta)*radius;
+ // A small, smoothly joined terrace supports the existing cafe floor.
+ if(theta<.67)y=T.MathUtils.lerp(-.15,y,T.MathUtils.smoothstep(theta,.43,.67));
+ return new T.Vector3(Math.cos(a)*r,y+lift,Math.sin(a)*r);
+}
+export function buildMarine(root,seaMat,isDisposed=()=>false){
+ const group=new T.Group();group.name='Spherical coast';root.add(group);
+ const loader=new GLTFLoader(),url='./assets/coast/',ready=[],animals=[];
+ const textureLoader=new T.TextureLoader();
+ const texture=(file,color=false)=>{const t=textureLoader.load(url+file);t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=4;if(color)t.colorSpace=T.SRGBColorSpace;return t};
+ const sandMaterial=new T.MeshStandardMaterial({map:texture('sand-color.webp',true),bumpMap:texture('sand-height.png'),bumpScale:.018,vertexColors:true,roughness:.93});
+ const positions=[],colors=[],uvs=[],indices=[],N=192,M=52;
+ for(let j=0;j<=M;j++)for(let i=0;i<=N;i++){
+  const a=i/N*Math.PI*2,theta=j/M*coastEdge(a),p=coastPoint(a,theta);positions.push(...p.toArray());
+  const wet=T.MathUtils.smoothstep(theta,coastEdge(a)-.12,coastEdge(a));
+  const color=new T.Color(0xffefc8).lerp(new T.Color(0xb0a78b),wet*.7);
+  colors.push(color.r,color.g,color.b);uvs.push(p.x/4,p.z/4);
+  if(j<M&&i<N){const k=j*(N+1)+i;indices.push(k,k+1,k+N+1,k+1,k+N+2,k+N+1)}
+ }
+ const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(positions,3));geo.setAttribute('color',new T.Float32BufferAttribute(colors,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uvs,2));geo.setIndex(indices);geo.computeVertexNormals();
+ const beach=new T.Mesh(geo,sandMaterial);beach.name='Continuous spherical beach';beach.receiveShadow=true;group.add(beach);
+ function anchor(a,theta){const g=new T.Group(),p=coastPoint(a,theta,.015);g.position.copy(p);g.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),p.clone().sub(new T.Vector3(0,-18.25,0)).normalize());group.add(g);return g}
+ function normalize(g,size){g.updateMatrixWorld(true);const b=new T.Box3().setFromObject(g),s=b.getSize(new T.Vector3()),c=b.getCenter(new T.Vector3());const wrap=new T.Group();wrap.add(g);g.position.sub(new T.Vector3(c.x,b.min.y,c.z));wrap.scale.setScalar(size/Math.max(s.x,s.y,s.z));g.traverse(m=>{if(m.isMesh){m.castShadow=true;m.receiveShadow=true}});return wrap}
+ function load(file,apply){const task=loader.loadAsync(url+file).then(g=>{if(isDisposed()){disposeCafeObject(g.scene);return}apply(g)}).catch(e=>{group.userData.loadFailed=true;console.warn('Coast asset failed:',file,e.message)});ready.push(task)}
+ const names=['Rock_Medium_1','Rock_Medium_2','Rock_Medium_3','Grass_Common_Short','Grass_Wispy_Tall','Bush_Common','Fern_1'];
+ names.forEach((name,index)=>load(name+'.gltf',g=>{
+  const count=index<3?9:index<5?22:8;
+  for(let i=0;i<count;i++){
+   // Leave the broad foreground sand open; vegetation gathers in dune clusters.
+   const a=.3+(i*2.399+index*.9)%(Math.PI*2),theta=.61+(i%4)*.067;
+   if(theta>coastEdge(a)-.23)continue;
+   const holder=anchor(a,theta),size=index<3?.6+(i%3)*.34:index<5?.55+(i%3)*.16:1.0+(i%2)*.35;
+   const model=normalize(g.scene.clone(true),size);model.rotation.y=i*1.7;holder.add(model);
+  }
+ }));
+ // Reuse only the source palm geometry, not its flat ground or house.
+ load('palm.glb',g=>{
+  g.scene.updateMatrixWorld(true);const palm=new T.Group();
+  g.scene.traverse(m=>{if(m.isMesh&&(/CoconutLeave1/.test(m.name)||m.name==='Tree_GentengTralisWarna_0')){const clone=new T.Mesh(m.geometry.clone().applyMatrix4(m.matrixWorld),m.material.clone());clone.material.color.set(/Coconut/.test(m.name)?0x71844b:0x957350);palm.add(clone)}});
+  for(const [a,theta,h]of [[2.65,.67,3.4],[2.92,.75,3.8],[3.18,.70,3.0],[4.5,.67,3.6],[4.75,.75,3.1],[.02,.74,3.2],[.18,.85,3.7]]){const holder=anchor(a,theta);holder.add(normalize(palm.clone(true),h))}
+  disposeCafeObject(g.scene);
+ });
+ // Shallow turquoise water follows precisely the same angular coastline.
+ const time={value:0};seaMat.roughness=.25;seaMat.metalness=.08;
+ seaMat.onBeforeCompile=shader=>{
+  shader.uniforms.coastTime=time;
+  shader.vertexShader='varying vec3 coastPosition;\n'+shader.vertexShader;
+  shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ncoastPosition=position;');
+  shader.fragmentShader=`uniform float coastTime;varying vec3 coastPosition;
+  float coastNoise(vec3 p){return sin(p.x+sin(p.z*.73))*sin(p.z*.82+p.y*.51);}
+  `+shader.fragmentShader;
+  shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_begin>',`#include <normal_fragment_begin>
+   float wave=coastNoise(coastPosition*3.4+vec3(coastTime*.42,0.,coastTime*.23))*.008+coastNoise(coastPosition*8.1-vec3(coastTime*.31))*.003;
+   vec3 q0=dFdx(vViewPosition),q1=dFdy(vViewPosition);
+   vec3 grad=cross(q1,normal)*dFdx(wave)+cross(normal,q0)*dFdy(wave);
+   normal=normalize(normal+grad/max(abs(dot(q0,cross(q1,normal))),.0001));`);
+  shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
+   float a=atan(coastPosition.z,coastPosition.x);
+   float theta=acos(clamp(coastPosition.y/17.8,-1.,1.));
+   float edge=1.27+.16*sin(a*3.+.5)+.10*sin(a*5.)-.16*cos(a-.4);
+   float shallow=1.-smoothstep(0.,.26,theta-edge);
+   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.20,.65,.57),shallow*.65);
+   float caustic=pow(max(0.,coastNoise(coastPosition*5.+vec3(coastTime*.3))),12.);
+   diffuseColor.rgb+=shallow*caustic*.055;
+   float fresnel=pow(1.-abs(dot(normalize(vNormal),normalize(vViewPosition))),4.);
+   diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.60,.77,.78),fresnel*.25);`);
+ };
  const surf=[];
- for(let b=0;b<3;b++){const g=new T.BufferGeometry(),p=new Float32Array((N+1)*2*3),idx=[];g.setAttribute('position',new T.BufferAttribute(p,3));for(let i=0;i<N;i++){const k=i*2;idx.push(k,k+1,k+2,k+1,k+3,k+2)}g.setIndex(idx);const mat=new T.MeshBasicMaterial({color:b===0?0xa8ddd4:0xf0f7dc,transparent:true,opacity:.5,side:T.DoubleSide,depthWrite:false});const m=new T.Mesh(g,mat);group.add(m);surf.push({g,p,mat})}
- const uniform={value:0};seaMat.roughness=.38;seaMat.metalness=.03;
- seaMat.onBeforeCompile=shader=>{shader.uniforms.coastTime=uniform;shader.vertexShader='varying vec3 coastPosition;\n'+shader.vertexShader;shader.vertexShader=shader.vertexShader.replace('#include <begin_vertex>','#include <begin_vertex>\ncoastPosition=position;');shader.fragmentShader='uniform float coastTime;varying vec3 coastPosition;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_begin>',`#include <normal_fragment_begin>
- float w1=sin(coastPosition.x*6.0+coastPosition.z*4.3+coastTime*1.3);
- float w2=sin(coastPosition.y*7.7-coastPosition.z*5.1+coastTime*.8);
- normal=normalize(normal+vec3(w1*.045,w2*.035,0.0));`);shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
- float rip=sin(coastPosition.x*5.0+coastPosition.z*3.1+coastTime)*sin(coastPosition.y*5.6-coastPosition.z*4.1-coastTime*.7);
- diffuseColor.rgb*=.93+.10*rip;
- diffuseColor.rgb+=vec3(.025,.045,.045)*pow(max(0.0,rip),12.0);`)};
- const animals=[];
- function dolphin(){const g=new T.Group(),skin=new T.MeshStandardMaterial({color:0x728e99,roughness:.34}),belly=new T.MeshStandardMaterial({color:0xd3dfda,roughness:.45});
-  const ell=(material,x,y,z,a,b,c)=>{const o=new T.Mesh(new T.SphereGeometry(1,32,20),material);o.position.set(x,y,z);o.scale.set(a,b,c);o.castShadow=true;g.add(o);return o};
-  ell(skin,0,0,0,.29,.32,.95);ell(belly,0,-.18,.13,.24,.15,.70);ell(skin,0,.025,.78,.23,.24,.34);ell(skin,0,-.045,1.11,.12,.10,.30);ell(skin,0,-.02,-.88,.13,.15,.33);
-  for(const side of [-1,1]){const fluke=ell(skin,side*.27,-.03,-1.10,.37,.055,.17);fluke.rotation.y=side*.30;const fin=ell(skin,side*.33,-.14,.02,.35,.045,.15);fin.rotation.y=side*.55;fin.rotation.z=side*-.22;ell(new T.MeshStandardMaterial({color:0x18282a}),side*.188,.08,.88,.03,.03,.03)}
-  const shape=new T.Shape();shape.moveTo(0,-.30);shape.quadraticCurveTo(.42,-.35,.46,.20);shape.quadraticCurveTo(.20,.04,0,.20);shape.closePath();const fin=new T.Mesh(new T.ExtrudeGeometry(shape,{depth:.06,bevelEnabled:true,bevelSize:.025,bevelThickness:.025,bevelSegments:3,curveSegments:16}),skin);fin.rotation.y=-Math.PI/2;fin.position.set(.03,.24,-.10);g.add(fin);return g;
+ for(let b=0;b<3;b++){
+  const g=new T.BufferGeometry(),p=new Float32Array((N+1)*2*3),ix=[];
+  g.setAttribute('position',new T.BufferAttribute(p,3));for(let i=0;i<N;i++){const k=i*2;ix.push(k,k+1,k+2,k+1,k+3,k+2)}g.setIndex(ix);
+  const mat=new T.MeshBasicMaterial({color:b===0?0xa0d9c4:0xf5f8e9,transparent:true,opacity:.5,side:T.DoubleSide,depthWrite:false});group.add(new T.Mesh(g,mat));surf.push({g,p,mat});
  }
- for(const [i,a]of [1.0,2.20,3.75].entries()){const r=16.25,base=point(a,r),normal=base.clone().sub(new T.Vector3(0,cy,0)).normalize(),anchor=new T.Group();anchor.position.copy(base);anchor.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),normal);group.add(anchor);const d=dolphin();anchor.add(d);d.scale.setScalar(i===1?1.2:.9);const rings=[];for(let j=0;j<2;j++){const m=new T.Mesh(new T.RingGeometry(.7,.77,64),new T.MeshBasicMaterial({color:0xe3f3e9,transparent:true,opacity:0,side:T.DoubleSide,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.y=.025;anchor.add(m);rings.push(m)}const droplets=[];for(let j=0;j<14;j++){const m=new T.Mesh(new T.SphereGeometry(.04,8,6),new T.MeshBasicMaterial({color:0xd8eee9,transparent:true,opacity:.7}));anchor.add(m);droplets.push(m)}animals.push({d,rings,droplets,phase:i*4.4,period:15+i*2});}
- function tick(t){uniform.value=t;surf.forEach(({g,p,mat},b)=>{const phase=(t*.18+b/3)%1,inrush=Math.sin(phase*Math.PI),width=b===0?.38:.075;mat.opacity=(b===0?.24:.65)*Math.sin(phase*Math.PI);for(let i=0;i<=N;i++){const a=i/N*Math.PI*2,r=edge(a)+.60-inrush*.75;for(let j=0;j<2;j++){const rr=r+j*width,v=point(a,rr,.05);if(rr<edge(a)){const t=T.MathUtils.clamp((rr-8.15)/(edge(a)-8.15),0,1);v.y=Math.max(v.y,T.MathUtils.lerp(-.14,height(rr)+.06,Math.pow(t,.78))+.04);}const k=(i*2+j)*3;p[k]=v.x;p[k+1]=v.y;p[k+2]=v.z}}g.attributes.position.needsUpdate=true;g.computeBoundingSphere()});
-  animals.forEach(({d,rings,droplets,phase,period})=>{const q=(t+phase)%period,u=q/4;d.visible=q<4;if(d.visible){d.position.set(0,-.65+Math.sin(u*Math.PI)*2.85,(u-.5)*3.7);d.rotation.x=-Math.atan2(Math.cos(u*Math.PI)*2.85*Math.PI,3.7);d.rotation.z=Math.sin(u*Math.PI*2)*.20;}const splash=q<1?q:q>3.1&&q<4.5?q-3.1:-1;rings.forEach((m,i)=>{m.visible=splash>=0;m.material.opacity=splash>=0?Math.max(0,.6-splash*.43):0;m.scale.setScalar(.5+Math.max(0,splash)*1.8+i*.3);m.position.z=q<1?-1.6:1.6});droplets.forEach((m,j)=>{m.visible=splash>=0&&splash<1;const a=j/14*Math.PI*2;m.position.set(Math.cos(a)*splash*.8,Math.max(0,Math.sin(splash*Math.PI)*(1+j%3*.2)),(q<1?-1.6:1.6)+Math.sin(a)*splash*.8)})});
+ for(let i=0;i<3;i++){
+  const a=[.75,2.05,3.75][i],theta=coastEdge(a)+.19,p=new T.Vector3(Math.sin(theta)*Math.cos(a),Math.cos(theta),Math.sin(theta)*Math.sin(a));
+  const base=new T.Group();base.position.copy(p).multiplyScalar(17.8).add(new T.Vector3(0,-18.25,0));base.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),p);group.add(base);
+  const d=new T.Group();base.add(d);const rings=[];
+  for(let j=0;j<2;j++){const ring=new T.Mesh(new T.RingGeometry(.6,.65,48),new T.MeshBasicMaterial({color:0xf0fff5,transparent:true,opacity:0,side:T.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.04;base.add(ring);rings.push(ring)}
+  const dropsGeo=new T.BufferGeometry();dropsGeo.setAttribute('position',new T.Float32BufferAttribute(new Float32Array(18*3),3));const drops=new T.Points(dropsGeo,new T.PointsMaterial({color:0xe5fff7,size:.075,transparent:true,opacity:.75,depthWrite:false}));base.add(drops);
+  const animal={d,rings,drops,phase:i*4.4,period:15+i*2,mixer:null};animals.push(animal);
+  load('dolphin_animated.glb',g=>{const model=normalize(g.scene,2.5);d.add(model);animal.mixer=new T.AnimationMixer(g.scene);for(const clip of g.animations)animal.mixer.clipAction(clip).play()});
  }
- return {tick,group};
+ function tick(t){
+  time.value=t;
+  surf.forEach(({g,p,mat},b)=>{
+   const phase=(t*.16+b/3)%1,inrush=Math.sin(phase*Math.PI);mat.opacity=(b===0?.18:.6)*inrush;
+   for(let i=0;i<=N;i++){
+    const a=i/N*Math.PI*2,theta=coastEdge(a)+.025-inrush*.045+.004*Math.sin(a*23+t);
+    for(let j=0;j<2;j++){const th=theta+j*(b===0?.02:.003),v=coastPoint(a,th,.04);const k=(i*2+j)*3;p[k]=v.x;p[k+1]=v.y;p[k+2]=v.z}
+   }g.attributes.position.needsUpdate=true;g.computeBoundingSphere();
+  });
+  for(const {d,rings,drops,phase,period,mixer}of animals){
+   const q=(t+phase)%period,u=q/4;d.visible=q<4;mixer?.setTime(t);
+   if(d.visible){d.position.set(0,-.7+Math.sin(u*Math.PI)*2.7,(u-.5)*3.5);d.rotation.x=-Math.atan2(Math.cos(u*Math.PI)*2.7*Math.PI,3.5);d.rotation.z=Math.sin(u*Math.PI*2)*.13}
+   const splash=q<1?q:q>3.1&&q<4.5?q-3.1:-1;
+   drops.visible=splash>=0&&splash<1.2;const dp=drops.geometry.attributes.position;
+   for(let j=0;j<18;j++){const a=j/18*Math.PI*2;dp.setXYZ(j,Math.cos(a)*splash*.9,Math.max(0,Math.sin(splash*Math.PI/1.2)*(1+j%3*.25)),(q<1?-1.5:1.5)+Math.sin(a)*splash*.9)}dp.needsUpdate=true;drops.geometry.computeBoundingSphere();
+   rings.forEach((m,i)=>{m.visible=splash>=0;m.material.opacity=Math.max(0,.65-splash*.45);m.scale.setScalar(.5+Math.max(0,splash)*2+i*.3);m.position.z=q<1?-1.5:1.5});
+  }
+ }
+ return {tick,group,ready:Promise.all(ready)};
 }

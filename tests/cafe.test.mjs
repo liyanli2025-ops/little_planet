@@ -22,3 +22,5 @@ test('expanded curved pavilion keeps seat approaches walkable and excludes sea c
 });
 
 test('window and terrace seats face the sea and stand back into their aisle',()=>{const f=setup();try{const u=f.user(1);f.cafe.update(u,{action:'join'});for(const id of ['window-1','terrace-1']){const seated=f.cafe.update(u,{action:'seat',seat:id}).guests[0];assert.equal(seated.yaw,cafeSeats.find(s=>s.id===id).yaw);const standing=f.cafe.update(u,{action:'stand'}).guests[0];assert.equal(standing.z,cafeSeats.find(s=>s.id===id).approachZ);assert.ok(cafeWalkable(standing.x,standing.z));}}finally{f.db.close()}});
+
+test('preparation is visible to other guests and retry does not restart it',()=>{const f=setup();try{const u=f.user(1),peer=f.user(2);f.cafe.update(u,{action:'join'});f.cafe.update(peer,{action:'join'});const order={action:'order',command:'service-visible-1',item:'cafe_cupcake',mode:'here'};f.cafe.update(u,order);const first=f.cafe.view(peer).guests.find(g=>g.id===u.id).service;assert.equal(first.item,'cafe_cupcake');f.advance(1000);f.cafe.update(u,order);assert.deepEqual(f.cafe.view(peer).guests.find(g=>g.id===u.id).service,first)}finally{f.db.close()}});

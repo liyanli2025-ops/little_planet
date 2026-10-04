@@ -53,3 +53,9 @@ Validation: coast geometry joins the ocean sphere at 360 sampled angles; sand ra
 Roundness correction: removed the raised foundation blend and floating legacy trees/stepping stones; added supported entrance steps. Rotation screenshots verify the outline from multiple bearings.
 
 Overview proportion: the building, deck and bears render at 65% scale only in the island overview; other views use the original scale and seating coordinates. Ground ray hits convert from world to building coordinates. Two bays bring water closer to the terrace and curved window seats; the opposite sandy coast remains broad. Terrain and water shader share the same bay formula.
+
+
+## Camera, menu and service flow
+Entry now opens the island overview. Its orbit target is the planet center (0, -18.25, 0), and two-finger zoom never shifts that pivot. Interior gestures keep a higher minimum elevation; foreground window sections, nearby hanging lights and extremely close chairs use a camera-dependent cutaway. A planar distant-ocean backdrop is enabled only in interior/detail views to supply a visible horizon where the small planet curves away. This is a scenic projection, not extra walkable water.
+
+The menu exposes coffee, cocktails and all six desserts, with thumbnails rendered from the actual food models. Scoped navigation layout contains all five buttons at mobile widths. Ordering walks the bear to the counter before submission, with duplicate clicks blocked and pending approach cancelled on exit. Shared server service timestamps drive host preparation, pouring/plating; ready food transfers to the guest. Sitting eases into the cushion and consuming plays a short raise-cup/food motion before the existing eat action. Takeaway still uses the existing transactional delivery to the home fridge; its preparation is visual, not a new delivery queue.

@@ -29,7 +29,7 @@ export function createCafe(db,{partner=()=>null,deliver=()=>{},profile=u=>({outf
    fail(!g.lastOrder||now()-g.lastOrder>=2000,'正在准备，请稍等一下',429);
    if(b.mode==='here')fail(!g.held,'先享用手里的这一份吧',409);
    db.exec('BEGIN IMMEDIATE');try{if(b.mode==='takeaway')deliver(u,item,randomUUID());db.prepare('INSERT INTO cafe_orders VALUES(?,?,?,?,?)').run(u.id,b.command,item.id,b.mode,now());db.exec('COMMIT')}catch(e){db.exec('ROLLBACK');throw e}
-   g.lastOrder=now();if(b.mode==='here')g.held={item:item.id,readyAt:now()+3500};return {...view(u),ordered:true,takeaway:b.mode==='takeaway'};
+   g.lastOrder=now();g.service={item:item.id,startedAt:now()};if(b.mode==='here')g.held={item:item.id,readyAt:now()+3500};return {...view(u),ordered:true,takeaway:b.mode==='takeaway'};
   }else fail(false,'操作不存在');
   return view(u);
  }

@@ -31,3 +31,9 @@
 #cafe .cafe-host-bubble{width:230px;max-width:calc(100% - 24px)}
 
 #cafe .cafe-note{bottom:max(28px,env(safe-area-inset-bottom));padding:6px 12px}#cafe .cafe-stage canvas{cursor:grab}#cafe .cafe-stage canvas:active{cursor:grabbing}
+
+.in-cafe #photo-camera{z-index:95}.in-cafe .radio-mini,.in-cafe #radio-mini,.in-cafe .fm-mini{z-index:96}
+.cafe-music{position:absolute;left:24px;bottom:calc(106px + env(safe-area-inset-bottom));width:46px;height:46px;border:0;border-radius:50%;background:#faf9edb8;color:#456452;font-size:25px;cursor:pointer}
+.photo-mode #cafe>:not(.cafe-stage){visibility:hidden!important;pointer-events:none!important}
+
+.in-cafe #travel-album{z-index:97}

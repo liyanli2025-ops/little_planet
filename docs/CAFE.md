@@ -101,3 +101,11 @@ Coarse-pointer/small initial viewports use 128x80 rings, 10 wave components, 70%
 - 熊端盘等用户点座位；落座后点实际杯子/甜品享用，防止连续点击重复发请求。
 - 修正海豚 GLB 鼻尖原始朝向，统一为 +Z；身体俯仰沿抛物线速度切线，出入水水花位于轨迹与海平面的交点。现有素材仅有海豚，没有单独鲸鱼模型。
 - 全景海面保留球体，并使用球面三向波纹和小幅径向起伏，海岸边衰减，避免平滑球体看起来像旧海面以及波浪切穿沙滩。
+
+
+2026-10-04 interaction follow-up:
+- Fresh visits clear held dine-in food; uncollected orders remain collectible. Leaving or standing clears the held tray. Seated meals progress every seven seconds; both guests and observers see the eating animation.
+- Chair meshes (including backrests) are selectable. Host clicks guide the visitor to an available bar seat and open the existing private AI chat.
+- Door, outdoor floor and sea/beach clicks exit. Empty window scenery clicks use an outdoor ground projection as fallback.
+- The shared camera captures the active cafe renderer at the current view, saves into the existing account photo album, and does not move the camera. Cafe photo mode currently supports the current pose.
+- Music reuses the existing player and its mini controls; no second player and no stop on arrival. Wave ambience remains independent.

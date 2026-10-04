@@ -90,3 +90,14 @@ The menu exposes coffee, cocktails and all six desserts, with thumbnails rendere
 MIT source is vendored under `dist/vendor/water-threejs` at revision `4f85f4a557da80a1dd24b9243869177f30c604c7`. No runtime CDN or paid API. Keeps Three.js r170 and existing sky/solar clock with one final tone-map pass. HDR/depth prepass supports refraction. Detail view uses a level ocean and lowers the beach into a gentle island, preserving shoreline XZ coordinates; anchored palms/rocks/dolphins are remapped with it. Globe view restores the original spherical beach and anchor orientations.
 
 Coarse-pointer/small initial viewports use 128x80 rings, 10 wave components, 70% refraction resolution and no screen-space reflection. Desktop uses 192x112, 16 components and sky reflections. Targets resize and dispose with the cafe. Browser-tested, not physical-device performance certification. Shore foam is depth-driven, not a full fluid solver.
+
+
+## 场景直接交互（2026-10-04）
+- 刷新和重新打开网页默认留在私人星球，不再恢复 `echoo-cafe-open`；用户点击入口才加入公共咖啡馆。
+- 复用 `planetArrival` 加载页，等待海岸纹理、GLB、甜品与植物资源和 shader 编译后再揭开；加载期间咖啡馆不可交互。
+- 删除底部场景切换导航。全景点咖啡馆进入；店内点门口、外部沙滩或海水，熊走到门外后切到外景。缩放可在近景和星球全景之间切换。
+- 点甜品柜先走过去，再显示选品近景；再次点具体甜品带入菜单。点地板可离开选品近景。
+- 点自己已完成的托盘领取，不再依赖取餐文字按钮，也不等待主理熊额外递盘；主理熊仍负责制作和放到吧台。领取时的服务端事务和订单幂等保留，其他订单正在制作不会阻塞已完成订单的领取。
+- 熊端盘等用户点座位；落座后点实际杯子/甜品享用，防止连续点击重复发请求。
+- 修正海豚 GLB 鼻尖原始朝向，统一为 +Z；身体俯仰沿抛物线速度切线，出入水水花位于轨迹与海平面的交点。现有素材仅有海豚，没有单独鲸鱼模型。
+- 全景海面保留球体，并使用球面三向波纹和小幅径向起伏，海岸边衰减，避免平滑球体看起来像旧海面以及波浪切穿沙滩。

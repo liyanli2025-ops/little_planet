@@ -29,3 +29,5 @@
 @media(max-width:600px){#cafe .cafe-menu-book{right:12px;bottom:96px;width:calc(100% - 24px);max-height:66dvh;padding:14px 14px 12px 17px;border-left-width:7px}#cafe .cafe-book-head{padding-bottom:10px}#cafe .cafe-book-head h2{font-size:24px}#cafe .cafe-book-items button{gap:9px;min-height:72px}#cafe .cafe-book-items img{width:58px;height:56px}#cafe .cafe-book-items b{font-size:17px}#cafe .cafe-order-mode button{padding:8px 10px}#cafe .cafe-chat{bottom:170px}#cafe:has(.cafe-menu-book:not([hidden])) .cafe-chat{display:none}}
 
 #cafe .cafe-host-bubble{width:230px;max-width:calc(100% - 24px)}
+
+#cafe .cafe-note{bottom:max(28px,env(safe-area-inset-bottom));padding:6px 12px}#cafe .cafe-stage canvas{cursor:grab}#cafe .cafe-stage canvas:active{cursor:grabbing}

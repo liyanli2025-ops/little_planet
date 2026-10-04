@@ -30,9 +30,9 @@ export function createCafe(db,{partner=()=>null,deliver=()=>{},profile=u=>({outf
    const receipt=db.prepare('SELECT * FROM cafe_orders WHERE account=? AND command=?').get(u.id,b.command);fail(receipt,'没有找到这份订单',404);if(receipt.collected)return {...view(u),pickedUp:true,takeaway:receipt.mode==='takeaway'};
    fail(g.order?.command===b.command,'请重新查看当前订单',409);fail(now()>=g.order.readyAt,'主理熊还在准备，请稍等',409);
    fail(!g.seat&&Math.hypot(g.x-CAFE_COUNTER.x,g.z-CAFE_COUNTER.z)<.85,'请走到吧台取餐处',409);
-   fail(![...guests.values()].some(o=>o.room===g.room&&((o.order&&now()>=o.order.startedAt&&now()<o.order.readyAt)||(o.handoff&&now()<o.handoff.endsAt))),'主理熊正在制作，等他忙完这一份再取餐吧',409);const order=g.order,held=g.held;
-   db.exec('BEGIN IMMEDIATE');try{if(order.mode==='takeaway'){for(const id of order.items)deliver(u,cafeMenu.find(i=>i.id===id),randomUUID())}else{fail(!g.held,'先享用托盘里的餐食吧',409);g.held={items:[...order.items],pickedAt:now()+3000,command:order.command}}
-    g.order=null;save(g);db.prepare('UPDATE cafe_orders SET collected=1 WHERE account=? AND command=?').run(u.id,b.command);db.exec('COMMIT');g.service=null;g.handoff={...order,startedAt:now(),endsAt:now()+3000};
+   const order=g.order,held=g.held;
+   db.exec('BEGIN IMMEDIATE');try{if(order.mode==='takeaway'){for(const id of order.items)deliver(u,cafeMenu.find(i=>i.id===id),randomUUID())}else{fail(!g.held,'先享用托盘里的餐食吧',409);g.held={items:[...order.items],pickedAt:now(),command:order.command}}
+    g.order=null;save(g);db.prepare('UPDATE cafe_orders SET collected=1 WHERE account=? AND command=?').run(u.id,b.command);db.exec('COMMIT');g.service=null;g.handoff=null;
    }catch(e){g.order=order;g.held=held;db.exec('ROLLBACK');throw e}return {...view(u),pickedUp:true,takeaway:order.mode==='takeaway'};
   }else if(b.action==='order'){
    const items=Array.isArray(b.items)?b.items:[b.item];fail(items.length>=1&&items.length<=2&&new Set(items).size===items.length&&items.every(id=>cafeMenu.some(i=>i.id===id)),'请选择菜单里的餐食');

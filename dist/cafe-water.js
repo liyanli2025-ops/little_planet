@@ -31,13 +31,14 @@ export function createCafeWater(scene,renderer,camera,horizon,sky){
  .replace('gl_FragColor = vec4(color, 1.0);',`color*=.16+.84*cafeLight;gl_FragColor=vec4(color,1.);
  #include <tonemapping_fragment>
  #include <colorspace_fragment>`);
- m.fragmentShader=m.fragmentShader.replace('vec3 Ns = N.y >= 0.0 ? N : -N;', 'if(cafeGlobe<.5)N=normalize(mix(N,vec3(0.,1.,0.),smoothstep(18.,110.,dist)*.92));vec3 Ns = N.y >= 0.0 ? N : -N;')
+ m.fragmentShader=m.fragmentShader.replace('N = normalize(vec3(N.x + dsum.x, N.y, N.z + dsum.y));', 'if(cafeGlobe>.5){vec3 q=vWorldPos*2.8+vec3(uTime*.13,uTime*.09,-uTime*.11);vec3 xy=noised(q.xy),yz=noised(q.yz),zx=noised(q.zx);vec3 g=vec3(xy.y+zx.z,xy.z+yz.y,yz.z+zx.y);N=normalize(N+(g-N*dot(g,N))*.075);}else N=normalize(vec3(N.x+dsum.x,N.y,N.z+dsum.y));')
+ .replace('vec3 Ns = N.y >= 0.0 ? N : -N;', 'if(cafeGlobe<.5)N=normalize(mix(N,vec3(0.,1.,0.),smoothstep(18.,110.,dist)*.92));vec3 Ns = N.y >= 0.0 ? N : -N;')
  .replace('(breakE + crestE * 0.7 + shoreFoam + contact)','(breakE*.12 + crestE*.12 + shoreFoam*1.2 + contact)')
  .replace('shoreFoam = shore * smoothstep(0.15, 0.55, sTex);',`float coastAngle=atan(vWorldPos.z,vWorldPos.x);float coastEdge=1.04-.24*cos(coastAngle-1.55)+.09*sin(2.*coastAngle+.3)-.16*cos(3.*(coastAngle-1.35));float coastDistance=length(vWorldPos.xz)-sin(coastEdge)*17.8;shoreFoam=shore*smoothstep(.15,.55,sTex)*(cafeGlobe>.5?1.:1.-smoothstep(.4,2.2,coastDistance));`)
  .replace('color += vec3(1.0, 0.94, 0.82) * D','color += vec3(.45, .42, .37) * min(D, 18.0)')
  .replace('breakE + shoreFoam + contact','breakE*.08 + shoreFoam + contact')
- .replace('float thickness = max(sceneEye - waterEye, 0.0);',`float thickness=max(sceneEye-waterEye,0.);if(cafeGlobe>.5){vec3 q=normalize(vWorldPos-vec3(0.,-18.25,0.));float a=atan(q.z,q.x);float e=1.04-.24*cos(a-1.55)+.09*sin(2.*a+.3)-.16*cos(3.*(a-1.35));thickness=.18+max(0.,acos(clamp(q.y,-1.,1.))-e)*42.;}`)
- .replace('vec3 sceneCol = texture2D(uRefractionTex, rUV).rgb;','vec3 sceneCol=texture2D(uRefractionTex,rUV).rgb;if(cafeGlobe>.5)sceneCol=vec3(.46,.43,.28)*(.3+.7*sunElev);');
+ .replace('float thickness = max(sceneEye - waterEye, 0.0);',`float thickness=max(sceneEye-waterEye,0.);if(cafeGlobe<.5){float a=atan(vWorldPos.z,vWorldPos.x);float e=1.04-.24*cos(a-1.55)+.09*sin(2.*a+.3)-.16*cos(3.*(a-1.35));float depth=.12+max(0.,length(vWorldPos.xz)-sin(e)*17.8)*.6;thickness=depth/max(.18,abs(V.y));}if(cafeGlobe>.5){vec3 q=normalize(vWorldPos-vec3(0.,-18.25,0.));float a=atan(q.z,q.x);float e=1.04-.24*cos(a-1.55)+.09*sin(2.*a+.3)-.16*cos(3.*(a-1.35));thickness=.18+max(0.,acos(clamp(q.y,-1.,1.))-e)*42.;}`)
+ .replace('vec3 sceneCol = texture2D(uRefractionTex, rUV).rgb;','vec3 sceneCol=texture2D(uRefractionTex,rUV).rgb;if(cafeGlobe<.5){float sampledDepth=sceneEye-waterEye;float validObject=1.-smoothstep(thickness*.65,thickness*.95,sampledDepth);if(sampledDepth<0.)validObject=0.;sceneCol=mix(vec3(.46,.43,.28)*(.3+.7*sunElev),sceneCol,validObject);}if(cafeGlobe>.5)sceneCol=vec3(.46,.43,.28)*(.3+.7*sunElev);');
  m.toneMapped=true;m.side=T.FrontSide;
  u.uWaveCount.value=light?10:16;u.uBaseFreq.value=2*Math.PI/18;u.uAmplitude.value=.12;u.uChoppy.value=.45;u.uSpeed.value=.55;
  u.uDetailStrength.value=.065;u.uDetailScale.value=.3;u.uSunGlitter.value=.12;u.uRoughness.value=.14;
@@ -52,8 +53,8 @@ export function createCafeWater(scene,renderer,camera,horizon,sky){
  const globeMaterial=m.clone();globeMaterial.uniforms=u;
  const body=globeMaterial.vertexShader.indexOf('void main(){');globeMaterial.vertexShader=globeMaterial.vertexShader.slice(0,body)+`void main(){
  vec3 p=(modelMatrix*vec4(position,1.)).xyz;vec3 radial=normalize(p-vec3(0.,-18.25,0.));WaveSample w=sampleOcean(p.xz);
- vWorldPos=p;vNormal=normalize(radial+(w.normal-vec3(0.,1.,0.))*.3);vFold=1.;vHeight=0.;vec4 vp=viewMatrix*vec4(p,1.);vViewZ=vp.z;gl_Position=projectionMatrix*vp;}`;
- for(const sphere of spheres){sphere.material=globeMaterial;sphere.castShadow=false;sphere.receiveShadow=false;}
+ vec3 slope=w.normal-vec3(0.,1.,0.);slope-=radial*dot(slope,radial);float coast=atan(radial.z,radial.x);float edge=1.04-.24*cos(coast-1.55)+.09*sin(2.*coast+.3)-.16*cos(3.*(coast-1.35));float offshore=acos(clamp(radial.y,-1.,1.))-edge;float ripple=w.height*.06*smoothstep(0.,.15,offshore);p+=radial*ripple;vWorldPos=p;vNormal=radial;vFold=w.fold;vHeight=ripple;vec4 vp=viewMatrix*vec4(p,1.);vViewZ=vp.z;gl_Position=projectionMatrix*vp;}`;
+ for(const sphere of spheres){sphere.geometry.dispose();sphere.geometry=new T.SphereGeometry(17.8,128,80);sphere.material=globeMaterial;sphere.castShadow=false;sphere.receiveShadow=false;}
 
  function render(time){const detail=horizon.visible;u.cafeGlobe.value=detail?0:1;spheres.forEach(o=>o.visible=false);
   renderer.getDrawingBufferSize(size);const w=Math.max(1,Math.round(size.x*(light?.7:1))),h=Math.max(1,Math.round(size.y*(light?.7:1)));
@@ -64,5 +65,5 @@ export function createCafeWater(scene,renderer,camera,horizon,sky){
    ocean.mesh.visible=true;spheres.forEach(o=>o.visible=!detail);renderer.toneMapping=tone;renderer.setRenderTarget(previous);renderer.shadowMap.autoUpdate=false;renderer.render(scene,camera);
   }finally{ocean.mesh.visible=true;renderer.toneMapping=tone;renderer.shadowMap.autoUpdate=shadows;renderer.setRenderTarget(previous)}
  }
- return {render,state:()=>({quality:light?'light':'full',triangles:indices.length/3,detail:horizon.visible}),dispose(){target.dispose()}};
+ return {render,pickables:[ocean.mesh,...spheres],state:()=>({quality:light?'light':'full',triangles:indices.length/3,detail:horizon.visible}),dispose(){target.dispose()}};
 }

@@ -11,7 +11,6 @@ export function makeCafeTray(items){const tray=new T.Group(),mat=new T.MeshStand
 }
 export function poseCafeTray(bear,tray,time,sipItem=null,sip=0){
  bear.avatar.updateWorldMatrix(true,false);tray.position.set(0,.54,.45);tray.rotation.set(0,Math.PI,0);
- const taking=(time-bear.data.held.pickedAt+360)/1000;if(taking<1){const source=bear.avatar.parent.localToWorld(v(CAFE_SERVE.x,1.08,-2.18));tray.position.copy(bear.avatar.worldToLocal(source)).lerp(v(0,.54,.45),ease(Math.max(0,taking)))}
  tray.updateWorldMatrix(true,false);for(let i=0;i<2;i++)aimCafePaw(bear,i,bear.avatar.localToWorld(tray.position.clone().add(v(i?.32:-.32,-.01,-.12))));
 
  for(const food of tray.userData.foods){food.position.copy(food.userData.trayPosition);food.rotation.set(0,0,0)}
@@ -28,7 +27,7 @@ export function createHostService(building,bear){
  function tick(guests,time){const list=[...guests.values()].map(b=>b.data),orders=list.filter(g=>g.order).map(g=>g.order),handoff=list.find(g=>g.handoff&&time<g.handoff.endsAt)?.handoff;
   const ids=new Set(orders.map(o=>o.command));if(handoff)ids.add(handoff.command);
   for(const [id,tray]of trays)if(!ids.has(id)){for(const food of tray.userData.foods){food.removeFromParent();disposeCafeObject(food)}tray.removeFromParent();disposeCafeObject(tray);trays.delete(id)}
-  for(const order of [...orders,...(handoff?[handoff]:[])]){let tray=trays.get(order.command);if(!tray){tray=makeCafeTray(order.items);trays.set(order.command,tray);building.add(tray)}const place=cafeTrayPlace(order.counterSlot);putTray(tray,v(place.x,place.y,place.z));tray.visible=time>=order.startedAt;for(let i=0;i<tray.userData.foods.length;i++){const f=tray.userData.foods[i];restFood(f,tray);f.visible=!!handoff&&handoff.command===order.command||time>=order.startedAt+(i+1)*7000}}
+  for(const order of [...orders,...(handoff?[handoff]:[])]){let tray=trays.get(order.command);if(!tray){tray=makeCafeTray(order.items);trays.set(order.command,tray);building.add(tray)}tray.userData.pick={type:'pickup',value:order.command};tray.userData.ready=time>=order.readyAt;const place=cafeTrayPlace(order.counterSlot);putTray(tray,v(place.x,place.y,place.z));tray.visible=time>=order.startedAt;for(let i=0;i<tray.userData.foods.length;i++){const f=tray.userData.foods[i];restFood(f,tray);f.visible=!!handoff&&handoff.command===order.command||time>=order.startedAt+(i+1)*7000}}
   working=orders.filter(o=>time>=o.startedAt&&time<o.readyAt).sort((a,b)=>a.startedAt-b.startedAt)[0];pitcher.visible=stream.visible=false;const seconds=time/1000;
   if(handoff){handing=handoff.command;const p=(time-handoff.startedAt)/3000,tray=trays.get(handoff.command),place=cafeTrayPlace(handoff.counterSlot),source=v(place.x,place.y,place.z),from=v(place.x,.77,-3.45),to=v(CAFE_SERVE.x,.77,-3.12);
    const at=p<.25?mix(home,from,p/.25):mix(from,to,(p-.25)/.55);setBear(at,v(at.x,1,-2),p<.8,seconds);if(p>.25){bear.body.rotation.x=.45;bear.avatar.updateWorldMatrix(true,true);const extended=v(CAFE_SERVE.x,1.43,-2.18),target=p<.72?mix(source,extended,(p-.25)/.47):mix(extended,v(CAFE_SERVE.x,1.08,-2.18),(p-.72)/.16);putTray(tray,target);tray.visible=p<.88;for(let i=0;i<2;i++)aimCafePaw(bear,i,inWorld(target.clone().add(v(i?.32:-.32,-.015,-.12))))}return;
@@ -44,5 +43,5 @@ export function createHostService(building,bear){
    if(!dessert&&p<.32){aimCafePaw(bear,1,inWorld(v(-2.71,1.63,-3.38)))}else if(!dessert&&p<.6){pitcher.visible=true;handObject(pitcher,1,hold.clone().add(v(.18,.20,-.01)));pitcher.rotation.z=-.6-Math.sin((p-.24)/.36*Math.PI)*.25;stream.visible=p>.32&&p<.52;stream.position.copy(hold).add(v(.055,.19,0));}else aimCafePaw(bear,1,inWorld(hold.clone().add(v(.17,0,0))));
   }else if(p>=.84){const dest=v(place.x+food.userData.trayPosition.x,place.y+.025,place.z);bear.body.rotation.x=.24;bear.avatar.updateWorldMatrix(true,true);if(p<.98){const from=building.worldToLocal(bear.avatar.localToWorld(v(-.12,.61,.4)));handObject(food,0,mix(from,dest,(p-.84)/.14))}else{aimCafePaw(bear,0,inWorld(dest));restFood(food,tray)}food.visible=true;}
  }
- return {tick,state:()=>({working:working?.command||null,handing,trays:trays.size})};
+ return {tick,pickables:()=>[...trays.values()].filter(t=>t.visible&&t.userData.ready),state:()=>({working:working?.command||null,handing,trays:trays.size})};
 }

@@ -83,9 +83,10 @@ export function buildCafe(worldRoot,pick,isDisposed){
  for(const [x,z]of [[-6.6,-.55],[6.4,-1.5]]){cyl(decor,brass,x,1.12,z,.023,1.82);cyl(decor,wood,x,.25,z,.23,.035);cyl(decor,0xd1bd96,x,2.10,z,.33,.35,.21);const lamp=ell(decor,new T.MeshStandardMaterial({color:0xffe2b6,emissive:0xffc887,emissiveIntensity:.5}),x,1.94,z,.27,.025,.27);lamps.push(lamp)}
  const string=[];for(let i=0;i<=32;i++){const x=-6.5+i*.4,y=3.0-.30*Math.sin(i/32*Math.PI),z=3.5+Math.cos(i*.14)*.30;string.push([x,y,z]);if(i%2===0){const bulb=ell(decor,new T.MeshStandardMaterial({color:0xffe4b0,emissive:0xffb968,emissiveIntensity:1}),x,y-.055,z,.028);lamps.push(bulb)}}tube(decor,wood,string,.008);
  pick(box(root,new T.MeshBasicMaterial({visible:false}),0,1.4,4.15,2.3,2.6,.1),'enter');const ground=slab(root,floorShape,.198,.003,new T.MeshBasicMaterial({visible:false}));pick(ground,'ground');pick(box(root,new T.MeshBasicMaterial({visible:false}),0,.19,5.2,3.2,.01,2.8),'ground');
+ const buildingHit=box(root,new T.MeshBasicMaterial({visible:false}),0,1.8,0,13,3.6,9);pick(buildingHit,'building');
  const {planet,coast,awning}=buildCoast({root,roof,furniture,pick,box,cyl,ell,rounded,tube,timber,lamps});
  // Batch opaque static decoration; keep interactive targets and curtains separate.
  function batch(group){group.updateWorldMatrix(true,true);const byMat=new Map();for(const o of [...group.children]){if(!o.isMesh||o.material.transparent||o.userData.pick)continue;const list=byMat.get(o.material)||[];list.push(o);byMat.set(o.material,list)}for(const [material,list]of byMat){if(list.length<3)continue;const geos=list.map(o=>(o.geometry.index?o.geometry.toNonIndexed():o.geometry.clone()).applyMatrix4(o.matrix));const combined=mergeGeometries(geos,false);if(combined){const m=new T.Mesh(combined,material);m.castShadow=m.receiveShadow=true;group.add(m);for(const o of list){group.remove(o);o.geometry.dispose()}}geos.forEach(g=>g.dispose())}}
- batch(decor);batch(furniture);batch(coast);const marine=buildMarine(worldRoot,seaMat,isDisposed);ready.push(marine.ready);
+ batch(decor);batch(furniture);batch(coast);const marine=buildMarine(worldRoot,seaMat,isDisposed);ready.push(marine.ready);pick(marine.beach,'exit');
  return {occluders,building:root,marine,planet,awning,roof,front,furniture,horizon,shore,seaMat,ready,lamps,mesh,box};
 }

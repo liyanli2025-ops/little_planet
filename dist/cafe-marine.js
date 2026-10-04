@@ -1,3 +1,4 @@
+import {marineLeap} from './cafe-marine-motion.js';
 import {detailBeachY} from './cafe-water-surface.js';
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
@@ -14,8 +15,8 @@ export function coastPoint(a,theta,lift=0){
 }
 export function buildMarine(root,seaMat,isDisposed=()=>false){
  let detail=false;const anchors=[];const group=new T.Group();group.name='Spherical coast';root.add(group);
- const loader=new GLTFLoader(),url='./assets/coast/',ready=[],animals=[];
- const textureLoader=new T.TextureLoader();
+ const ready=[],animals=[];const manager=new T.LoadingManager();let allLoaded;const loaded=new Promise(r=>allLoaded=r);manager.onLoad=()=>allLoaded();const loader=new GLTFLoader(manager),url='./assets/coast/';
+ const textureLoader=new T.TextureLoader(manager);
  const texture=(file,color=false)=>{const t=textureLoader.load(url+file);t.wrapS=t.wrapT=T.RepeatWrapping;t.anisotropy=4;if(color)t.colorSpace=T.SRGBColorSpace;return t};
  const sandMaterial=new T.MeshStandardMaterial({map:texture('sand-color.webp',true),bumpMap:texture('sand-height.png'),bumpScale:.018,vertexColors:true,roughness:.93});
  const positions=[],colors=[],uvs=[],indices=[],N=192,M=52;
@@ -81,16 +82,16 @@ export function buildMarine(root,seaMat,isDisposed=()=>false){
   const mat=new T.MeshBasicMaterial({color:b===0?0xa0d9c4:0xf5f8e9,transparent:true,opacity:.5,side:T.DoubleSide,depthWrite:false});const mesh=new T.Mesh(g,mat);group.add(mesh);surf.push({g,p,mat,mesh});
  }
  for(let i=0;i<3;i++){
-  const a=[.75,2.05,3.75][i],theta=coastEdge(a)+.19,p=new T.Vector3(Math.sin(theta)*Math.cos(a),Math.cos(theta),Math.sin(theta)*Math.sin(a));
+  const a=[.75,2.05,3.75][i],theta=coastEdge(a)+.32,p=new T.Vector3(Math.sin(theta)*Math.cos(a),Math.cos(theta),Math.sin(theta)*Math.sin(a));
   const base=new T.Group();base.position.copy(p).multiplyScalar(17.8).add(new T.Vector3(0,-18.25,0));base.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),p);base.userData.coastPose={p:base.position.clone(),q:base.quaternion.clone(),water:true};anchors.push(base);group.add(base);
-  const d=new T.Group();base.add(d);const rings=[];
+  const d=new T.Group();d.name='Jumping dolphin '+i;base.add(d);const rings=[];
   for(let j=0;j<2;j++){const ring=new T.Mesh(new T.RingGeometry(.6,.65,48),new T.MeshBasicMaterial({color:0xf0fff5,transparent:true,opacity:0,side:T.DoubleSide,depthWrite:false}));ring.rotation.x=-Math.PI/2;ring.position.y=.04;base.add(ring);rings.push(ring)}
   const dropsGeo=new T.BufferGeometry();dropsGeo.setAttribute('position',new T.Float32BufferAttribute(new Float32Array(18*3),3));const drops=new T.Points(dropsGeo,new T.PointsMaterial({color:0xe5fff7,size:.075,transparent:true,opacity:.75,depthWrite:false}));base.add(drops);
   const animal={d,rings,drops,phase:i*4.4,period:15+i*2,mixer:null};animals.push(animal);
-  load('dolphin_animated.glb',g=>{const model=normalize(g.scene,2.5);d.add(model);animal.mixer=new T.AnimationMixer(g.scene);for(const clip of g.animations)animal.mixer.clipAction(clip).play()});
+  load('dolphin_animated.glb',g=>{const aligned=new T.Group();aligned.add(g.scene);aligned.rotation.y=-Math.PI/2;aligned.updateMatrixWorld(true);const bounds=new T.Box3().setFromObject(aligned),center=bounds.getCenter(new T.Vector3()),size=bounds.getSize(new T.Vector3());const model=new T.Group();model.add(aligned);aligned.position.sub(center);model.scale.setScalar(2.5/Math.max(size.x,size.y,size.z));d.add(model);animal.mixer=new T.AnimationMixer(g.scene);for(const clip of g.animations)animal.mixer.clipAction(clip).play()});
  }
  const sphereBeach=Float32Array.from(geo.attributes.position.array);
- function setDetail(value){if(value===detail)return;detail=value;const attr=geo.attributes.position;for(let i=0;i<attr.count;i++){const x=sphereBeach[i*3],z=sphereBeach[i*3+2];attr.setY(i,detail?detailBeachY(x,z):sphereBeach[i*3+1])}attr.needsUpdate=true;geo.computeVertexNormals();geo.computeBoundingSphere();for(const g of anchors){const pose=g.userData.coastPose;g.position.copy(pose.p);g.quaternion.copy(pose.q);if(detail){g.position.y=pose.water?-1.8:detailBeachY(g.position.x,g.position.z)+.015;g.quaternion.identity()}}surf.forEach(s=>s.mesh.visible=!detail)}
+ function setDetail(value){if(value===detail)return;detail=value;const attr=geo.attributes.position;for(let i=0;i<attr.count;i++){const x=sphereBeach[i*3],z=sphereBeach[i*3+2];attr.setY(i,detail?detailBeachY(x,z):sphereBeach[i*3+1])}attr.needsUpdate=true;geo.computeVertexNormals();geo.computeBoundingSphere();for(const g of anchors){const pose=g.userData.coastPose;g.position.copy(pose.p);g.quaternion.copy(pose.q);if(detail){if(pose.water){const a=Math.atan2(pose.p.z,pose.p.x),r=Math.sin(coastEdge(a))*17.8+5.5;g.position.set(Math.cos(a)*r,-1.8,Math.sin(a)*r)}else g.position.y=detailBeachY(g.position.x,g.position.z)+.015;g.quaternion.identity()}}surf.forEach(s=>s.mesh.visible=!detail)}
  function tick(t){
   time.value=t;
   surf.forEach(({g,p,mat},b)=>{
@@ -101,13 +102,11 @@ export function buildMarine(root,seaMat,isDisposed=()=>false){
    }g.attributes.position.needsUpdate=true;g.computeBoundingSphere();
   });
   for(const {d,rings,drops,phase,period,mixer}of animals){
-   const q=(t+phase)%period,u=q/4;d.visible=q<4;mixer?.setTime(t);
-   if(d.visible){d.position.set(0,-.7+Math.sin(u*Math.PI)*2.7,(u-.5)*3.5);d.rotation.x=-Math.atan2(Math.cos(u*Math.PI)*2.7*Math.PI,3.5);d.rotation.z=Math.sin(u*Math.PI*2)*.13}
-   const splash=q<1?q:q>3.1&&q<4.5?q-3.1:-1;
+   const leap=marineLeap(t+phase,period),q=(t+phase)%period;d.visible=leap.visible;mixer?.setTime(q*.7);if(d.visible){d.position.set(0,leap.y,leap.z);d.rotation.set(leap.pitch,0,leap.roll)}const splash=leap.splash;
    drops.visible=splash>=0&&splash<1.2;const dp=drops.geometry.attributes.position;
-   for(let j=0;j<18;j++){const a=j/18*Math.PI*2;dp.setXYZ(j,Math.cos(a)*splash*.9,Math.max(0,Math.sin(splash*Math.PI/1.2)*(1+j%3*.25)),(q<1?-1.5:1.5)+Math.sin(a)*splash*.9)}dp.needsUpdate=true;drops.geometry.computeBoundingSphere();
-   rings.forEach((m,i)=>{m.visible=splash>=0;m.material.opacity=Math.max(0,.65-splash*.45);m.scale.setScalar(.5+Math.max(0,splash)*2+i*.3);m.position.z=q<1?-1.5:1.5});
+   for(let j=0;j<18;j++){const a=j/18*Math.PI*2;dp.setXYZ(j,Math.cos(a)*splash*.9,Math.max(0,Math.sin(splash*Math.PI/1.2)*(1+j%3*.25)),leap.splashZ+Math.sin(a)*splash*.9)}dp.needsUpdate=true;drops.geometry.computeBoundingSphere();
+   rings.forEach((m,i)=>{m.visible=splash>=0;m.material.opacity=Math.max(0,.65-splash*.45);m.scale.setScalar(.5+Math.max(0,splash)*2+i*.3);m.position.z=leap.splashZ});
   }
  }
- return {tick,setDetail,group,ready:Promise.all(ready)};
+ return {tick,setDetail,group,beach,ready:Promise.all([...ready,loaded])};
 }

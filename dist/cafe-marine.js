@@ -4,7 +4,7 @@ import {disposeCafeObject} from './cafe-food.js';
 
 // Coordinates are angular around the actual planet, never a flat island lid.
 // Broad low-frequency bays avoid pointed notches and abrupt coastline turns.
-export const coastEdge=a=>1.04-.29*Math.cos(a-1.55)+.07*Math.sin(2*a+.3);
+export const coastEdge=a=>1.04-.24*Math.cos(a-1.55)+.09*Math.sin(2*a+.3)-.16*Math.cos(3*(a-1.35));
 export function coastPoint(a,theta,lift=0){
  const edge=coastEdge(a),shore=T.MathUtils.smoothstep(theta,edge-.16,edge);
  const radius=17.8+.045*(1-shore),r=Math.sin(theta)*radius;
@@ -65,7 +65,7 @@ export function buildMarine(root,seaMat,isDisposed=()=>false){
   shader.fragmentShader=shader.fragmentShader.replace('#include <color_fragment>',`#include <color_fragment>
    float a=atan(coastPosition.z,coastPosition.x);
    float theta=acos(clamp(coastPosition.y/17.8,-1.,1.));
-   float edge=1.04-.29*cos(a-1.55)+.07*sin(2.*a+.3);
+   float edge=1.04-.24*cos(a-1.55)+.09*sin(2.*a+.3)-.16*cos(3.*(a-1.35));
    float shallow=1.-smoothstep(0.,.26,theta-edge);
    diffuseColor.rgb=mix(diffuseColor.rgb,vec3(.20,.65,.57),shallow*.65);
    float caustic=pow(max(0.,coastNoise(coastPosition*5.+vec3(coastTime*.3))),12.);

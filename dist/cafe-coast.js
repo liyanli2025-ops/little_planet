@@ -32,14 +32,11 @@ export function buildCoast({root,roof,furniture,pick,box,cyl,ell,rounded,tube,ti
  for(const [x,z]of [[.8,7],[6.9,5.1]]){rounded(coast,0x9b7855,x,.47,z,.65,.47,.48,.075);for(let i=0;i<7;i++){const a=i*.9;const leaf=ell(coast,0x84946b,x+Math.sin(a)*.18,.88+(i%2)*.1,z+Math.cos(a)*.12,.10,.31,.065);leaf.rotation.z=Math.sin(a)*.45;ell(coast,0xe1d1b4,x+Math.sin(a)*.18,1.17,z+Math.cos(a)*.12,.055,.04,.05)}}
  // Standing-seam roof lines follow the rounded roof instead of a flat blank lid.
  for(let x=-5.8;x<6;x+=.55){const zExtent=3.5-Math.max(0,Math.abs(x)-4)*.5;const points=[];for(let z=-zExtent;z<=zExtent;z+=.2){if(Math.pow((x-.3)/2.2,2)+Math.pow((z-.1)/1.4,2)<1.05){if(points.length>1)tube(roof,0x798778,points.splice(0),.012);continue}points.push([x,3.99,z])}if(points.length>1)tube(roof,0x798778,points,.012)}
- // Sandy cove, rocks, a modest jetty and a striped beach umbrella.
- for(let i=0;i<12;i++){const a=2.5+i*.12,x=Math.cos(a)*9,z=Math.sin(a)*7.5;const rock=ell(coast,i%2?0xb1ad98:0x9da797,x,-.05,z,.32+(i%3)*.1,.25,.35);rock.rotation.y=a;}
- for(let i=0;i<16;i++)box(coast,i%2?0xb79e77:0xc2aa83,-3.4,-.02,6.8+i*.19,1.4,.07,.175);
- for(const x of [-4,-2.8])for(const z of [7.2,8.3,9.4]){cyl(coast,wood,x,-.38,z,.055,.9);cyl(coast,0xd2c29c,x,.10,z,.075,.07);}
- const parasol=new T.Group();parasol.position.set(-6.5,.05,5.25);coast.add(parasol);cyl(parasol,wood,0,.85,0,.025,1.7);
- for(let i=0;i<10;i++){const geo=new T.ConeGeometry(1,.37,1,1,true,i*Math.PI/5,Math.PI/5);const m=new T.Mesh(geo,new T.MeshStandardMaterial({color:i%2?0xe7d9b9:0x94a797,side:T.DoubleSide,roughness:1}));m.position.y=1.66;m.castShadow=true;parasol.add(m)}
- const towel=box(coast,0xe2c19f,-6.4,.10,5.8,.8,.016,1.5);towel.rotation.y=-.35;
- for(const x of [-.9,.9]){cyl(coast,wood,x,.25,6.55,.065,.6);const light=ell(coast,new T.MeshStandardMaterial({color:0xffdfab,emissive:0xffc88c,emissiveIntensity:.6}),x,.63,6.55,.09,.13,.09);lamps.push(light)}
+ // The pavilion sits on timber piles instead of an artificially raised sand hill.
+ for(const [x,z]of [[-6,-2],[-6,1],[-5,3.3],[-3,4.1],[0,3.8],[3,4.2],[5.8,3],[6.4,0],[5.8,-2.6],[-3,-4],[2,-4],[.5,7],[3,7.2],[5.8,7.2],[7,5.5]]){
+  const ground=-18.25+Math.sqrt(17.84*17.84-x*x-z*z),top=.10;
+  cyl(coast,wood,x,(ground+top)/2,z,.105,top-ground+.10);
+ }
  // Ocean motion and wildlife are owned by the spherical coast renderer.
  const planet=new T.Group();root.add(planet);
  return {planet,coast,awning};

@@ -44,8 +44,10 @@
 
 ## Spherical coast and imported assets (2026-10-04)
 
-The coastline is an angular contour on the radius-17.8 ocean sphere. A small level cafe foundation blends into the curved sand; the broad beach continues to the sides of the planet. Wet sand, shallow-water coloring and surf use the same contour. Sea ripples use a lightweight animated material, not a physical fluid simulation.
+The coastline is an angular contour on the radius-17.8 ocean sphere. The sand shell stays within 4.5 cm of the ocean radius everywhere. Timber piles support the level cafe deck without raising the sand into a hill; the broad beach continues to the sides of the planet. Wet sand, shallow-water coloring and surf use the same contour. Sea ripples use a lightweight animated material, not a physical fluid simulation.
 
 Selected assets live under `dist/assets/coast/`: Akshat’s skinned Dolphin Animated (with its existing swim clip plus runtime breaching trajectory and splash), two palm meshes extracted from Jefbud’s beach scene, seven Quaternius rock/grass/bush/fern models, and resized Poly Haven sand color/height maps. Source credits and modification notices are accessible through the cafe’s discreet attribution link. The OBJ animals were not imported because that archive contains no animation. Sand remains scenery: this change does not extend the multiplayer walking bounds into the beach or sea.
 
-Validation: coast geometry joins the ocean sphere at 360 sampled angles; cafe foundation remains level; all glTF dependencies are local; optimized palm buffer bounds checked. Browser QA uses Chrome/Playwright (Browser plugin not available): desktop/mobile render, 20 animation samples, console errors, plus existing two-visitor seating/order/takeaway regression. Physical-phone frame rate has not been measured.
+Validation: coast geometry joins the ocean sphere at 360 sampled angles; sand radial deviation stays below 4.5 cm across the cap; all glTF dependencies are local; optimized palm buffer bounds checked. Browser QA uses Chrome/Playwright (Browser plugin not available): desktop/mobile render, 20 animation samples, console errors, plus existing two-visitor seating/order/takeaway regression. Physical-phone frame rate has not been measured.
+
+Roundness correction: removed the raised foundation blend and floating legacy trees/stepping stones; added supported entrance steps. Rotation screenshots verify the outline from multiple bearings.

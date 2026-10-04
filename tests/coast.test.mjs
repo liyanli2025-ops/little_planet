@@ -6,8 +6,8 @@ import path from 'node:path';
 test('coastline joins the ocean sphere at every angle, without a flat cap edge',()=>{
  for(let i=0;i<360;i++){const a=i*Math.PI/180,p=coastPoint(a,coastEdge(a));assert.ok(Math.abs(Math.hypot(p.x,p.y+18.25,p.z)-17.8)<1e-8);const near=coastPoint(a,coastEdge(a)-.0001);assert.ok(p.distanceTo(near)<.003)}
 });
-test('cafe foundation stays level and sandy land continues far down the sphere',()=>{
- for(let i=0;i<72;i++){const a=i*Math.PI/36;assert.equal(coastPoint(a,.3).y,-.15);assert.ok(coastPoint(a,coastEdge(a)).y<-6)}
+test('sand stays within 4.5cm of the ocean sphere across the entire cap',()=>{
+ for(let i=0;i<72;i++)for(let j=0;j<=50;j++){const a=i*Math.PI/36,p=coastPoint(a,coastEdge(a)*j/50),r=Math.hypot(p.x,p.y+18.25,p.z);assert.ok(r>=17.8-1e-8&&r<=17.845+1e-8)}
 });
 test('all selected nature model dependencies are shipped locally',()=>{
  const dir=new URL('../dist/assets/coast/',import.meta.url);

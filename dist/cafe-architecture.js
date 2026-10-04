@@ -26,8 +26,8 @@ export function buildCafe(root,pick,isDisposed){
  function slab(parent,shape,y,depth,color){const geo=new T.ExtrudeGeometry(shape,{depth,bevelEnabled:true,bevelSize:.07,bevelThickness:.045,bevelSegments:3,curveSegments:18});geo.rotateX(-Math.PI/2);return mesh(parent,geo,color,0,y,0)}
  slab(root,floorShape,-.02,.18,0x67513e);const floor=slab(root,floorShape,.17,.025,timber);const uv=floor.geometry.attributes.uv,pos=floor.geometry.attributes.position;for(let i=0;i<uv.count;i++)uv.setXY(i,pos.getX(i)/14,pos.getZ(i)/10);uv.needsUpdate=true;
  // Outside arrival deck wraps around a recessed front door.
- rounded(root,timber,0,.10,5.1,3.2,.18,2.3,.55);for(let i=0;i<3;i++)rounded(root,0xb8a180,0,.07-i*.07,6.3+i*.28,2.5,.10,.38,.12);
- for(let i=0;i<9;i++){const p=rounded(decor,0xd1c4a8,-.3+Math.sin(i*.5)*.15,-.02,7.2+i*.16,.65,.06,.19,.08);p.rotation.y=Math.sin(i*.5)*.1}
+ rounded(root,timber,0,.10,5.1,3.2,.18,2.3,.55);
+ for(let i=0;i<15;i++){const z=6.3+i*.18,top=.10-i*.205,ground=-18.25+Math.sqrt(17.84*17.84-z*z);rounded(root,0xb8a180,0,(top+ground)/2,z,2.5,Math.max(.1,top-ground),.25,.07)}
  const wood=0x59402d,brass=0xb39464,glass=new T.MeshPhysicalMaterial({color:0xc8dfd5,transparent:true,opacity:.10,roughness:.15,metalness:.04,depthWrite:false,side:T.DoubleSide});
  const perimeter=curve.getSpacedPoints(32);
  for(let i=0;i<32;i++){const a=perimeter[i],b=perimeter[i+1],mid=a.clone().add(b).multiplyScalar(.5),length=a.distanceTo(b),angle=Math.atan2(b.x-a.x,b.z-a.z),part=mid.z>2.2?front:decor;
@@ -81,9 +81,6 @@ export function buildCafe(root,pick,isDisposed){
  for(const [x,z]of [[-3.4,-2.5],[-1,-2.5],[3.1,-2.3],[-4,2.3],[4.6,1.8],[.1,2.6]])pendant(x,z,2.7,.24);
  for(const [x,z]of [[-6.6,-.55],[6.4,-1.5]]){cyl(decor,brass,x,1.12,z,.023,1.82);cyl(decor,wood,x,.25,z,.23,.035);cyl(decor,0xd1bd96,x,2.10,z,.33,.35,.21);const lamp=ell(decor,new T.MeshStandardMaterial({color:0xffe2b6,emissive:0xffc887,emissiveIntensity:.5}),x,1.94,z,.27,.025,.27);lamps.push(lamp)}
  const string=[];for(let i=0;i<=32;i++){const x=-6.5+i*.4,y=3.0-.30*Math.sin(i/32*Math.PI),z=3.5+Math.cos(i*.14)*.30;string.push([x,y,z]);if(i%2===0){const bulb=ell(decor,new T.MeshStandardMaterial({color:0xffe4b0,emissive:0xffb968,emissiveIntensity:1}),x,y-.055,z,.028);lamps.push(bulb)}}tube(decor,wood,string,.008);
- // Driftwood, dune grasses and an arrival lantern outside the curved pavilion.
- for(const [x,z]of [[-8,1],[7.8,-2],[-7,-5]]){const trunk=cyl(root,0x9f8968,x,.8,z,.10,1.65,.07);trunk.rotation.z=.13;for(let i=0;i<7;i++){const a=i/7*Math.PI*2,leaf=ell(root,0x7d926d,x+Math.sin(a)*.44,1.65,z+Math.cos(a)*.44,.17,.055,.70);leaf.rotation.y=a;leaf.rotation.x=.25}}
- for(let i=0;i<18;i++){const a=i*.79,x=Math.cos(a)*8.5,z=Math.sin(a)*7.1;for(let j=0;j<3;j++){const stem=ell(decor,0xa3aa7e,x+(j-1)*.05,.14,z,.026,.25,.03);stem.rotation.z=(j-1)*.3}}
  pick(box(root,new T.MeshBasicMaterial({visible:false}),0,1.4,4.15,2.3,2.6,.1),'enter');const ground=slab(root,floorShape,.198,.003,new T.MeshBasicMaterial({visible:false}));pick(ground,'ground');pick(box(root,new T.MeshBasicMaterial({visible:false}),0,.19,5.2,3.2,.01,2.8),'ground');
  const {planet,coast,awning}=buildCoast({root,roof,furniture,pick,box,cyl,ell,rounded,tube,timber,lamps});
  // Batch opaque static decoration; keep interactive targets and curtains separate.

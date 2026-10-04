@@ -6,10 +6,8 @@ import {disposeCafeObject} from './cafe-food.js';
 export const coastEdge=a=>1.27+.16*Math.sin(a*3+.5)+.10*Math.sin(a*5)-.16*Math.cos(a-.4);
 export function coastPoint(a,theta,lift=0){
  const edge=coastEdge(a),shore=T.MathUtils.smoothstep(theta,edge-.16,edge);
- const radius=17.8+.36*(1-shore),r=Math.sin(theta)*radius;
- let y=-18.25+Math.cos(theta)*radius;
- // A small, smoothly joined terrace supports the existing cafe floor.
- if(theta<.67)y=T.MathUtils.lerp(-.15,y,T.MathUtils.smoothstep(theta,.43,.67));
+ const radius=17.8+.045*(1-shore),r=Math.sin(theta)*radius;
+ const y=-18.25+Math.cos(theta)*radius;
  return new T.Vector3(Math.cos(a)*r,y+lift,Math.sin(a)*r);
 }
 export function buildMarine(root,seaMat,isDisposed=()=>false){

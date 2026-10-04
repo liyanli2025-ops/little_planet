@@ -18,5 +18,9 @@ test('extracted palm geometry buffers stay within the shipped GLB',()=>{
 });
 
 test('sea-facing bays approach the cafe while the opposite beach remains broad',()=>{
- assert.ok(coastEdge(1.25)<.70);assert.ok(coastEdge(2.85)<.85);assert.ok(coastEdge(4.5)>1.1);
+ assert.ok(coastEdge(1.25)<.82);assert.ok(coastEdge(2.85)<1.0);assert.ok(coastEdge(4.5)>1.1);
+});
+
+test('shoreline has gently varying slope without sharp bay notches',()=>{
+ const h=.001;for(let i=0;i<720;i++){const a=i*Math.PI/360,d2=(coastEdge(a+h)-2*coastEdge(a)+coastEdge(a-h))/(h*h);assert.ok(Math.abs(d2)<.6)}
 });

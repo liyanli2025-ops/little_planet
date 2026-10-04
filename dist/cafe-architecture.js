@@ -46,7 +46,7 @@ export function buildCafe(worldRoot,pick,isDisposed){
  function art(p,x,y,z,w,h,kind,angle=0){const c=document.createElement('canvas');c.width=384;c.height=256;const q=c.getContext('2d');q.fillStyle='#e8ddc5';q.fillRect(0,0,384,256);if(kind==='sign'){q.fillStyle='#4c5143';q.textAlign='center';q.font='34px serif';q.fillText('海 风 来 信',192,113);q.font='17px serif';q.fillText('COFFEE  ·  SEA  ·  STORIES',192,159)}else{q.fillStyle=['#94b8b0','#b4b58d','#a8b9bd'][kind%3];q.fillRect(18,18,348,220);q.fillStyle='#efdcaa';q.beginPath();q.arc(270,72,27,0,7);q.fill();q.fillStyle='#729994';q.fillRect(18,145,348,93);q.fillStyle='#d6c29c';q.beginPath();q.moveTo(18,207);q.quadraticCurveTo(160,124,366,208);q.lineTo(366,238);q.lineTo(18,238);q.fill();q.fillStyle='#627e6c';q.beginPath();q.moveTo(70,170);q.lineTo(110,91);q.lineTo(145,175);q.fill()}const g=new T.Group();g.position.set(x,y,z);g.rotation.y=angle;p.add(g);rounded(g,wood,0,0,0,w+.10,h+.10,.055,.04);const plane=mesh(g,new T.PlaneGeometry(w,h),new T.MeshStandardMaterial({map:new T.CanvasTexture(c),roughness:1}),0,0,.09);return g}
  const sign=art(front,0,3.0,4.15,2.35,.78,'sign');
  // Smooth walnut horseshoe counter and brass footrail.
- const bar=new T.Shape();bar.moveTo(-4.25,3.9);bar.lineTo(.6,3.9);bar.quadraticCurveTo(1.10,3.8,1.10,3.25);bar.quadraticCurveTo(.9,2.50,-.1,2.48);bar.lineTo(-3.6,2.48);bar.quadraticCurveTo(-4.5,2.55,-4.5,3.15);bar.quadraticCurveTo(-4.5,3.7,-4.25,3.9);
+ const bar=new T.Shape();bar.moveTo(-4.25,3.05);bar.lineTo(.6,3.05);bar.quadraticCurveTo(1.10,3.05,1.10,2.85);bar.quadraticCurveTo(.9,2.50,-.1,2.48);bar.lineTo(-3.6,2.48);bar.quadraticCurveTo(-4.5,2.55,-4.5,3.15);bar.quadraticCurveTo(-4.5,3.05,-4.25,3.05);
  slab(root,bar,.21,1.0,wood);slab(root,bar,1.22,.10,0x7f5c40);
  for(let i=0;i<30;i++)box(decor,i%2?0x64442d:0x795138,-3.7+i*.127,.70,-2.465,.055,.91,.034);
  tube(decor,brass,[[-4.1,.4,-2.6],[-3.7,.4,-2.23],[-.4,.4,-2.23],[.75,.4,-2.67]],.027);
@@ -54,6 +54,8 @@ export function buildCafe(worldRoot,pick,isDisposed){
  rounded(root,0xd9ccb1,-1.75,1.9,-4.68,5.8,3.35,.22,.22);
  for(const y of [1.12,1.85,2.60]){rounded(decor,wood,-1.75,y,-4.48,5.5,.065,.40,.035);for(let i=0;i<11;i++){const x=-4.1+i*.44;if(y===1.85&&i>6)continue;const bottle=cyl(decor,[0x698578,0xb18a62,0x8e6d53,0xd5c59c][i%4],x,y+.19,-4.40,.065,.29,.052);cyl(decor,brass,x,y+.365,-4.40,.028,.075)}}
  for(let i=0;i<5;i++)art(decor,-.25+i*.29,2.15+(i%2)*.035,-4.43,.22,.28,i,.02*(i-2));
+ rounded(root,wood,-3.2,1.2,-3.63,1.75,.12,1.15,.08);
+ box(root,wood,-.3,.48,-3.8,9,.58,1.6);
  const machine=rounded(decor,0x9ba99b,-3.15,1.61,-3.38,.84,.52,.51,.09);box(decor,0x394d43,-3.15,1.56,-3.11,.72,.22,.035);rounded(decor,0xc4c9b8,-3.15,1.35,-3.10,.87,.04,.29,.025);
  for(const x of [-3.36,-3.02]){cyl(decor,brass,x,1.5,-3.04,.023,.17);const cup=makeCafeFood('cafe_latte');cup.scale.setScalar(.65);cup.position.set(x,1.36,-3.03);decor.add(cup)}
  cyl(decor,0x46584b,-4.03,1.53,-3.34,.15,.4);cyl(decor,0x9f7753,-4.03,1.87,-3.34,.13,.25,.16);

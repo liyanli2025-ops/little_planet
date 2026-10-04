@@ -22,7 +22,7 @@ export const cafeSeats=cafeTables.flatMap(([x,z],table)=>[-1,1].map((side,i)=>({
 );
 export function islandSky(now=Date.now()){
  const hour=((now/3600000+8)%24+24)%24,slot=Math.floor(now/10800000),wet=((slot*17+13)%19+19)%19<3;
- return {time:now,timezone:'Asia/Shanghai',hour,weather:wet?'rain':'sun',night:hour<6||hour>=18.5,temperature:wet?24:27};
+ return {time:now,timezone:'Asia/Shanghai',hour,weather:wet?'rain':'sun',night:hour<6||hour>=18,temperature:wet?24:27};
 }
 
 // Keep walking inside the inset pavilion footprint, including the arrival deck.

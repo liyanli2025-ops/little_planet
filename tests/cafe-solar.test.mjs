@@ -1,0 +1,4 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {cafeSolar} from '../dist/cafe-solar.js';
+const at=h=>cafeSolar(Date.parse('2026-10-04T00:00:00+08:00')+h*3600000);
+test('island sun rises in east, sets in west and drops below horizon at night',()=>{assert.ok(at(6).direction[0]>.9);assert.ok(Math.abs(at(6).direction[1])<1e-8);assert.ok(at(12).direction[1]>.9);assert.ok(at(18).direction[0]<-.9);assert.equal(at(23).above,false);assert.equal(at(23).daylight,0)});
+test('solar motion is continuous, normalized and repeats after one day',()=>{for(let h=0;h<24;h+=.1){const a=at(h),b=at(h+.001);assert.ok(Math.abs(Math.hypot(...a.direction)-1)<1e-9);assert.ok(Math.hypot(...a.direction.map((v,i)=>v-b.direction[i]))<.001);assert.ok(a.daylight>=0&&a.daylight<=1)}assert.deepEqual(at(6),at(30))});

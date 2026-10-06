@@ -64,3 +64,7 @@
 
 #cafe .cinema-back{left:auto;right:16px;top:max(16px,env(safe-area-inset-top));width:44px;height:44px;padding:0;font-size:28px;line-height:44px;border-radius:50%;z-index:2}
 #cafe .cinema-sound{position:absolute;left:16px;bottom:max(20px,env(safe-area-inset-bottom));z-index:2;border:0;border-radius:22px;padding:10px 16px;background:#f7f1df;color:#345248;font:inherit;cursor:pointer}
+
+#cafe .cinema-video-feed{position:absolute;left:0;top:0;width:1px;height:1px;opacity:.01;pointer-events:none}
+#cafe .cinema-playback{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);max-width:80%;padding:16px 20px;border-radius:16px;background:#17262be8;color:#fff4df;text-align:center;z-index:2;font-size:14px}
+#cafe .cinema-playback[hidden]{display:none}#cafe .cinema-playback button{display:block;margin:12px auto 0;border:0;border-radius:20px;padding:10px 18px;background:#f7f1df;color:#345248;font:inherit}#cafe .cinema-playback button[hidden]{display:none}

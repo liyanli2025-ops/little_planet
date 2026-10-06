@@ -7,7 +7,9 @@ export function createCafeAmbience({host=window,doc=document,load=fetch}={}){
  function unlock(){
   if(!context){const Audio=host.AudioContext||host.webkitAudioContext;if(!Audio)return;context=new Audio();gain=context.createGain();gain.gain.value=0;gain.connect(context.destination);context.onstatechange=()=>{if(active&&!doc.hidden&&context.state==='interrupted')void context.resume().catch(()=>{})}}
   // Called directly from the visit click, before network awaits (mobile autoplay).
-  if(context.state!=='running')void context.resume().catch(()=>{});
+  if(context.state!=='running')void context.resume().then(()=>{start();level()}).catch(()=>{});
+  // Prime the output during the initiating tap, before the audio download finishes.
+  if(!buffer){const prime=context.createBufferSource();prime.buffer=context.createBuffer(1,1,context.sampleRate);prime.connect(gain);prime.start();prime.onended=()=>prime.disconnect()}
   if(!buffer&&!loading)loading=(async()=>{const r=await load(url);if(!r.ok)throw Error('Wave audio unavailable');buffer=await context.decodeAudioData(await r.arrayBuffer());start()})().catch(()=>{}).finally(()=>{loading=null});
   start();
  }
@@ -16,6 +18,6 @@ export function createCafeAmbience({host=window,doc=document,load=fetch}={}){
  function gesture(){if(active)unlock()}
  function pageHide(){if(context)void context.suspend().catch(()=>{})}
  function pageShow(){if(active){unlock();level()}}
- doc.addEventListener('pointerdown',gesture,{passive:true});doc.addEventListener('keydown',gesture);doc.addEventListener('visibilitychange',visibility);host.addEventListener('pagehide',pageHide);host.addEventListener('pageshow',pageShow);
- return {unlock,play(){active=true;unlock();level()},cinema(value){if(cinema===!!value)return;cinema=!!value;level()},room(value){indoor=!!value;level()},stop,dispose(){stop();doc.removeEventListener('pointerdown',gesture);doc.removeEventListener('keydown',gesture);doc.removeEventListener('visibilitychange',visibility);host.removeEventListener('pagehide',pageHide);host.removeEventListener('pageshow',pageShow);if(context)void context.close().catch(()=>{})}};
+ doc.addEventListener('pointerdown',gesture,{passive:true});doc.addEventListener('keydown',gesture);doc.addEventListener('touchend',gesture,{passive:true});doc.addEventListener('click',gesture,{passive:true});doc.addEventListener('visibilitychange',visibility);host.addEventListener('pagehide',pageHide);host.addEventListener('pageshow',pageShow);
+ return {unlock,play(){active=true;unlock();level()},cinema(value){if(cinema===!!value)return;cinema=!!value;level()},room(value){indoor=!!value;level()},stop,dispose(){stop();doc.removeEventListener('pointerdown',gesture);doc.removeEventListener('keydown',gesture);doc.removeEventListener('touchend',gesture);doc.removeEventListener('click',gesture);doc.removeEventListener('visibilitychange',visibility);host.removeEventListener('pagehide',pageHide);host.removeEventListener('pageshow',pageShow);if(context)void context.close().catch(()=>{})}};
 }

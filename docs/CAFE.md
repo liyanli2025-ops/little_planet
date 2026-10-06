@@ -116,3 +116,9 @@ Host and daylight follow-up:
 - `place_cafe_order` is the sole chat tool, constrained to catalog IDs and one drink plus one dessert. The existing cafe service validates presence, queue and ownership. Stable per-message receipt IDs prevent duplicate orders. UI syncs after tool success so the existing preparation motion runs.
 - Requests for recommendations must stay conversational; only explicit ordering or acceptance of a specific recommendation triggers the tool. No live paid-model call was made during local QA.
 - Detail camera can tilt toward the sky without moving under the floor. The weather sun icon looks toward the real world-space sun. Sun position still follows the shared island clock; rain/night hide it. A sunny day does not put the sun in every camera direction.
+
+Sunrise/sunset visual follow-up (2026-10-06):
+- Shared Beijing clock is unchanged (simplified 06:00 sunrise / 18:00 sunset). Twilight now blends orange horizon, pink middle sky and violet upper sky without tone-mapping washout.
+- Existing procedural 3D clouds are flatter, drift faster, and receive peach highlights / violet undersides. No external animated cloud asset was imported.
+- Sun icon toggles a clear seaside observation camera in detail mode; wheel/pinch adjusts its field of view. In globe mode it retains the spherical planet and frames the sun beside it, including portrait screens. Toggling again restores the previous orbit; dragging exits observation. Rain/night exits observation automatically.
+- Validated sunny 06:20 / 17:40 rendered previews, portrait globe framing, real cloud displacement, no browser console errors, and 11 solar/water/coast tests.

@@ -1,3 +1,4 @@
+import {cafeGroundY} from './cafe-navigation.js';
 import * as T from './vendor/three.module.js';
 import {buildMarine} from './cafe-marine.js';
 import {buildCoast} from './cafe-coast.js';
@@ -26,7 +27,7 @@ export function buildCafe(worldRoot,pick,isDisposed){
  slab(root,floorShape,-.02,.18,0x67513e);const floor=slab(root,floorShape,.17,.025,timber);const uv=floor.geometry.attributes.uv,pos=floor.geometry.attributes.position;for(let i=0;i<uv.count;i++)uv.setXY(i,pos.getX(i)/14,pos.getZ(i)/10);uv.needsUpdate=true;
  // Outside arrival deck wraps around a recessed front door.
  rounded(root,timber,0,.10,5.1,3.2,.18,2.3,.55);
- for(let i=0;i<15;i++){const z=6.3+i*.18,top=.10-i*.205,ground=-18.25+Math.sqrt(17.84*17.84-z*z);rounded(root,0xb8a180,0,(top+ground)/2,z,2.5,Math.max(.1,top-ground),.25,.07)}
+ for(let i=0;i<16;i++){const z=6.2+(i+.5)*3/16,top=cafeGroundY(0,z)-.02,ground=top-.25;rounded(root,0xb8a180,0,(top+ground)/2,z,2.5,Math.max(.1,top-ground),.22,.025)}
  const wood=0x59402d,brass=0xb39464,glass=new T.MeshPhysicalMaterial({color:0xc8dfd5,transparent:true,opacity:.10,roughness:.15,metalness:.04,depthWrite:false,side:T.DoubleSide});
  const perimeter=curve.getSpacedPoints(32);
  for(let i=0;i<32;i++){const a=perimeter[i],b=perimeter[i+1],mid=a.clone().add(b).multiplyScalar(.5),length=a.distanceTo(b),angle=Math.atan2(b.x-a.x,b.z-a.z),part=new T.Group();root.add(part);part.userData.wall=true;part.userData.center=mid.clone();occluders.push(part);

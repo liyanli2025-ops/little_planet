@@ -129,3 +129,8 @@ Cafe comfort follow-up (2026-10-06):
 - Clicking the host no longer selects a seat. Standing visitors walk to the counter; seated visitors retain their seat. Private chat accepts present visitors regardless of seat, while actual orders still use the existing counter/presence/queue validations. Idle host approaches the closest counter visitor; preparation has priority. Four display cups now sit on the actual counter surface.
 - Seated guests keep their meal until standing/leaving; tray shell hides, food rests at table height. Alternating cup and dessert-spoon cycles include pauses and small body movement. Standing clears all meal objects. Serving trays have a generous invisible hit target so their empty middle remains clickable.
 - QA: 39 related unit tests passed; mobile standing-chat, wall hide/restore, click-to-pickup, click-to-seat, repeated dining and stand cleanup passed without console errors. Warm re-entry made no extra cafe asset requests (37 before/37 after); local headless re-entry measured 2.4s, not a production/mobile speed guarantee.
+
+Beach exit follow-up (2026-10-06):
+- Exit no longer stops at the arrival deck. Door/sea clicks route through the doorway, down a shared-height stair corridor, onto dry sand in front of the cafe. Clicking reachable front-beach sand chooses a destination; open water stays outside the walkable area.
+- Exterior building clicks return via the stairs and doorway. Indoor chair/host/display targets are disabled from outside so they cannot intercept roof clicks. Terrace seating remains selectable.
+- Beach framing includes the stairs and visitor. Server presence validates the same expanded walkable area and observers use the shared ground height.

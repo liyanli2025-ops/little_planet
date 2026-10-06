@@ -1,3 +1,4 @@
+import {cafeRouteWalkable} from '../dist/cafe-navigation.js';
 import {randomUUID} from 'node:crypto';
 import {fail} from './store.mjs';
 import {cafeMenu,cafeSeats,islandSky} from '../dist/cafe-catalog.js';
@@ -20,7 +21,7 @@ export function createCafe(db,{partner=()=>null,deliver=()=>{},profile=u=>({outf
   if(b.action==='join'){const g=join(u);if(b.fresh){g.held=null;g.dining=null;g.seat=null;g.x=0;g.z=4.5;save(g)}return view(u)}
   const g=guests.get(u.id);fail(g,'请重新进入咖啡馆',409);g.seen=now();
   if(b.action==='sync'){
-   if(!g.seat&&(!g.handoff||now()>=g.handoff.endsAt)&&[b.x,b.z,b.yaw].every(Number.isFinite)){g.x=Math.max(-6.5,Math.min(6.9,b.x));g.z=Math.max(-4,Math.min(7.15,b.z));g.yaw=b.yaw%(Math.PI*2)}
+   if(!g.seat&&(!g.handoff||now()>=g.handoff.endsAt)&&[b.x,b.z,b.yaw].every(Number.isFinite)){if(cafeRouteWalkable(b.x,b.z)){g.x=b.x;g.z=b.z;}g.yaw=b.yaw%(Math.PI*2)}
   }else if(b.action==='seat'){
    fail(!g.handoff||now()>=g.handoff.endsAt,'先接好托盘再走吧',409);const s=cafeSeats.find(s=>s.id===b.seat);fail(s,'座位不存在');fail(![...guests.values()].some(o=>o.id!==u.id&&o.room===g.room&&o.seat===s.id),'这里已经有人坐了',409);if(g.seat!==s.id){g.dining=g.held?{startedAt:now(),items:[...g.held.items]}:null}Object.assign(g,{seat:s.id,x:s.x,z:s.z,yaw:s.yaw});
   }else if(b.action==='stand'){const s=cafeSeats.find(s=>s.id===g.seat);if(g.seat){g.held=null;g.dining=null;save(g)}g.seat=null;g.x=s?.approachX??g.x;g.z=s?.approachZ??g.z+.58;

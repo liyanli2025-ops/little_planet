@@ -33,9 +33,9 @@ export function createCafeScene(host,{onPick,onMove,onError,onHostPoint,onEnviro
 
   for(const [id,b]of guests)if(!ids.has(id)){b.avatar.removeFromParent();disposeCafeObject(b.avatar);guests.delete(id)}
  }
- const blocked=(x,z)=>{const floor=guests.get(self)?.data.floor||0;return !cafeRouteWalkable(x,z,floor)||(!floor&&((z<-1.95&&x>-4.85&&x<4.9)||(x<-5.5&&z<-.5)||Math.hypot(x-6,z-1.4)<.5||(x>2.05&&x<6.6&&z>6.6&&z<7.45)||cafeTables.some(([a,b])=>Math.hypot(x-a,z-b)<.64)))||[...guests.entries()].some(([id,b])=>id!==self&&(b.data.floor||0)===floor&&Math.hypot(x-b.avatar.position.x,z-b.avatar.position.z)<.72)};
+ const blocked=(x,z)=>{const floor=guests.get(self)?.data.floor||0;return !cafeRouteWalkable(x,z,floor)||(floor===1&&cafeSeats.some(s=>s.floor===1&&Math.hypot(x-s.x,z-s.z)<.5))||(!floor&&((z<-1.95&&x>-4.85&&x<4.9)||(x<-5.5&&z<-.5)||Math.hypot(x-6,z-1.4)<.5||(x>2.05&&x<6.6&&z>6.6&&z<7.45)||cafeTables.some(([a,b])=>Math.hypot(x-a,z-b)<.64)))||[...guests.entries()].some(([id,b])=>id!==self&&(b.data.floor||0)===floor&&Math.hypot(x-b.avatar.position.x,z-b.avatar.position.z)<.72)};
  function routeTo(x,z,done){const b=guests.get(self);if(!b)return;const start=b.avatar.position.clone(),step=.30;const key=(x,z)=>x+','+z,cell=v=>Math.round(v/step);const sx=cell(start.x),sz=cell(start.z),tx=cell(x),tz=cell(z),queue=[[sx,sz]],prev=new Map([[key(sx,sz),null]]);let found=null;
-  for(let i=0;i<queue.length&&i<4500;i++){const [a,c]=queue[i];if(Math.hypot(a*step-x,c*step-z)<.38){found=[a,c];break}for(const [dx,dz]of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=a+dx,nz=c+dz,k=key(nx,nz);if(prev.has(k)||blocked(nx*step,nz*step))continue;prev.set(k,[a,c]);queue.push([nx,nz])}}
+  for(let i=0;i<queue.length&&i<4500;i++){const [a,c]=queue[i];if(Math.hypot(a*step-x,c*step-z)<.38){found=[a,c];break}for(const [dx,dz]of [[1,0],[-1,0],[0,1],[0,-1]]){const nx=a+dx,nz=c+dz,k=key(nx,nz);if(prev.has(k)||(blocked(nx*step,nz*step)&&!(b.data.floor===1&&cafeRouteWalkable(nx*step,nz*step,1)&&Math.hypot(nx*step-start.x,nz*step-start.z)<.7)))continue;prev.set(k,[a,c]);queue.push([nx,nz])}}
   if(!found){onError?.('这里暂时走不过去');return false}const points=[];for(let p=found;p;p=prev.get(key(...p)))points.push(new T.Vector3(p[0]*step,.22,p[1]*step));path=points.reverse().slice(1);arrive=done;moving=true;return true;
  }
  let starView=null,sunView=null;const frames=new Map();

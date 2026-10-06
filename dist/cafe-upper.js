@@ -48,7 +48,7 @@ export function buildCafeUpper(parent,pick){
  for(const x of [-8.22,-7.08]){line([[x,upperGroundY(x,4.2)+.8,4.2],[x,UPPER_Y+.8,-1.8]],.032);for(let i=0;i<=7;i++){const z=4.2-i*6/7;cylinder(x,upperGroundY(-7.65,z)+.4,z,.023,.8)}}
  const bridge=box(-6.5,UPPER_Y-.08,-1.8,2.7,.16,.75);pick(bridge,'upper-ground');pick(stairs,'stairs');const upHit=box(-7.65,upperGroundY(-7.65,4.2)+.3,4.2,1.2,.6,.6,new T.MeshBasicMaterial({visible:false}));pick(upHit,'stairs');
  for(const x of [-7.65,-6]){line([[x,UPPER_Y+.8,-2.17],[x+1.1,UPPER_Y+.8,-2.17]],.03)}
- const starsMarker=cylinder(3.1,UPPER_Y+.035,3.0,.33,.035,'brass');pick(starsMarker,'stargaze');
+
  const garden=buildTerraceGarden(group);
  return {group,tick(daylight,upper){garden.tick(daylight);for(const l of lights)l.intensity=(1-daylight)*(l.userData.power??(l.position.x<0?7:3));roofs.forEach(o=>o.visible=!upper)},dispose(){}};
 }

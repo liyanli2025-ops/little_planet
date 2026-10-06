@@ -23,12 +23,15 @@ export function createCafeWater(scene,renderer,camera,horizon,sky){
  vec3 displaced=worldPos+w.displacement*fade;`)
  .replace('vNormal   = w.normal;','vNormal=normalize(mat3(modelMatrix)*normal+(w.normal-vec3(0.,1.,0.))*fade*.55);')
  .replace('vHeight   = w.height;','vHeight=w.height*fade;');
- Object.assign(u,{cafeGlobe:{value:0},cafeTop:sky.top,cafeEdge:sky.edge,cafeLight:sky.light,cafeWarm:sky.warm});
- const atmosphere=`uniform vec3 cafeTop,cafeEdge;uniform float cafeLight,cafeWarm,cafeGlobe;
+ Object.assign(u,{cafeMoonDir:sky.moonDirection,cafeMoonLight:sky.moonLight,cafeGlobe:{value:0},cafeTop:sky.top,cafeEdge:sky.edge,cafeLight:sky.light,cafeWarm:sky.warm});
+ const atmosphere=`uniform vec3 cafeTop,cafeEdge,cafeMoonDir;uniform float cafeMoonLight;uniform float cafeLight,cafeWarm,cafeGlobe;
  vec3 cafeAtmosphere(vec3 d,vec3 sun){return mix(cafeEdge,cafeTop,smoothstep(0.,.75,max(0.,d.y)))+vec3(.32,.15,.055)*pow(max(0.,dot(d,sun)),22.)*cafeLight*(.3+cafeWarm);}
  `;
  m.fragmentShader=m.fragmentShader.replace('void main(){',atmosphere+'void main(){').replaceAll('atmosphere(Rsky, sunDir)','cafeAtmosphere(Rsky, sunDir)').replaceAll('atmosphere(refr, sunDir)','cafeAtmosphere(refr, sunDir)').replaceAll('atmosphere(horizonDir, sunDir)','cafeAtmosphere(horizonDir, sunDir)')
- .replace('gl_FragColor = vec4(color, 1.0);',`color*=.16+.84*cafeLight;gl_FragColor=vec4(color,1.);
+ .replace('gl_FragColor = vec4(color, 1.0);',`color*=.16+.84*cafeLight;
+ vec3 moonReflect=reflect(-V,normalize(N));float moonAlignment=max(0.,dot(moonReflect,normalize(cafeMoonDir)));float moonGlint=pow(moonAlignment,220.)*.8+pow(moonAlignment,32.)*.07;
+ color+=vec3(.75,.82,1.)*moonGlint*cafeMoonLight*smoothstep(0.,.12,cafeMoonDir.y);
+ gl_FragColor=vec4(color,1.);
  #include <tonemapping_fragment>
  #include <colorspace_fragment>`);
  m.fragmentShader=m.fragmentShader.replace('N = normalize(vec3(N.x + dsum.x, N.y, N.z + dsum.y));', 'if(cafeGlobe>.5){vec3 q=vWorldPos*2.8+vec3(uTime*.13,uTime*.09,-uTime*.11);vec3 xy=noised(q.xy),yz=noised(q.yz),zx=noised(q.zx);vec3 g=vec3(xy.y+zx.z,xy.z+yz.y,yz.z+zx.y);N=normalize(N+(g-N*dot(g,N))*.075);}else N=normalize(vec3(N.x+dsum.x,N.y,N.z+dsum.y));')

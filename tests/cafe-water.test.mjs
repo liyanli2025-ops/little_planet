@@ -10,3 +10,9 @@ test('radial mesh is ordered and dry sand remains above the water',()=>{
 });
 
 test('dolphin routes and splash rings stay offshore throughout the leap',()=>{for(const a of [.75,2.05,3.75]){const r=Math.sin(coastEdge(a))*17.8+5.5;for(let z=-4;z<=4;z+=.1){const x=Math.cos(a)*r,y=Math.sin(a)*r+z,edge=Math.sin(coastEdge(Math.atan2(y,x)))*17.8;assert.ok(Math.hypot(x,y)>edge+1)}}});
+
+test('cinema chairs retain a broad dry-sand margin and shore has no sharp seam',()=>{
+ for(const [x,z] of [[-10.7,8],[-9.2,8],[-7.7,8],[-9.4,9],[-7.9,9],[-11.93,5.6]]){const radius=Math.sin(waterEdge(Math.atan2(z,x)))*17.8;assert.ok(radius-Math.hypot(x,z)>4,'cinema shore buffer');assert.ok(detailBeachY(x,z)>-1.65)}
+ for(let i=0;i<720;i++){const a=i*Math.PI/360;assert.ok(Math.abs(waterEdge(a+.001)-waterEdge(a))<.002)}
+ assert.ok(Math.abs(waterEdge(0)-waterEdge(2*Math.PI))<1e-10);
+});

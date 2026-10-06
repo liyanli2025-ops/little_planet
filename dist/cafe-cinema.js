@@ -28,10 +28,20 @@ export function createCafeCinema(parent,pick,host,{onSound}={}){
   for(const x of [-.34,.34]){for(const z of [-.25,.25])part(x,.2,z,.055,.4,.055);part(x,.59,-.28,.055,.78,.055);part(x,.55,.02,.055,.06,.65)}
   part(0,.38,0,.68,.08,.62,fabric);const back=part(0,.69,-.27,.62,.58,.07,fabric);back.rotation.x=-.12;
   const cushion=new T.Mesh(new T.SphereGeometry(1,16,12),new T.MeshStandardMaterial({color:0xf0deba,roughness:1}));cushion.scale.set(.24,.15,.07);cushion.position.set(.02,.6,-.18);g.add(cushion);
+  // A softly folded throw over the back of alternating chairs.
+  if(i%2){const vertices=[],indices=[];for(let row=0;row<=10;row++)for(let col=0;col<=6;col++){const u=col/6,v=row/10;vertices.push((u-.5)*.48,.99-v*.47,-.32-.07*Math.sin(v*Math.PI)+.012*Math.sin(u*6*Math.PI));if(row<10&&col<6){const k=row*7+col;indices.push(k,k+1,k+7,k+1,k+8,k+7)}}const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(vertices,3));geo.setIndex(indices);geo.computeVertexNormals();g.add(new T.Mesh(geo,new T.MeshStandardMaterial({color:i===1?0xcf9675:0xd8cbaa,roughness:1,side:T.DoubleSide})))}
   // Low individual table: matches the seated food position in poseCafeTray.
   part(0,.55,.63,.72,.055,.36);for(const x of [-.27,.27])part(x,.265,.63,.045,.53,.045);
   pick(g,'seat',s.id);
  }
+ // A low rope-and-lantern edge gives the seating a sheltered boundary,
+ // with a broad strip of dry sand still beyond it. It stays out of the aisle.
+ const lanternGlass=new T.MeshStandardMaterial({color:0xffddaa,emissive:0xffbc69,emissiveIntensity:.7,roughness:.6});
+ const ropeMaterial=new T.MeshStandardMaterial({color:0xb09a74,roughness:1});
+ const edgePosts=[[-13.25,4.3],[-13.4,6.5],[-13.1,8.7],[-12.1,10.8]];
+ const ropePoints=[];
+ for(const [x,z]of edgePosts){const y=detailBeachY(x,z);box(x,y+.34,z,.09,.68,.09);ropePoints.push(new T.Vector3(x,y+.60,z));box(x,y+.79,z,.22,.055,.22);box(x,y+.92,z,.15,.22,.15,lanternGlass);box(x,y+1.06,z,.22,.055,.22);for(const dx of [-.09,.09])for(const dz of [-.09,.09])box(x+dx,y+.92,z+dz,.022,.25,.022)}
+ for(let i=1;i<ropePoints.length;i++){const a=ropePoints[i-1],b=ropePoints[i],mid=a.clone().lerp(b,.5);mid.y-=.15;group.add(new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3([a,mid,b]),20,.014,5,false),ropeMaterial))}
  const px=-8.7,pz=10.05,py=detailBeachY(px,pz);box(px,py+.25,pz,.48,.5,.45);box(px,py+.6,pz,.38,.2,.31,new T.MeshStandardMaterial({color:0xd5c9ad,roughness:.7}));
  const lens=new T.Mesh(new T.CylinderGeometry(.065,.065,.10,16),new T.MeshBasicMaterial({color:0xffeac1}));lens.rotation.x=Math.PI/2;lens.position.set(px,py+.61,pz-.19);group.add(lens);
  const end=new T.Vector3(sx,base+2.12,sz+.09),start=lens.position.clone(),beamDirection=end.clone().sub(start);

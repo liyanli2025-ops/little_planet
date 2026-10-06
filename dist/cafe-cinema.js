@@ -61,21 +61,22 @@ export function createCafeCinema(parent,pick,host,{onSound}={}){
  const video=document.createElement('video');video.playsInline=true;video.muted=true;video.preload='none';video.setAttribute('playsinline','');video.setAttribute('aria-label','海风放映室影片');
  const texture=new T.VideoTexture(video);texture.colorSpace=T.SRGBColorSpace;
  const ui=document.createElement('div');ui.className='cinema-strip';ui.hidden=true;ui.innerHTML='<button data-film="fold" aria-label="收起电影面板">×</button><div><strong>海风放映室</strong><span class="cinema-status" role="status"></span></div><button data-film="sound">开启电影声音</button><button data-film="large">看大银幕</button><button data-film="retry" hidden>重新连接</button><details><summary>片单与署名</summary><div class="cinema-credits"></div></details>';
- const chip=document.createElement('button');chip.className='cinema-chip';chip.textContent='放映室 · 展开';chip.hidden=true;host.append(ui,chip);
- let folded=false;chip.onclick=()=>{folded=false;ui.hidden=false;chip.hidden=true};
- const overlay=document.createElement('div');overlay.className='cinema-overlay';overlay.hidden=true;overlay.setAttribute('role','dialog');overlay.setAttribute('aria-label','银幕近景');overlay.innerHTML='<button class="cinema-back">返回现场</button>';overlay.append(video);host.append(overlay);
+ host.append(ui);let folded=false,wantsEnlarge=false;
+ function dismiss(){folded=true;ui.hidden=true}
+ function showInfo(){folded=false;ui.hidden=false}
+ const overlay=document.createElement('div');overlay.className='cinema-overlay';overlay.hidden=true;overlay.setAttribute('role','dialog');overlay.setAttribute('aria-label','银幕近景');overlay.innerHTML='<button class="cinema-back" aria-label="退出全屏，恢复场景" title="退出全屏">×</button><button class="cinema-sound" aria-label="开启电影声音">开启声音</button>';overlay.append(video);host.append(overlay);
  let current=null,program=null,active=false,disposed=false,failed=false,pending=false,blocked=false,playingAttempt=false,lastSync=0,lastStatus='',audible=false;
  const status=ui.querySelector('.cinema-status'),retry=ui.querySelector('[data-film="retry"]');
  function credit(f){const el=ui.querySelector('.cinema-credits');el.replaceChildren();const link=document.createElement('a');link.href=f.page;link.target='_blank';link.rel='noopener';link.textContent=f.original;const license=document.createElement('a');license.href=f.licenseUrl;license.target='_blank';license.rel='noopener';license.textContent=f.license;el.append(link,document.createTextNode(' · '+f.credit+' · '),license)}
- function muted(value){video.muted=value;audible=!value;ui.querySelector('[data-film="sound"]').textContent=value?'开启电影声音':'关闭电影声音';onSound?.(active&&audible)}
+ function muted(value){video.muted=value;audible=!value;ui.querySelector('[data-film="sound"]').textContent=value?'开启电影声音':'关闭电影声音';overlay.querySelector('.cinema-sound').textContent=value?'开启声音':'静音';overlay.querySelector('.cinema-sound').setAttribute('aria-label',value?'开启电影声音':'关闭电影声音');onSound?.(active&&audible)}
  function play(){if(disposed||!active||failed||blocked||playingAttempt||!program?.open||program.intermission)return;playingAttempt=true;video.play().catch(e=>{if(e.name==='AbortError')return;blocked=true;if(active&&!disposed&&program?.open){status.textContent='点“重新连接”开始播放';retry.hidden=false}}).finally(()=>{playingAttempt=false})}
  video.addEventListener('loadedmetadata',()=>{if(disposed||!program||!current)return;pending=false;status.textContent=lastStatus;retry.hidden=true;video.currentTime=Math.min(program.offset,Math.max(0,video.duration-.15));play()});
  video.addEventListener('error',()=>{if(!current||disposed)return;failed=true;pending=false;screenMaterial.map=posterTexture;screenMaterial.needsUpdate=true;status.textContent='片源暂时无法连接，可以稍后重试';retry.hidden=false});
- function enlarge(){if(!active)return;overlay.hidden=false;document.body.classList.add('cinema-closeup');overlay.querySelector('button').focus();play()}
- function shrink(){overlay.hidden=true;document.body.classList.remove('cinema-closeup');(folded?chip:ui.querySelector('[data-film="large"]')).focus()}
- overlay.querySelector('button').onclick=shrink;
- overlay.addEventListener('keydown',e=>{if(e.key==='Escape')shrink();if(e.key==='Tab'){e.preventDefault();overlay.querySelector('button').focus()}});
- ui.onclick=e=>{const key=e.target.closest('[data-film]')?.dataset.film;if(key==='fold'){folded=true;ui.hidden=true;chip.hidden=false;chip.focus()}if(key==='sound'){blocked=false;muted(!video.muted);play()}if(key==='large')enlarge();if(key==='retry'){failed=false;blocked=false;retry.hidden=true;pending=true;video.load();play()}};
+ function enlarge(){if(!program?.open||program.intermission){wantsEnlarge=false;showInfo();return}wantsEnlarge=true;if(!active)return;wantsEnlarge=false;dismiss();overlay.hidden=false;document.body.classList.add('cinema-closeup');overlay.querySelector('button').focus();play()}
+ function shrink(){wantsEnlarge=false;overlay.hidden=true;document.body.classList.remove('cinema-closeup');host.querySelector('canvas')?.focus({preventScroll:true})}
+ overlay.querySelector('button').onclick=shrink;overlay.querySelector('.cinema-sound').onclick=()=>{blocked=false;muted(!video.muted);play()};
+ overlay.addEventListener('keydown',e=>{if(e.key==='Escape')shrink();if(e.key==='Tab'){e.preventDefault();const buttons=overlay.querySelectorAll('button');(document.activeElement===buttons[0]?buttons[1]:buttons[0]).focus()}});
+ ui.onclick=e=>{const key=e.target.closest('[data-film]')?.dataset.film;if(key==='fold')dismiss();if(key==='sound'){blocked=false;muted(!video.muted);play()}if(key==='large')enlarge();if(key==='retry'){failed=false;blocked=false;retry.hidden=true;pending=true;video.load();play()}};
  function visibility(){if(document.hidden){video.pause();onSound?.(false)}}
  document.addEventListener('visibilitychange',visibility);window.addEventListener('pagehide',visibility);
  function tick(time,visible,overview=false){
@@ -84,7 +85,7 @@ export function createCafeCinema(parent,pick,host,{onSound}={}){
    group.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),new T.Vector3(x,y,z).normalize());group.position.set(x/scale,(-18.25+y)/scale,z/scale).sub(center.applyQuaternion(group.quaternion));
   }else{group.position.set(0,0,0);group.quaternion.identity()}
 
-  program=cinemaProgram(time);active=visible&&!document.hidden;ui.hidden=!visible||folded;chip.hidden=!visible||!folded;document.body.classList.toggle('at-cinema',visible);
+  program=cinemaProgram(time);active=visible&&!document.hidden;ui.hidden=!visible||folded;if(wantsEnlarge&&active&&program.open)enlarge();document.body.classList.toggle('at-cinema',visible);
   screen.scale.y=program.open?1:.075;screen.position.y=program.open?base+2.12:base+3.4;lamp.intensity=program.open?3:0;beam.visible=program.open&&visible&&video.readyState>=2;bulbs.forEach(b=>b.visible=program.open);
   const description=program.open?(program.intermission?'稍歇片刻，即将播放下一部':program.film.title+' · 全岛同步放映'):'白天在这里歇歇脚 · 今晚 18:00 开映';
   if(description!==lastStatus){lastStatus=description;if(!failed)status.textContent=description;credit(program.film)}
@@ -94,5 +95,5 @@ export function createCafeCinema(parent,pick,host,{onSound}={}){
   if(failed)return;
   if(video.readyState>=2&&!video.seeking){if(time-lastSync>2500){lastSync=time;if(Math.abs(video.currentTime-program.offset)>2)video.currentTime=Math.min(program.offset,Math.max(0,video.duration-.15))}if(screenMaterial.map!==texture){screenMaterial.map=texture;screenMaterial.needsUpdate=true}if(video.paused)play()}
  }
- return {ready,group,tick,enlarge,state:()=>({film:current,time:video.currentTime,open:program?.open,active,failed,muted:video.muted,ready:video.readyState}),dispose(){disposed=true;document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',visibility);document.body.classList.remove('cinema-closeup');document.body.classList.remove('at-cinema');current=null;video.pause();video.removeAttribute('src');video.load();ui.remove();chip.remove();overlay.remove();texture.dispose();posterTexture.dispose();onSound?.(false)}};
+ return {ready,group,tick,enlarge,dismiss,showInfo,state:()=>({film:current,time:video.currentTime,open:program?.open,active,failed,muted:video.muted,ready:video.readyState}),dispose(){disposed=true;document.removeEventListener('visibilitychange',visibility);window.removeEventListener('pagehide',visibility);document.body.classList.remove('cinema-closeup');document.body.classList.remove('at-cinema');current=null;video.pause();video.removeAttribute('src');video.load();ui.remove();overlay.remove();texture.dispose();posterTexture.dispose();onSound?.(false)}};
 }

@@ -16,3 +16,12 @@ test('cinema chairs retain a broad dry-sand margin and shore has no sharp seam',
  for(let i=0;i<720;i++){const a=i*Math.PI/360;assert.ok(Math.abs(waterEdge(a+.001)-waterEdge(a))<.002)}
  assert.ok(Math.abs(waterEdge(0)-waterEdge(2*Math.PI))<1e-10);
 });
+
+test('whole shoreline stays gently curved without deep bays or radial folds',()=>{
+ const samples=Array.from({length:1440},(_,i)=>waterEdge(i*Math.PI/720));
+ assert.ok(Math.max(...samples)-Math.min(...samples)<.55,'no deep angular cut into the beach');
+ assert.ok(Math.max(...samples)<Math.PI/2,'no folded spherical shoreline');
+ assert.ok(Math.max(...samples)-Math.min(...samples)>.30,'retain natural bays');
+ const h=.002;
+ for(let i=0;i<720;i++){const a=i*Math.PI/360;assert.ok(Math.abs((waterEdge(a+h)-2*waterEdge(a)+waterEdge(a-h))/(h*h))<2.,'no concentrated notch curvature')}
+});

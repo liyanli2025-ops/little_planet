@@ -24,3 +24,9 @@ Big Buck Bunny — (c) 2008 Blender Foundation / www.bigbuckbunny.org, director 
 https://peach.blender.org/about/
 Both films: Creative Commons Attribution 3.0, https://creativecommons.org/licenses/by/3.0/
 Official 480p encodes shown unchanged, fitted to the virtual screen. Playback synchronized to Beijing time.
+
+Beach Chair by Akshat
+https://sketchfab.com/shooter24994
+https://sketchfab.com/3d-models/beach-chair-30ae401a142d4e648ec7975631ed87b9
+CC BY 4.0 https://creativecommons.org/licenses/by/4.0/
+Original GLB supplied by user; runtime scale and orientation adjusted.

@@ -1,0 +1,7 @@
+import {detailBeachY} from './cafe-water-surface.js';
+export const cinemaFilms=[
+ {id:'llamigos',title:'羊驼与小企鹅',original:'Caminandes: Llamigos',duration:150,source:'https://video.blender.org/object-storage/web_videos/23f3ef79-15dc-44c5-aa45-cf92e78a4509-480.mp4',credit:'© 2016 Blender Foundation · Pablo Vazquez',license:'CC BY 3.0',licenseUrl:'https://creativecommons.org/licenses/by/3.0/',page:'https://studio.blender.org/blog/caminandes-3-caminandes-llamigos/'},
+ {id:'bunny',title:'大雄兔',original:'Big Buck Bunny',duration:596,source:'https://video.blender.org/object-storage/web_videos/bf1f3fb5-b119-4f9f-9930-8e20e892b898-480.mp4',credit:'© 2008 Blender Foundation · Sacha Goedegebure',license:'CC BY 3.0',licenseUrl:'https://creativecommons.org/licenses/by/3.0/',page:'https://peach.blender.org/about/'}
+];
+export const cinemaSeats=[[-10.7,8.0],[-9.2,8.0],[-7.7,8.0],[-9.4,9.0],[-7.9,9.0]].map(([x,z],i)=>({id:'cinema-'+i,zone:'cinema',table:8,x,z,y:detailBeachY(x,z)+.4,avatarY:detailBeachY(x,z)+.34,yaw:Math.PI,approachX:x,approachZ:z+.55}));
+export function cinemaProgram(time){const beijing=time+8*3600000,day=Math.floor(beijing/86400000),hour=(beijing-day*86400000)/3600000,open=hour>=18||hour<6,start=(day-(hour<6?1:0))*86400000+18*3600000-8*3600000,total=cinemaFilms.reduce((n,f)=>n+f.duration+20,0);let offset=((time-start)/1000%total+total)%total;for(const film of cinemaFilms){if(offset<film.duration+20)return {open,film,offset:Math.min(offset,film.duration-.1),intermission:offset>=film.duration};offset-=film.duration+20}}

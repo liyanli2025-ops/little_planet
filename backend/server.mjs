@@ -1,3 +1,4 @@
+import {cinemaStream} from './cinema-stream.mjs';
 import {createCafeChat} from './cafe-chat.mjs';
 import {createCafe} from './cafe.mjs';
 import {studioLayout} from '../dist/studio-layout.js';
@@ -81,6 +82,7 @@ async function passwordHash(password,salt){
 function registrationInfo(){return {first:db.prepare('SELECT COUNT(*) AS n FROM accounts').get().n===0,full:false,availableActors:[0,1],canManage:false}}
 function identity(u){const p=hub.partner(u),avatars=[0,1];avatars[u.slot]=u.avatar;if(p)avatars[1-u.slot]=p.avatar;return {authenticated:true,secure,accountId:u.id,legacyActor:db.prepare('SELECT slot FROM users WHERE username=?').get(u.username)?.slot,space:u.space,actor:u.slot,username:u.username,nickname:u.nickname||u.username,displayNames:hub.displayNames(u),partnerNickname:p?.nickname||p?.username||null,csrf:u.csrf,partner:p?.username||null,paired:!!p,avatars,invitationExpires:db.prepare('SELECT expires FROM account_invites WHERE account=?').get(u.id)?.expires||null,registration:registrationInfo()}}
 async function api(req,res,p){
+ if(['GET','HEAD'].includes(req.method)&&p.startsWith('/api/cinema/film/')){requireUser(req);return cinemaStream(req,res,p.slice('/api/cinema/film/'.length))}
  const current=session(req),services=current?hub.space(current.space):null,store=services?.store,mediaService=services?.mediaService,musicService=services?.musicService,weatherService=services?.weatherService;
  if(p!=='/api/presence'&&p!=='/api/cafe')store?.expireMeals();
  if(req.method==='GET'&&p==='/api/health')return json(res,200,{ok:true});

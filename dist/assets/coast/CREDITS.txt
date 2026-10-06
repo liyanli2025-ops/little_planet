@@ -15,3 +15,12 @@ https://github.com/achrefelouafi/WaterThreeJS
 Source revision: 4f85f4a557da80a1dd24b9243869177f30c604c7
 Adapted wave/foam/refraction shaders for curved coast, globe view, shared solar lighting and mobile quality.
 Full license: ../../vendor/water-threejs/LICENSE
+
+Beach cinema (streamed from official Blender video hosting, no video in this package):
+Caminandes 3: Llamigos — (c) 2016 Blender Foundation, director Pablo Vazquez.
+https://studio.blender.org/blog/caminandes-3-caminandes-llamigos/
+https://video.blender.org/w/23f3ef79-15dc-44c5-aa45-cf92e78a4509
+Big Buck Bunny — (c) 2008 Blender Foundation / www.bigbuckbunny.org, director Sacha Goedegebure.
+https://peach.blender.org/about/
+Both films: Creative Commons Attribution 3.0, https://creativecommons.org/licenses/by/3.0/
+Official 480p encodes shown unchanged, fitted to the virtual screen. Playback synchronized to Beijing time.

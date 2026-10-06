@@ -12,7 +12,7 @@ test('island day and night follow Beijing time independently of visitor timezone
 test('a full partner room is reported instead of silently separating the pair',()=>{const f=setup();try{for(const id of [1,3,4,5,6,7,8,9])f.cafe.update(f.user(id),{action:'join'});assert.throws(()=>f.cafe.update(f.user(2),{action:'join'}),/对方所在.*已满/);f.cafe.update(f.user(3),{action:'leave'});assert.equal(f.cafe.update(f.user(2),{action:'join'}).room,1)}finally{f.db.close()}});
 
 test('expanded curved pavilion keeps seat approaches walkable and excludes sea corners',()=>{
- for(const seat of cafeSeats)assert.equal(cafeWalkable(seat.approachX??seat.x,seat.approachZ??seat.z+.58),true,seat.id);
+ for(const seat of cafeSeats)assert.equal(cafeRouteWalkable(seat.approachX??seat.x,seat.approachZ??seat.z+.58),true,seat.id);
  assert.equal(cafeWalkable(0,5.8),true);
  assert.equal(cafeWalkable(6.4,4),false);
  assert.equal(cafeWalkable(0,7),false);
@@ -40,3 +40,5 @@ test('meals remain after multiple cycles and fresh entry clears held items',()=>
 import {cafeRouteWalkable,cafeGroundY,beachWalkable} from '../dist/cafe-navigation.js';
 test('doorway stair corridor reaches dry beach without a height jump',()=>{let previous=.22;for(let z=5.6;z<=9.6;z+=.05){assert.ok(cafeRouteWalkable(0,z),String(z));const y=cafeGroundY(0,z);assert.ok(Math.abs(y-previous)<.2,String(z));previous=y}assert.ok(beachWalkable(0,9.6));assert.equal(beachWalkable(0,30),false);assert.equal(cafeRouteWalkable(2,8),false)});
 test('beach coordinates sync to other guests while deep sea coordinates are rejected',()=>{const f=setup();try{const u=f.user(1),peer=f.user(2);f.cafe.update(u,{action:'join'});f.cafe.update(peer,{action:'join'});f.cafe.update(u,{action:'sync',x:0,z:9.6,yaw:0});assert.equal(f.cafe.view(peer).guests.find(g=>g.id===1).z,9.6);f.cafe.update(u,{action:'sync',x:0,z:100,yaw:0});assert.equal(f.cafe.view(peer).guests.find(g=>g.id===1).z,9.6)}finally{f.db.close()}});
+
+test('cinema visitors share seats and stand on the beach without retaining a meal',()=>{const f=setup();try{const u=f.user(1),peer=f.user(2);f.cafe.update(u,{action:'join'});f.cafe.update(peer,{action:'join'});f.cafe.update(u,{action:'seat',seat:'cinema-0'});assert.throws(()=>f.cafe.update(peer,{action:'seat',seat:'cinema-0'}),/已经有人/);assert.equal(f.cafe.view(peer).guests.find(g=>g.id===1).seat,'cinema-0');const g=f.cafe.update(u,{action:'stand'}).guests.find(g=>g.id===1);assert.ok(beachWalkable(g.x,g.z));assert.equal(g.held,null)}finally{f.db.close()}});

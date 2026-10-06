@@ -1,8 +1,8 @@
 // Independent ambience bus: never changes the music player or media session.
 export function createCafeAmbience({host=window,doc=document,load=fetch}={}){
- let context,gain,buffer,loading,source,active=false,indoor=false;
+ let context,gain,buffer,loading,source,active=false,indoor=false,cinema=false;
  const url=new URL('./assets/audio/cafe-waves.mp3',import.meta.url);
- function level(){if(!gain)return;const t=context.currentTime;gain.gain.cancelScheduledValues(t);gain.gain.setTargetAtTime(active&&!doc.hidden?(indoor?.22:.32):0,t,.45)}
+ function level(){if(!gain)return;const t=context.currentTime;gain.gain.cancelScheduledValues(t);gain.gain.setTargetAtTime(active&&!doc.hidden?(cinema?.10:indoor?.22:.32):0,t,.45)}
  function start(){if(!active||doc.hidden||!buffer||source)return;source=context.createBufferSource();source.buffer=buffer;source.loop=true;source.connect(gain);source.start();level()}
  function unlock(){
   if(!context){const Audio=host.AudioContext||host.webkitAudioContext;if(!Audio)return;context=new Audio();gain=context.createGain();gain.gain.value=0;gain.connect(context.destination);context.onstatechange=()=>{if(active&&!doc.hidden&&context.state==='interrupted')void context.resume().catch(()=>{})}}
@@ -17,5 +17,5 @@ export function createCafeAmbience({host=window,doc=document,load=fetch}={}){
  function pageHide(){if(context)void context.suspend().catch(()=>{})}
  function pageShow(){if(active){unlock();level()}}
  doc.addEventListener('pointerdown',gesture,{passive:true});doc.addEventListener('keydown',gesture);doc.addEventListener('visibilitychange',visibility);host.addEventListener('pagehide',pageHide);host.addEventListener('pageshow',pageShow);
- return {unlock,play(){active=true;unlock();level()},room(value){indoor=!!value;level()},stop,dispose(){stop();doc.removeEventListener('pointerdown',gesture);doc.removeEventListener('keydown',gesture);doc.removeEventListener('visibilitychange',visibility);host.removeEventListener('pagehide',pageHide);host.removeEventListener('pageshow',pageShow);if(context)void context.close().catch(()=>{})}};
+ return {unlock,play(){active=true;unlock();level()},cinema(value){if(cinema===!!value)return;cinema=!!value;level()},room(value){indoor=!!value;level()},stop,dispose(){stop();doc.removeEventListener('pointerdown',gesture);doc.removeEventListener('keydown',gesture);doc.removeEventListener('visibilitychange',visibility);host.removeEventListener('pagehide',pageHide);host.removeEventListener('pageshow',pageShow);if(context)void context.close().catch(()=>{})}};
 }

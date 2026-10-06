@@ -39,6 +39,7 @@ export function buildMarine(root,seaMat,isDisposed=()=>false){
    // Leave the broad foreground sand open; vegetation gathers in dune clusters.
    const a=.3+(i*2.399+index*.9)%(Math.PI*2),theta=.61+(i%4)*.067;
    if(theta>coastEdge(a)-.23)continue;
+   const location=coastPoint(a,theta);if(location.x< -6&&location.z>1&&location.z<12)continue;
    const holder=anchor(a,theta),size=index<3?.6+(i%3)*.34:index<5?.55+(i%3)*.16:1.0+(i%2)*.35;
    const model=normalize(g.scene.clone(true),size);model.rotation.y=i*1.7;holder.add(model);
   }
@@ -47,7 +48,7 @@ export function buildMarine(root,seaMat,isDisposed=()=>false){
  load('palm.glb',g=>{
   g.scene.updateMatrixWorld(true);const palm=new T.Group();
   g.scene.traverse(m=>{if(m.isMesh&&(/CoconutLeave1/.test(m.name)||m.name==='Tree_GentengTralisWarna_0')){const clone=new T.Mesh(m.geometry.clone().applyMatrix4(m.matrixWorld),m.material.clone());clone.material.color.set(/Coconut/.test(m.name)?0x71844b:0x957350);palm.add(clone)}});
-  for(const [a,theta,h]of [[2.65,.67,3.4],[2.92,.75,3.8],[3.18,.70,3.0],[4.5,.67,3.6],[4.75,.75,3.1],[.02,.74,3.2],[.18,.85,3.7]]){const holder=anchor(a,theta);holder.add(normalize(palm.clone(true),h))}
+  for(const [a,theta,h]of [[3.55,.67,3.4],[3.82,.75,3.8],[3.18,.70,3.0],[4.5,.67,3.6],[4.75,.75,3.1],[.02,.74,3.2],[.18,.85,3.7]]){const holder=anchor(a,theta);holder.add(normalize(palm.clone(true),h))}
   disposeCafeObject(g.scene);
  });
  // Shallow turquoise water follows precisely the same angular coastline.

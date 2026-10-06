@@ -1,3 +1,4 @@
+import {buildingGroundY} from './cafe-grounding.js';
 import * as T from './vendor/three.module.js';
 
 // Exterior details share the cafe's deck height and doorway; no separate scene.
@@ -34,10 +35,10 @@ export function buildCoast({root,roof,furniture,pick,box,cyl,ell,rounded,tube,ti
  for(let x=-5.8;x<6;x+=.55){const zExtent=3.5-Math.max(0,Math.abs(x)-4)*.5;const points=[];for(let z=-zExtent;z<=zExtent;z+=.2){if(Math.pow((x-.3)/2.2,2)+Math.pow((z-.1)/1.4,2)<1.05){if(points.length>1)tube(roof,0x798778,points.splice(0),.012);continue}points.push([x,3.99,z])}if(points.length>1)tube(roof,0x798778,points,.012)}
  // The pavilion sits on timber piles instead of an artificially raised sand hill.
  for(const [x,z]of [[-6,-2],[-6,1],[-5,3.3],[-3,4.1],[0,3.8],[3,4.2],[5.8,3],[6.4,0],[5.8,-2.6],[-3,-4],[2,-4],[.5,7],[3,7.2],[5.8,7.2],[7,5.5]]){
-  const ground=-18.25+Math.sqrt(17.84*17.84-x*x-z*z),top=.10;
-  cyl(coast,wood,x,(ground+top)/2,z,.105,top-ground+.10);
+  const pile=cyl(coast,wood,x,0,z,.105,1);pile.userData.groundPile=true;
  }
  // Ocean motion and wildlife are owned by the spherical coast renderer.
  const planet=new T.Group();root.add(planet);
- return {planet,coast,awning};
+ function groundPiles(overview){for(const p of coast.children){if(!p.userData.groundPile)continue;const bottom=buildingGroundY(p.position.x,p.position.z,overview)-.10,top=.10;p.position.y=(bottom+top)/2;p.scale.y=top-bottom}}groundPiles(false);
+ return {planet,coast,awning,groundPiles};
 }

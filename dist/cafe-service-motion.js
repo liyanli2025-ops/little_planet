@@ -15,7 +15,7 @@ export function makeCafeTray(items){const tray=new T.Group(),mat=new T.MeshStand
 }
 export function poseCafeTray(bear,tray,time,sipItem=null,sip=0){
  const seated=!!bear.data?.seat,seat=cafeSeats.find(s=>s.id===bear.data?.seat);for(const part of tray.children)if(part.userData.trayShell)part.visible=!seated;
- bear.avatar.updateWorldMatrix(true,false);tray.position.set(0,seated?(seat?.zone==='cinema'?seat.avatarY+.21:seat?.zone==='bar'?1.34:1.015)-bear.avatar.position.y:.54,seated?.63:.45);tray.rotation.set(0,Math.PI,0);
+ bear.avatar.updateWorldMatrix(true,false);tray.position.set(0,seated?(['cinema','beach'].includes(seat?.zone)?seat.avatarY+.21:seat?.zone==='bar'?1.34:1.015)-bear.avatar.position.y:.54,seated?.63:.45);tray.rotation.set(0,Math.PI,0);
  tray.updateWorldMatrix(true,false);if(!seated)for(let i=0;i<2;i++)aimCafePaw(bear,i,bear.avatar.localToWorld(tray.position.clone().add(v(i?.32:-.32,-.01,-.12))));
 
  for(const food of tray.userData.foods){food.position.copy(food.userData.trayPosition);food.rotation.set(0,0,0)}

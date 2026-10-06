@@ -1,3 +1,4 @@
+import {upperSeats} from './cafe-upper-layout.js';
 import {beachSeats} from './beach-seats.js';
 import {cinemaSeats} from './cinema-catalog.js';
 // Shared public-island menu and seat coordinates; all prices are zero.
@@ -21,7 +22,7 @@ export const cafeSeats=cafeTables.flatMap(([x,z],table)=>[-1,1].map((side,i)=>({
  [[-5.95,.6,-1.57],[-5.72,1.75,-1.30],[-5.1,2.85,-.95]].map(([x,z,yaw],i)=>({id:`window-${i}`,table:5,zone:'window',x,z,y:.68,yaw,approachX:x-Math.sin(yaw)*.65,approachZ:z-Math.cos(yaw)*.65})),
  [-3.65,-2.25,-.85].map((x,i)=>({id:`bar-${i}`,table:7,zone:'bar',x,z:-1.8,y:.95,avatarY:.79,yaw:Math.PI,approachX:x,approachZ:-1.05})),
  [2.8,4.2,5.6].map((x,i)=>({id:`terrace-${i}`,table:6,zone:'terrace',x,z:6.15,y:.68,yaw:0,approachZ:5.57}))
-,cinemaSeats,beachSeats);
+,cinemaSeats,beachSeats,upperSeats);
 export function islandSky(now=Date.now()){
  const hour=((now/3600000+8)%24+24)%24,slot=Math.floor(now/10800000),wet=((slot*17+13)%19+19)%19<3;
  return {time:now,timezone:'Asia/Shanghai',hour,weather:wet?'rain':'sun',night:hour<6||hour>=18,temperature:wet?24:27};

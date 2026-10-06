@@ -1,3 +1,4 @@
+import {STAIR_BOTTOM} from '../dist/cafe-upper-layout.js';
 import {cafeRouteWalkable} from '../dist/cafe-navigation.js';
 import {randomUUID} from 'node:crypto';
 import {fail} from './store.mjs';
@@ -13,24 +14,26 @@ export function createCafe(db,{partner=()=>null,deliver=()=>{},profile=u=>({outf
   fail(!peer||[...guests.values()].filter(g=>g.room===room).length<8,'对方所在的咖啡馆已满，稍后再来一起坐吧',409);
   while([...guests.values()].filter(g=>g.room===room).length>=8)room++;
   const count=[...guests.values()].filter(g=>g.room===room).length,pocket=JSON.parse(db.prepare('SELECT state FROM cafe_pockets WHERE account=?').get(u.id)?.state||'{}');
-  g={id:u.id,name:u.nickname||u.username,avatar:u.avatar,room,x:-.9+(count%3)*.9,z:4.5+Math.floor(count/3)*.7,yaw:Math.PI,seat:null,seen:now(),held:null,order:pocket.order||null,...profile(u)};if(g.held)g.held.pickedAt=Math.min(g.held.pickedAt,now()-1000);if(g.order){const used=new Set([...guests.values()].filter(o=>o.room===room&&o.order).map(o=>o.order.counterSlot));if(used.has(g.order.counterSlot))g.order.counterSlot=Array.from({length:8},(_,i)=>i).find(i=>!used.has(i))??0}g.service=g.order;guests.set(u.id,g);return g;
+  g={id:u.id,name:u.nickname||u.username,avatar:u.avatar,room,x:-.9+(count%3)*.9,z:4.5+Math.floor(count/3)*.7,yaw:Math.PI,seat:null,floor:0,seen:now(),held:null,order:pocket.order||null,...profile(u)};if(g.held)g.held.pickedAt=Math.min(g.held.pickedAt,now()-1000);if(g.order){const used=new Set([...guests.values()].filter(o=>o.room===room&&o.order).map(o=>o.order.counterSlot));if(used.has(g.order.counterSlot))g.order.counterSlot=Array.from({length:8},(_,i)=>i).find(i=>!used.has(i))??0}g.service=g.order;guests.set(u.id,g);return g;
  }
  function view(u){clean();const own=guests.get(u.id);return {self:own?.id,room:own?.room,sky:islandSky(now()),guests:own?[...guests.values()].filter(g=>g.room===own.room).map(({seen,lastOrder,...g})=>g):[]}}
  function update(u,b){fail(b&&typeof b==='object','操作无效');clean();
   if(b.action==='leave'){const g=guests.get(u.id);if(g){g.held=null;g.dining=null;save(g)}guests.delete(u.id);return {left:true}}
-  if(b.action==='join'){const g=join(u);if(b.fresh){g.held=null;g.dining=null;g.seat=null;g.x=0;g.z=4.5;save(g)}return view(u)}
+  if(b.action==='join'){const g=join(u);if(b.fresh){g.held=null;g.dining=null;g.seat=null;g.floor=0;g.x=0;g.z=4.5;save(g)}return view(u)}
   const g=guests.get(u.id);fail(g,'请重新进入咖啡馆',409);g.seen=now();
   if(b.action==='sync'){
-   if(!g.seat&&(!g.handoff||now()>=g.handoff.endsAt)&&[b.x,b.z,b.yaw].every(Number.isFinite)){if(cafeRouteWalkable(b.x,b.z)){g.x=b.x;g.z=b.z;}g.yaw=b.yaw%(Math.PI*2)}
+   if(!g.seat&&(!g.handoff||now()>=g.handoff.endsAt)&&[b.x,b.z,b.yaw].every(Number.isFinite)){if(cafeRouteWalkable(b.x,b.z,g.floor)){g.x=b.x;g.z=b.z;}g.yaw=b.yaw%(Math.PI*2)}
+  }else if(b.action==='floor'){
+   fail([0,1].includes(b.floor)&&!g.seat&&Math.hypot(g.x-STAIR_BOTTOM.x,g.z-STAIR_BOTTOM.z)<.65,'请先走到楼梯入口',409);g.floor=b.floor;
   }else if(b.action==='seat'){
-   fail(!g.handoff||now()>=g.handoff.endsAt,'先接好托盘再走吧',409);const s=cafeSeats.find(s=>s.id===b.seat);fail(s,'座位不存在');fail(![...guests.values()].some(o=>o.id!==u.id&&o.room===g.room&&o.seat===s.id),'这里已经有人坐了',409);if(g.seat!==s.id){g.dining=g.held?{startedAt:now(),items:[...g.held.items]}:null}Object.assign(g,{seat:s.id,x:s.x,z:s.z,yaw:s.yaw});
+   fail(!g.handoff||now()>=g.handoff.endsAt,'先接好托盘再走吧',409);const s=cafeSeats.find(s=>s.id===b.seat);fail(s,'座位不存在');fail((s.floor||0)===(g.floor||0),'请先走到座位所在楼层',409);fail(![...guests.values()].some(o=>o.id!==u.id&&o.room===g.room&&o.seat===s.id),'这里已经有人坐了',409);if(g.seat!==s.id){g.dining=g.held?{startedAt:now(),items:[...g.held.items]}:null}Object.assign(g,{seat:s.id,x:s.x,z:s.z,yaw:s.yaw});
   }else if(b.action==='stand'){const s=cafeSeats.find(s=>s.id===g.seat);if(g.seat){g.held=null;g.dining=null;save(g)}g.seat=null;g.x=s?.approachX??g.x;g.z=s?.approachZ??g.z+.58;
   }else if(b.action==='eat'){
    fail(!g.handoff||now()>=g.handoff.endsAt,'先接好托盘吧',409);fail(g.held?.items?.includes(b.item),'托盘里没有这份餐食',409);fail(g.seat,'先找个座位坐下，慢慢享用吧',409);g.held.items=g.held.items.filter(id=>id!==b.item);if(!g.held.items.length)g.held=null;g.dining=g.held?{startedAt:now(),items:[...g.held.items]}:null;save(g);
   }else if(b.action==='pickup'){
    const receipt=db.prepare('SELECT * FROM cafe_orders WHERE account=? AND command=?').get(u.id,b.command);fail(receipt,'没有找到这份订单',404);if(receipt.collected)return {...view(u),pickedUp:true,takeaway:receipt.mode==='takeaway'};
    fail(g.order?.command===b.command,'请重新查看当前订单',409);fail(now()>=g.order.readyAt,'主理熊还在准备，请稍等',409);
-   fail(!g.seat&&Math.hypot(g.x-CAFE_COUNTER.x,g.z-CAFE_COUNTER.z)<.85,'请走到吧台取餐处',409);
+   fail(!g.floor&&!g.seat&&Math.hypot(g.x-CAFE_COUNTER.x,g.z-CAFE_COUNTER.z)<.85,'请走到吧台取餐处',409);
    const order=g.order,held=g.held;
    db.exec('BEGIN IMMEDIATE');try{if(order.mode==='takeaway'){for(const id of order.items)deliver(u,cafeMenu.find(i=>i.id===id),randomUUID())}else{fail(!g.held,'先享用托盘里的餐食吧',409);g.held={items:[...order.items],pickedAt:now(),command:order.command}}
     g.order=null;save(g);db.prepare('UPDATE cafe_orders SET collected=1 WHERE account=? AND command=?').run(u.id,b.command);db.exec('COMMIT');g.service=null;g.handoff=null;

@@ -7,7 +7,7 @@ export function createCafe(db,{partner=()=>null,deliver=()=>{},profile=u=>({outf
  if(!db.prepare('PRAGMA table_info(cafe_orders)').all().some(c=>c.name==='collected'))db.exec('ALTER TABLE cafe_orders ADD COLUMN collected INTEGER NOT NULL DEFAULT 1');
  const guests=new Map(),ttl=20000;
  function save(g){db.prepare('INSERT INTO cafe_pockets VALUES(?,?) ON CONFLICT(account) DO UPDATE SET state=excluded.state').run(g.id,JSON.stringify({order:g.order,held:g.held}))}
- function clean(){for(const [id,g]of guests){if(g.dining&&g.held){const remaining=g.dining.items.slice(Math.floor((now()-g.dining.startedAt)/7000));if(remaining.length!==g.held.items.length){g.held=remaining.length?{...g.held,items:remaining}:null;if(!g.held)g.dining=null;save(g)}}if(now()-g.seen>ttl)guests.delete(id)}}
+ function clean(){for(const [id,g]of guests)if(now()-g.seen>ttl)guests.delete(id)}
  function join(u){clean();let g=guests.get(u.id);if(g)return g;const peer=guests.get(partner(u)?.id);let room=peer?.room||1;
   fail(!peer||[...guests.values()].filter(g=>g.room===room).length<8,'对方所在的咖啡馆已满，稍后再来一起坐吧',409);
   while([...guests.values()].filter(g=>g.room===room).length>=8)room++;

@@ -180,7 +180,9 @@ export const server=http.createServer(async(req,res)=>{
   fail(f.startsWith(ROOT+path.sep)&&!rel.split('/').some(s=>s.startsWith('.')),'文件不存在',404);
   let stat;try{stat=fs.statSync(f)}catch{throw new AppError(404,'文件不存在')}
   fail(stat.isFile(),'文件不存在',404);
-  res.writeHead(200,{'Content-Type':types[path.extname(f)]||'application/octet-stream','Content-Length':stat.size,'Cache-Control':'no-cache'});
+  const etag='W/\"'+stat.size.toString(16)+'-'+Math.trunc(stat.mtimeMs).toString(16)+'\"';
+  if(req.headers['if-none-match']===etag){res.writeHead(304,{'ETag':etag,'Cache-Control':'no-cache'});return res.end()}
+  res.writeHead(200,{'ETag':etag,'Content-Type':types[path.extname(f)]||'application/octet-stream','Content-Length':stat.size,'Cache-Control':'no-cache'});
   if(req.method==='HEAD')return res.end();
   fs.createReadStream(f).on('error',()=>res.destroy()).pipe(res);
  }catch(e){

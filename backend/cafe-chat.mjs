@@ -8,7 +8,7 @@ export function createCafeChat({cafe,env=process.env,fetcher=fetch,now=Date.now}
  const sessions=new Map();let running=0;
  return {async send(u,b){
   const state=cafe.view(u),own=state.guests.find(g=>g.id===u.id);
-  fail(cafeSeats.some(s=>s.id===own?.seat&&s.zone==='bar'),'坐到吧台前，就能和主理熊聊天了',409);
+  fail(!!own,'请先进入咖啡馆再聊天',409);
   fail(typeof b?.message==='string'&&b.message.trim().length>0&&b.message.length<=600,'请写下 1–600 字想说的话');
   fail(typeof b.command==='string'&&/^[a-zA-Z0-9_-]{8,80}$/.test(b.command),'消息编号无效');
   for(const [id,s] of sessions)if(!s.busy&&now()-s.at>1800000)sessions.delete(id);
@@ -30,7 +30,7 @@ export function createCafeChat({cafe,env=process.env,fetcher=fetch,now=Date.now}
     let args;try{args=JSON.parse(calls[0].function.arguments)}catch{throw new AppError(502,'点单内容没有整理好，请再说一次')}
     fail(args&&Array.isArray(args.items)&&args.items.length>=1&&args.items.length<=2&&new Set(args.items).size===args.items.length&&args.items.every(id=>cafeMenu.some(i=>i.id===id))&&['here','takeaway'].includes(args.mode),'菜单里没有这份完整的餐食，请换一种说法',502);
     const current=cafe.view(u).guests.find(g=>g.id===u.id);
-    fail(cafeSeats.some(s=>s.id===current?.seat&&s.zone==='bar'),'你已经离开吧台，回来坐下再点吧',409);
+    fail(!!current,'你已经离开咖啡馆，回来再点吧',409);
     const command='chat-'+createHash('sha256').update(String(u.id)+':'+b.command).digest('hex').slice(0,48);
     try{cafe.update(u,{action:'order',command,items:args.items,mode:args.mode});ordered=true;reply='好，'+args.items.map(id=>cafeMenu.find(i=>i.id===id).name).join('和')+'，'+(args.mode==='takeaway'?'帮你打包':'在店里慢慢享用')+'。已经记下了，我按顺序准备，做好后点吧台托盘就能拿。'}catch(e){if(!(e instanceof AppError))throw e;reply=e.message;}
    }

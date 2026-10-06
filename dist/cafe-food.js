@@ -1,3 +1,4 @@
+import {cafeAssetBytes} from './cafe-asset-cache.js';
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 import {cafeMenu} from './cafe-catalog.js';
@@ -9,7 +10,7 @@ export function makeCafeFood(id,{display=false}={}){
  if(item.kind==='dessert'){
   const displayWidth=['cafe_strawberry','cafe_chocolate','cafe_cherry'].includes(id)?.64:id==='cafe_cupcake'?.34:id==='cafe_cinnamon'?.38:.48;add(new T.CylinderGeometry(display?displayWidth*.57:.23,display?displayWidth*.55:.22,.025,40),0xf2e9d8,0,.012,0);
   const name=display?item.display:item.serving,url='./assets/cafe-desserts/'+name+'.glb';
-  if(!files.has(url))files.set(url,fetch(url).then(r=>{if(!r.ok)throw Error('甜品暂未载入');return r.arrayBuffer()}).catch(e=>{files.delete(url);throw e}));
+  if(!files.has(url))files.set(url,cafeAssetBytes(url).catch(e=>{files.delete(url);throw e}));
   group.userData.ready=files.get(url).then(bytes=>new GLTFLoader().parseAsync(bytes.slice(0),new URL('.',location.href).href)).then(gltf=>{
    const model=gltf.scene,b=new T.Box3().setFromObject(model),s=b.getSize(new T.Vector3()),c=b.getCenter(new T.Vector3()),scale=(display?displayWidth:.34)/Math.max(s.x,s.z);model.scale.setScalar(scale);model.position.set(-c.x*scale,.028-b.min.y*scale,-c.z*scale);model.traverse(o=>{if(o.isMesh)o.castShadow=o.receiveShadow=true});if(group.userData.disposed){disposeCafeObject(model);return}group.add(model);
   }).catch(()=>{group.userData.loadFailed=true});

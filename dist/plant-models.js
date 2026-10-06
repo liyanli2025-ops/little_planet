@@ -1,3 +1,4 @@
+import {cafeAssetBytes} from './cafe-asset-cache.js';
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 import {isModelPlant} from './furniture-catalog.js';
@@ -6,7 +7,7 @@ import {releaseModel} from './model-resources.js';
 const bytes=new Map();
 async function loadPart(name,signal){
  let data=bytes.get(name);
- if(!data){const r=await fetch(new URL('./assets/tiny-plants/'+name+'.glb',import.meta.url),{signal});if(!r.ok)throw Error('植物模型加载失败，请重试');data=await r.arrayBuffer();if(signal?.aborted)throw new DOMException('已取消','AbortError');bytes.set(name,data)}
+ if(!data){data=await cafeAssetBytes(new URL('./assets/tiny-plants/'+name+'.glb',import.meta.url));if(signal?.aborted)throw new DOMException('已取消','AbortError');bytes.set(name,data)}
  const root=(await new GLTFLoader().parseAsync(data.slice(0),'')).scene;
  if(signal?.aborted){releaseModel(root);throw new DOMException('已取消','AbortError')}
  return root;

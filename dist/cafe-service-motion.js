@@ -1,5 +1,6 @@
 import * as T from './vendor/three.module.js';
 import {makeCafeFood,disposeCafeObject} from './cafe-food.js';
+import {cafeSeats} from './cafe-catalog.js';
 import {cafeMenu} from './cafe-catalog.js';
 import {CAFE_SERVE,cafeServicePhase,cafeTrayPlace} from './cafe-service-state.js';
 const down=new T.Vector3(0,-1,0),v=(x,y,z)=>new T.Vector3(x,y,z),ease=t=>t*t*(3-2*t),mix=(a,b,t)=>a.clone().lerp(b,ease(T.MathUtils.clamp(t,0,1)));
@@ -7,14 +8,20 @@ export function aimCafePaw(bear,index,world){const arm=bear.arms[index];arm.pare
 export function makeCafeTray(items){const tray=new T.Group(),mat=new T.MeshStandardMaterial({color:0xa77d50,roughness:.72});
  const base=new T.Mesh(new T.BoxGeometry(.82,.035,.49),mat);base.castShadow=base.receiveShadow=true;tray.add(base);
  for(const side of [-1,1]){const rim=new T.Mesh(new T.BoxGeometry(.82,.045,.022),mat);rim.position.set(0,.023,side*.235);tray.add(rim);const end=new T.Mesh(new T.BoxGeometry(.025,.045,.49),mat);end.position.set(side*.4,.023,0);tray.add(end)}
+ const hit=new T.Mesh(new T.BoxGeometry(.86,.32,.53),new T.MeshBasicMaterial({visible:false}));hit.position.y=.14;tray.add(hit);
+ for(const part of tray.children)part.userData.trayShell=true;
+ const spoon=new T.Group();spoon.userData.utensil=true;const metal=new T.MeshStandardMaterial({color:0xbfc8c4,metalness:.6,roughness:.3}),handle=new T.Mesh(new T.CylinderGeometry(.008,.008,.15,8),metal);handle.rotation.x=Math.PI/2;spoon.add(handle);const bowl=new T.Mesh(new T.SphereGeometry(1,12,8),metal);bowl.scale.set(.027,.008,.038);bowl.position.z=.095;spoon.add(bowl);spoon.visible=false;tray.add(spoon);tray.userData.spoon=spoon;
  tray.userData.foods=items.map((id,i)=>{const food=makeCafeFood(id);food.scale.setScalar(.68);food.position.set(items.length===1?0:i===0?-.19:.19,.025,0);food.userData.trayPosition=food.position.clone();tray.add(food);return food});return tray;
 }
 export function poseCafeTray(bear,tray,time,sipItem=null,sip=0){
- bear.avatar.updateWorldMatrix(true,false);tray.position.set(0,.54,.45);tray.rotation.set(0,Math.PI,0);
- tray.updateWorldMatrix(true,false);for(let i=0;i<2;i++)aimCafePaw(bear,i,bear.avatar.localToWorld(tray.position.clone().add(v(i?.32:-.32,-.01,-.12))));
+ const seated=!!bear.data?.seat,seat=cafeSeats.find(s=>s.id===bear.data?.seat);for(const part of tray.children)if(part.userData.trayShell)part.visible=!seated;
+ bear.avatar.updateWorldMatrix(true,false);tray.position.set(0,seated?(seat?.zone==='bar'?1.34:1.015)-bear.avatar.position.y:.54,seated?.63:.45);tray.rotation.set(0,Math.PI,0);
+ tray.updateWorldMatrix(true,false);if(!seated)for(let i=0;i<2;i++)aimCafePaw(bear,i,bear.avatar.localToWorld(tray.position.clone().add(v(i?.32:-.32,-.01,-.12))));
 
  for(const food of tray.userData.foods){food.position.copy(food.userData.trayPosition);food.rotation.set(0,0,0)}
- if(sip>0){const food=tray.userData.foods.find(f=>f.userData.food===sipItem);if(food){const goal=bear.avatar.localToWorld(v(-.12,.83,.36)),rest=tray.localToWorld(food.userData.trayPosition.clone());aimCafePaw(bear,0,rest.lerp(goal,sip));bear.arms[0].updateWorldMatrix(true,false);const paw=bear.arms[0].localToWorld(v(0,-.34*(bear.arms[0].userData.cafeReach||1),0));food.position.copy(tray.worldToLocal(paw));food.rotation.x=-sip*.45}}
+ tray.userData.spoon.visible=false;
+ if(sip>0){const food=tray.userData.foods.find(f=>f.userData.food===sipItem);if(food){const dessert=cafeMenu.find(i=>i.id===sipItem)?.kind==='dessert',arm=dessert?1:0,goal=bear.avatar.localToWorld(v(dessert?.11:-.12,.83,.36)),rest=tray.localToWorld(food.userData.trayPosition.clone());aimCafePaw(bear,arm,rest.lerp(goal,sip));bear.arms[arm].updateWorldMatrix(true,false);const paw=bear.arms[arm].localToWorld(v(0,-.34*(bear.arms[arm].userData.cafeReach||1),0));if(dessert){const spoon=tray.userData.spoon;spoon.visible=true;spoon.position.copy(tray.worldToLocal(paw));spoon.rotation.set(-sip*.25,Math.PI,0)}else{food.position.copy(tray.worldToLocal(paw));food.rotation.x=-sip*.45}}}
+
 }
 export function createHostService(building,bear){
  const trays=new Map();let working=null,handing=null,activeCommand=null,startPose=null;const home=v(.15,.77,-3.48),pitcher=new T.Mesh(new T.CylinderGeometry(.095,.075,.21,20),new T.MeshStandardMaterial({color:0xaab7b1,metalness:.65,roughness:.3}));
@@ -32,7 +39,7 @@ export function createHostService(building,bear){
   if(handoff){handing=handoff.command;const p=(time-handoff.startedAt)/3000,tray=trays.get(handoff.command),place=cafeTrayPlace(handoff.counterSlot),source=v(place.x,place.y,place.z),from=v(place.x,.77,-3.45),to=v(CAFE_SERVE.x,.77,-3.12);
    const at=p<.25?mix(home,from,p/.25):mix(from,to,(p-.25)/.55);setBear(at,v(at.x,1,-2),p<.8,seconds);if(p>.25){bear.body.rotation.x=.45;bear.avatar.updateWorldMatrix(true,true);const extended=v(CAFE_SERVE.x,1.43,-2.18),target=p<.72?mix(source,extended,(p-.25)/.47):mix(extended,v(CAFE_SERVE.x,1.08,-2.18),(p-.72)/.16);putTray(tray,target);tray.visible=p<.88;for(let i=0;i<2;i++)aimCafePaw(bear,i,inWorld(target.clone().add(v(i?.32:-.32,-.015,-.12))))}return;
   }
-  handing=null;if(!working){const returning=bear.avatar.position.distanceTo(home)>.03,point=bear.avatar.position.clone().lerp(home,.07);setBear(point,v(home.x,1,-2),returning,seconds);bear.arms[0].rotation.x=-.12+Math.sin(seconds*1.8)*.035;return}
+  handing=null;if(!working){const visitor=list.filter(g=>g.z>=-2.2&&g.z<=-.8).sort((a,b)=>Math.abs(a.x-bear.avatar.position.x)-Math.abs(b.x-bear.avatar.position.x))[0],destination=visitor?v(T.MathUtils.clamp(visitor.x,-3.7,.4),.77,-3.12):home;const returning=bear.avatar.position.distanceTo(destination)>.03,point=bear.avatar.position.clone().lerp(destination,.07);setBear(point,visitor?v(visitor.x,1,visitor.z):v(home.x,1,-2),returning,seconds);bear.arms[0].rotation.x=-.12+Math.sin(seconds*1.8)*.035;return}
   if(activeCommand!==working.command){activeCommand=working.command;startPose=bear.avatar.position.clone()}
   const phase=cafeServicePhase(working,time),tray=trays.get(working.command),food=tray.userData.foods[phase.index],item=cafeMenu.find(i=>i.id===working.items[phase.index]),dessert=item.kind==='dessert',p=phase.progress;
   const source=dessert?v(2.9,1.39,-3.72):v(-2.6,1.46,-3.32),station=dessert?v(2.9,.77,-4.13):v(-2.6,.77,-3.75),place=cafeTrayPlace(working.counterSlot),finish=v(place.x,.77,-3.4);

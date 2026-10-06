@@ -24,8 +24,8 @@ export const cafeSeats=cafeTables.flatMap(([x,z],table)=>[-1,1].map((side,i)=>({
  [2.8,4.2,5.6].map((x,i)=>({id:`terrace-${i}`,table:6,zone:'terrace',x,z:6.15,y:.68,yaw:0,approachZ:5.57}))
 ,cinemaSeats,beachSeats,upperSeats);
 export function islandSky(now=Date.now()){
- const hour=((now/3600000+8)%24+24)%24,slot=Math.floor(now/10800000),wet=((slot*17+13)%19+19)%19<3;
- return {time:now,timezone:'Asia/Shanghai',hour,weather:wet?'rain':'sun',night:hour<6||hour>=18,temperature:wet?24:27};
+ const hour=((now/3600000+8)%24+24)%24;
+ return {time:now,timezone:'Asia/Shanghai',hour,weather:'sun',night:hour<6||hour>=18,temperature:27};
 }
 
 // Keep walking inside the inset pavilion footprint, including the arrival deck.

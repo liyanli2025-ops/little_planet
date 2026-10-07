@@ -25,7 +25,7 @@ export function createAuroraLodge(){
  const wall=mesh(iceBrick(3.48,start+.009,end-start-.018,lo+.006,hi-.006,.20),ice);wall.userData.mid=(start+end)/2;walls.push(wall)}}
  // A single ice bar with three built-in seats; the snow floor stays open.
  for(let row=0;row<3;row++)for(let col=0;col<6;col++){const x=(col-2.5)*.55;rounded(x,.19+row*.30,-1.68+.23*(x/1.5)**2,.53,.28,.60,ice)}
- const barShape=new T.Shape();barShape.moveTo(-1.78,-1.10);barShape.quadraticCurveTo(0,-1.66,1.78,-1.10);barShape.lineTo(1.78,-1.91);barShape.quadraticCurveTo(0,-2.36,-1.78,-1.91);barShape.closePath();const barGeometry=new T.ExtrudeGeometry(barShape,{depth:.14,bevelEnabled:true,bevelSize:.045,bevelThickness:.025,bevelSegments:3,steps:1});barGeometry.rotateX(Math.PI/2);barGeometry.computeBoundingBox();const bb=barGeometry.boundingBox,bs=bb.getSize(new T.Vector3()),bp=barGeometry.attributes.position,bn=barGeometry.attributes.normal,bu=barGeometry.attributes.uv;for(let i=0;i<bp.count;i++){const x=(bp.getX(i)-bb.min.x)/bs.x,y=(bp.getY(i)-bb.min.y)/bs.y,z=(bp.getZ(i)-bb.min.z)/bs.z;bu.setXY(i,Math.abs(bn.getX(i))>.6?z:x,Math.abs(bn.getY(i))>.6?z:y)}const bar=mesh(barGeometry,ice,0,1.045,0);
+ const barShape=new T.Shape();barShape.moveTo(-1.78,-1.10);barShape.quadraticCurveTo(0,-1.66,1.78,-1.10);barShape.lineTo(1.78,-1.91);barShape.quadraticCurveTo(0,-2.36,-1.78,-1.91);barShape.closePath();const barGeometry=new T.ExtrudeGeometry(barShape,{depth:.14,bevelEnabled:true,bevelSize:.045,bevelThickness:.025,bevelSegments:3,steps:1});barGeometry.rotateX(Math.PI/2);barGeometry.computeBoundingBox();const bb=barGeometry.boundingBox,bs=bb.getSize(new T.Vector3()),bp=barGeometry.attributes.position,bn=barGeometry.attributes.normal,bu=barGeometry.attributes.uv;for(let i=0;i<bp.count;i++){const x=(bp.getX(i)-bb.min.x)/bs.x,y=(bp.getY(i)-bb.min.y)/bs.y,z=(bp.getZ(i)-bb.min.z)/bs.z;bu.setXY(i,Math.abs(bn.getX(i))>.6?z:x,Math.abs(bn.getY(i))>.6?z:y)}const bar=mesh(barGeometry,ice,0,.94,0);
  const frost=ice.clone();frost.color.set(0xd7edf0);frost.roughness=.38;frost.transmission=.12;
 
  rounded(0,1.96,-2.63,2.65,.12,.38,ice);
@@ -44,7 +44,7 @@ export function createAuroraLodge(){
   rounded(x,.84,.04,.86,.22,.13,ice);
   for(const dx of [-.40,.40])rounded(x+dx,.84,-.39,.09,.18,.69,ice);
  }
- const host=createTeddy(group,1);host.avatar.position.set(.45,0,-2.35);host.avatar.scale.setScalar(1.22);host.avatar.rotation.y=Math.PI;host.seatTick(false,1);group.updateMatrixWorld(true);const hostBounds=new T.Box3().setFromObject(host.avatar);host.avatar.position.y+=group.position.y-hostBounds.min.y;host.relax(true);
+ const host=createTeddy(group,1);host.avatar.position.set(.45,0,-2.35);host.avatar.scale.setScalar(1.22);host.avatar.rotation.y=0;host.seatTick(false,1);group.updateMatrixWorld(true);const hostBounds=new T.Box3().setFromObject(host.avatar);host.avatar.position.y+=group.position.y-hostBounds.min.y;host.relax(true);
  // Small ice formations and light held inside the ice give this room its own character.
  for(const side of [-1,1]){for(let i=0;i<4;i++){const crystal=mesh(new T.ConeGeometry(.09+i*.018,.24+i*.11,5),ice,side*(2.30+i*.09),.12+i*.055,-1.1+i*.12);crystal.rotation.z=side*(.12+i*.08)}const blue=new T.PointLight(0x8adfea,2.5,2.5,2);blue.position.set(side*2.5,.35,-1.4);group.add(blue)}
  const edgeGlow=new T.MeshStandardMaterial({color:0xffe5b6,emissive:0xffd39a,emissiveIntensity:.55});
@@ -63,7 +63,7 @@ export function createAuroraLodge(){
  }
  for(const x of [-1.4,1.4]){const light=new T.PointLight(0xffd4a0,9,6,2);light.position.set(x,2,-.5);group.add(light)}
  hits.push({object:host.avatar,type:'host'});
- const served=cup(.5,1.085,-1.35),servedLiquid=group.children[group.children.indexOf(served)+1];served.visible=servedLiquid.visible=false;
+ const served=cup(.5,.98,-1.35),servedLiquid=group.children[group.children.indexOf(served)+1];served.visible=servedLiquid.visible=false;
  hits.push({object:served,type:'served'});
  const held=cup(-1.1,1.22,-1.1),heldLiquid=group.children[group.children.indexOf(held)+1];held.visible=heldLiquid.visible=false;hits.push({object:held,type:'drink'});
  let order=null,drinking=false;const ceramic=material(0xe8e2cf);

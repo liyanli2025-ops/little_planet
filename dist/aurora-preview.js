@@ -42,6 +42,9 @@ const edgeGeometry=new T.BufferGeometry();edgeGeometry.setAttribute('position',n
 const iceCoast=mesh(edgeGeometry,new T.MeshStandardMaterial({vertexColors:true,roughness:.62,side:T.DoubleSide}));iceCoast.name='closed-submerged-ice-coast';iceCoast.castShadow=false;
 
 function surface(x,z,lift=0){const o=new T.Group(),n=new T.Vector3(x,Math.sqrt(Math.max(1,100-x*x-z*z)),z).normalize();o.position.copy(n).multiplyScalar(10.09+lift);o.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),n);world.add(o);return o}
+// Sample the actual snow mesh along each object's local vertical, including curvature.
+function groundY(parent,x,z){parent.updateWorldMatrix(true,false);cap.updateWorldMatrix(true,false);const start=parent.localToWorld(new T.Vector3(x,6,z)),down=new T.Vector3(0,-1,0).transformDirection(parent.matrixWorld),hit=new T.Raycaster(start,down,0,20).intersectObject(cap)[0];if(!hit)throw Error('Missing snow support');return parent.worldToLocal(hit.point.clone()).y;}
+function groundedRod(parent,x,z,top,r,material){return rod([x,groundY(parent,x,z)-.045,z],[x,top,z],r,material,parent)}
 let seed=87;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
 for(let i=0;i<38;i++){const a=rand()*Math.PI*2,r=7.8+rand()*.65,x=Math.cos(a)*r,z=Math.sin(a)*r;if(z>3&&x>-5)continue;const g=surface(x,z),h=.95+rand()*1.25;rod([0,0,0],[0,h,0],.045,wood,g);
  for(let k=0;k<5;k++){const y=.28+k*h*.16,w=(1-k*.16)*h*.29;for(let j=0;j<5;j++){const a=j/5*Math.PI*2+k*.7,branch=ball(Math.cos(a)*w*.50,y,Math.sin(a)*w*.5,1,dark,g);branch.scale.set(w*.67,h*.13,w*.23);branch.rotation.y=-a;branch.rotation.z=Math.cos(a)*-.18;const cap=ball(Math.cos(a)*w*.5,y+h*.055,Math.sin(a)*w*.5,1,snow,g);cap.scale.set(w*.64,h*.10,w*.25);cap.rotation.y=-a}}
@@ -49,23 +52,24 @@ for(let i=0;i<38;i++){const a=rand()*Math.PI*2,r=7.8+rand()*.65,x=Math.cos(a)*r,
 }
 const brickMats=[iceMaterial()];
 const lodge=surface(-1,-.4);lodge.name='warm-ice-lodge';
-const floor=mesh(new T.CylinderGeometry(2.2,2.3,.14,64),snow,lodge);floor.position.y=.03;
+const floor=mesh(new T.CylinderGeometry(2.2,2.3,.70,64),snow,lodge);floor.position.y=-.25;
 // Closed, thick ice blocks with a half-brick offset between courses.
 for(let row=0;row<9;row++){const low=row/9*Math.PI/2,high=(row+1)/9*Math.PI/2,count=24;for(let i=0;i<count;i++){const angle=(i+(row%2)*.5)/count*Math.PI*2,mid=angle+Math.PI/count;if(row<4&&Math.abs(Math.atan2(Math.sin(mid-Math.PI/2),Math.cos(mid-Math.PI/2)))<.29)continue;
 mesh(iceBrick(2.04,angle+.004,Math.PI*2/count-.008,low+.004,high-.004,.14),brickMats[0],lodge)}}
 const door=mesh(new T.CircleGeometry(.64,40),new T.MeshStandardMaterial({color:0xc58b50,emissive:0xffa54c,emissiveIntensity:.6}),lodge);door.scale.y=1.25;door.position.set(0,.70,2.035);
 const arch=new T.Mesh(new T.TorusGeometry(.68,.18,10,28,Math.PI),ice);arch.position.set(0,.58,2.12);lodge.add(arch);box(-.68,.30,2.12,.3,.6,.48,ice,lodge);box(.68,.30,2.12,.3,.6,.48,ice,lodge);
-for(let i=0;i<11;i++)box(0,.035,2.1+i*.23,1.2,.055,.20,wood,lodge);
+for(let i=0;i<11;i++){const z=2.1+i*.23,y=groundY(lodge,0,z);box(0,y+.01,z,1.2,.12,.24,wood,lodge);}
+
 const light=new T.PointLight(0xffb66b,24,9,2);light.position.set(0,1,1.4);lodge.add(light);
-for(const x of [-1.25,1.25]){const post=rod([x,0,2.4],[x,1.15,2.4],.045,wood,lodge);ball(x,1.17,2.4,.12,gold,lodge)}
-function lantern(parent,x,z){rod([x,0,z],[x,.65,z],.024,wood,parent);box(x,.72,z,.18,.25,.18,gold,parent);box(x,.88,z,.24,.05,.24,wood,parent)}
+for(const x of [-1.25,1.25]){const post=groundedRod(lodge,x,2.4,1.15,.045,wood);ball(x,1.17,2.4,.12,gold,lodge)}
+function lantern(parent,x,z){groundedRod(parent,x,z,.65,.024,wood);box(x,.72,z,.18,.25,.18,gold,parent);box(x,.88,z,.24,.05,.24,wood,parent)}
 const path=[];for(let i=0;i<17;i++){const z=3+i*.29,x=-1+Math.sin(i*.20)*1.1;const g=surface(x,z);if(i%3===0&&i<6)lantern(g,-.7,0);for(const side of [-1,1]){const foot=ball(side*.12,.015,0,.07,mat(0xb0c7d5),g);foot.scale.set(.65,.12,1.2)}path.push(g)}
 // Sheltered seating beside the lodge, facing the ice bay.
 const nook=surface(2.1,2.7);
-for(const x of [-.6,.65]){box(x,.25,0,.8,.16,.7,wood,nook);box(x,.51,-.3,.8,.57,.12,wood,nook);box(x,.35,0,.77,.12,.65,mat(x<0?0xc19c86:0x8cacac),nook);for(const s of [-1,1])rod([x+s*.3,0,-.23],[x+s*.3,.23,-.23],.035,wood,nook)}
+for(const x of [-.6,.65]){box(x,.25,0,.8,.16,.7,wood,nook);box(x,.51,-.3,.8,.57,.12,wood,nook);box(x,.35,0,.77,.12,.65,mat(x<0?0xc19c86:0x8cacac),nook);for(const side of [-1,1])for(const z of [-.23,.23])groundedRod(nook,x+side*.3,z,.23,.035,wood)}
 for(const x of [-.6,.65]){const cushion=ball(x,.48,-.16,1,mat(0xb59a83),nook);cushion.scale.set(.28,.22,.10);const blanket=ball(x,.40,.16,1,mat(0x8bacaa),nook);blanket.scale.set(.34,.075,.32)}
 const bear=createTeddy(nook,0);bear.avatar.position.set(-.6,.28,0);bear.avatar.scale.setScalar(.63);bear.seatTick(true,1);bear.relax(true);
-const table=mesh(new T.CylinderGeometry(.30,.32,.10,24),wood,nook);table.position.set(.05,.4,.65);rod([.05,0,.65],[.05,.35,.65],.06,wood,nook);ball(.05,.57,.65,.075,gold,nook);
+const table=mesh(new T.CylinderGeometry(.30,.32,.10,24),wood,nook);table.position.set(.05,.4,.65);groundedRod(nook,.05,.65,.35,.06,wood);ball(.05,.57,.65,.075,gold,nook);
 const nookLight=new T.PointLight(0xffc985,7,4);nookLight.position.set(0,1,0);nook.add(nookLight);
 const floeSlots=[];
 // Preserve the original thin floes and scattering; vary only the polygon perimeter.
@@ -80,7 +84,7 @@ function brokenIceOutline(top,bottom,height,seed){
 for(let i=0;i<22;i++){const x=-3.5+rand()*10,z=5.5+rand()*2.5;if(x*x+z*z>95||Math.asin(Math.hypot(x,z)/10)<shore(Math.atan2(z,x))+.02)continue;const g=surface(x,z,-.08),o=mesh(brokenIceOutline(.18+rand()*.25,.32,.10,i+31),ice,g);o.rotation.y=rand()*6;o.userData.floe=true;floeSlots.push(o)}
 for(let i=0;i<13;i++){const x=-5+rand()*10,z=7.7+rand()*1.5;if(x*x+z*z>97)continue;const g=surface(x,z,-.07),o=mesh(brokenIceOutline(.3+rand()*.4,.5,.10,i+73),snow,g);o.rotation.y=rand()*6;o.userData.floe=true;floeSlots.push(o)}
 // Warm suspended string lights around the outdoor nook.
-for(const x of [-1.5,1.5])rod([x,0,-.7],[x,2,-.7],.035,wood,nook);
+for(const x of [-1.5,1.5])groundedRod(nook,x,-.7,2,.035,wood);
 const curve=new T.CatmullRomCurve3([new T.Vector3(-1.5,2,-.7),new T.Vector3(0,1.65,-.7),new T.Vector3(1.5,2,-.7)]);
 mesh(new T.TubeGeometry(curve,32,.009,4,false),wood,nook);
 for(let i=0;i<13;i++){const v=curve.getPoint(i/12);ball(v.x,v.y-.06,v.z,.037,gold,nook)}

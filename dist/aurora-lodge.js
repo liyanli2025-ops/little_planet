@@ -20,7 +20,7 @@ export function createAuroraLodge(){
  const wall=mesh(iceBrick(3.48,start+.009,end-start-.018,lo+.006,hi-.006,.20),ice);wall.userData.mid=(start+end)/2;walls.push(wall)}}
  const carpet=mesh(new T.CylinderGeometry(1.6,1.6,.022,64),sage,0,.04,.8);carpet.scale.z=.67;
  for(let i=0;i<28;i++){const a=i/28*Math.PI*2;mesh(new T.SphereGeometry(.025,8,6),cream,Math.cos(a)*1.52,.063,.8+Math.sin(a)*1.02)}
- rounded(0,.63,-1.7,3.1,1.18,.65,ice);rounded(0,1.26,-1.7,3.3,.13,.85,wood);
+ rounded(0,.63,-1.7,3.1,1.18,.65,ice.clone());rounded(0,1.26,-1.7,3.3,.13,.85,wood);
  for(let x=-1.45;x<=1.5;x+=.21)rounded(x,.64,-1.345,.08,.95,.04,trim);
  rounded(0,2.13,-2.6,2.8,.13,.35,wood);for(const x of [-1.05,1.05])rounded(x,1.93,-2.65,.075,.32,.18,trim);
  const glass=new T.MeshPhysicalMaterial({color:0xc6edf1,roughness:.13,metalness:.1,transparent:true,opacity:.65,side:T.DoubleSide});

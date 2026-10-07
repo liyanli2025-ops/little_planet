@@ -14,3 +14,10 @@ CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
 https://sketchfab.com/3d-models/holiday-island-3572303ad2564dc1a7da4b2f671ad6c5
 
 Holiday Island: reindeer and sleigh extracted; source placement removed and materials converted. Runtime scales and placement adjusted.
+
+Ice Block — BrysonJones
+https://sketchfab.com/3d-models/ice-block-d420727bf2e541b0a1bd45f749825621
+License: Sketchfab Standard (source metadata). User-provided asset.
+Ice Glacier — Svenja (gwenchana3)
+https://sketchfab.com/3d-models/ice-glacier-933b3c2ee51c48bb958d06655d1ff8bd
+License: CC BY 4.0. Small connected pieces extracted at runtime; scaled and recolored.

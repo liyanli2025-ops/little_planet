@@ -1,4 +1,5 @@
-import {iceMaterial,iceBrick} from './aurora-ice.js';
+import {replaceFloeAssets} from './aurora-floe-assets.js';
+import {iceMaterial,iceBrick,iceAssetsReady} from './aurora-ice.js';
 import {snowShore} from './aurora-terrain.js';
 import {createSleighRide} from './aurora-sleigh.js';
 import {createAuroraWildlife} from './aurora-wildlife.js';
@@ -63,6 +64,7 @@ for(const x of [-.6,.65]){const cushion=ball(x,.48,-.16,1,mat(0xb59a83),nook);cu
 const bear=createTeddy(nook,0);bear.avatar.position.set(-.6,.28,0);bear.avatar.scale.setScalar(.63);bear.seatTick(true,1);bear.relax(true);
 const table=mesh(new T.CylinderGeometry(.30,.32,.10,24),wood,nook);table.position.set(.05,.4,.65);rod([.05,0,.65],[.05,.35,.65],.06,wood,nook);ball(.05,.57,.65,.075,gold,nook);
 const nookLight=new T.PointLight(0xffc985,7,4);nookLight.position.set(0,1,0);nook.add(nookLight);
+const floeSlots=[];
 // Preserve the original thin floes and scattering; vary only the polygon perimeter.
 function brokenIceOutline(top,bottom,height,seed){
  const count=7+seed%4,g=new T.CylinderGeometry(top,bottom,height,count),p=g.attributes.position;
@@ -72,8 +74,8 @@ function brokenIceOutline(top,bottom,height,seed){
  const angle=a+.10*Math.sin(a*2+phase);p.setXYZ(i,Math.cos(angle)*radius,p.getY(i),Math.sin(angle)*radius);
  }g.computeVertexNormals();return g;
 }
-for(let i=0;i<22;i++){const x=-3.5+rand()*10,z=5.5+rand()*2.5;if(x*x+z*z>95||Math.asin(Math.hypot(x,z)/10)<shore(Math.atan2(z,x))+.02)continue;const g=surface(x,z,-.08),o=mesh(brokenIceOutline(.18+rand()*.25,.32,.10,i+31),ice,g);o.rotation.y=rand()*6}
-for(let i=0;i<13;i++){const x=-5+rand()*10,z=7.7+rand()*1.5;if(x*x+z*z>97)continue;const g=surface(x,z,-.07),o=mesh(brokenIceOutline(.3+rand()*.4,.5,.10,i+73),snow,g);o.rotation.y=rand()*6}
+for(let i=0;i<22;i++){const x=-3.5+rand()*10,z=5.5+rand()*2.5;if(x*x+z*z>95||Math.asin(Math.hypot(x,z)/10)<shore(Math.atan2(z,x))+.02)continue;const g=surface(x,z,-.08),o=mesh(brokenIceOutline(.18+rand()*.25,.32,.10,i+31),ice,g);o.rotation.y=rand()*6;o.userData.floe=true;floeSlots.push(o)}
+for(let i=0;i<13;i++){const x=-5+rand()*10,z=7.7+rand()*1.5;if(x*x+z*z>97)continue;const g=surface(x,z,-.07),o=mesh(brokenIceOutline(.3+rand()*.4,.5,.10,i+73),snow,g);o.rotation.y=rand()*6;o.userData.floe=true;floeSlots.push(o)}
 // Warm suspended string lights around the outdoor nook.
 for(const x of [-1.5,1.5])rod([x,0,-.7],[x,2,-.7],.035,wood,nook);
 const curve=new T.CatmullRomCurve3([new T.Vector3(-1.5,2,-.7),new T.Vector3(0,1.65,-.7),new T.Vector3(1.5,2,-.7)]);
@@ -106,9 +108,9 @@ ball(-22,18,-48,1.05,new T.MeshBasicMaterial({color:0xffedce}),scene);
 const hazeCanvas=document.createElement('canvas');hazeCanvas.width=hazeCanvas.height=128;const c=hazeCanvas.getContext('2d'),grad=c.createRadialGradient(64,64,0,64,64,64);grad.addColorStop(0,'rgba(230,240,221,.30)');grad.addColorStop(.25,'rgba(170,214,221,.10)');grad.addColorStop(1,'rgba(160,220,230,0)');c.fillStyle=grad;c.fillRect(0,0,128,128);const halo=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(hazeCanvas),transparent:true,depthWrite:false,blending:T.AdditiveBlending}));halo.position.set(-22,18,-48);halo.scale.set(12,12,1);scene.add(halo);
 world.updateMatrixWorld(true);
 const batches=new Map();
-world.traverse(o=>{if(!o.isMesh||o===sea)return;for(let p=o;p;p=p.parent)if(p===bear.avatar)return;const key=o.material.uuid;let batch=batches.get(key);if(!batch)batches.set(key,batch=[]);batch.push(o)});
-for(const objects of batches.values()){if(objects.length<2)continue;const copies=objects.map(o=>{const g=o.geometry.clone().applyMatrix4(o.matrixWorld);g.deleteAttribute('uv');return g}),merged=mergeGeometries(copies);if(merged){const o=mesh(merged,objects[0].material);for(const old of objects)old.removeFromParent()}for(const g of copies)g.dispose()}
-const wildlife=createAuroraWildlife(world);let assetsReady=false;wildlife.ready.then(()=>assetsReady=true).catch(e=>{document.querySelector('#loading').textContent='模型加载失败，请刷新重试';console.error(e)});
+world.traverse(o=>{if(!o.isMesh||o===sea||o.userData.floe)return;for(let p=o;p;p=p.parent)if(p===bear.avatar)return;const key=o.material.uuid;let batch=batches.get(key);if(!batch)batches.set(key,batch=[]);batch.push(o)});
+for(const objects of batches.values()){if(objects.length<2)continue;const copies=objects.map(o=>{const g=o.geometry.clone().applyMatrix4(o.matrixWorld);if(!o.material.userData.sourceIce)g.deleteAttribute('uv');return g}),merged=mergeGeometries(copies);if(merged){const o=mesh(merged,objects[0].material);for(const old of objects)old.removeFromParent()}for(const g of copies)g.dispose()}
+const wildlife=createAuroraWildlife(world);let assetsReady=false;Promise.all([wildlife.ready,iceAssetsReady,replaceFloeAssets(floeSlots)]).then(()=>assetsReady=true).catch(e=>{document.querySelector('#loading').textContent='模型加载失败，请刷新重试';console.error(e)});
 const ride=createSleighRide(world,wildlife,bear);
 const interior=createAuroraLodge();scene.add(interior.group);
 const lodgeHit=new T.Mesh(new T.SphereGeometry(2.15,16,12),new T.MeshBasicMaterial({visible:false}));lodge.add(lodgeHit);

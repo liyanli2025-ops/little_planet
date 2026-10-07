@@ -55,11 +55,23 @@ for(let i=0;i<13;i++){const v=curve.getPoint(i/12);ball(v.x,v.y-.06,v.z,.037,gol
 const auroras=[];
 const auroraMaterial=new T.ShaderMaterial({transparent:true,depthWrite:false,side:T.BackSide,blending:T.AdditiveBlending,uniforms:{time:{value:0}},
 vertexShader:`varying vec3 skyDirection;void main(){skyDirection=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}`,
-fragmentShader:`varying vec3 skyDirection;uniform float time;void main(){vec3 d=normalize(skyDirection);float longitude=atan(d.z,d.x),latitude=asin(clamp(d.y,-1.,1.));vec3 light=vec3(0.);
-for(int i=0;i<3;i++){float layer=float(i),x=longitude-time*.025+layer*1.7;float edge=-.12+layer*.32+.13*sin(x*3.+time*.12+layer)+.055*sin(x*7.-time*.18);float h=latitude-edge;
-float base=smoothstep(-.015,.045,h),fade=exp(-max(h,0.)*9.);float fold=x+.025*sin(x*5.+time*.22)+.009*sin(latitude*13.-time*.3);float rays=.50+.28*sin(fold*180.+time*.5)+.16*sin(fold*391.-time*.3);float drift=.65+.35*sin(x*2.-time*.12+layer);
-vec3 color=mix(vec3(.10,.90,.57),vec3(.32,.32,.92),smoothstep(.04,.31,h));color=mix(color,vec3(.74,.25,.55),smoothstep(.23,.48,h)*.6);light+=color*base*fade*(.32+rays*.68)*drift*.65;}
-float poleFade=1.-smoothstep(1.25,1.56,abs(latitude));gl_FragColor=vec4(light*poleFade,1.);}`});
+fragmentShader:`varying vec3 skyDirection;uniform float time;
+float hash3(vec3 p){p=fract(p*.1031);p+=dot(p,p.yzx+33.33);return fract((p.x+p.y)*p.z);}
+float noise3(vec3 p){vec3 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(mix(hash3(i),hash3(i+vec3(1,0,0)),f.x),mix(hash3(i+vec3(0,1,0)),hash3(i+vec3(1,1,0)),f.x),f.y),mix(mix(hash3(i+vec3(0,0,1)),hash3(i+vec3(1,0,1)),f.x),mix(hash3(i+vec3(0,1,1)),hash3(i+vec3(1,1,1)),f.x),f.y),f.z);}
+void main(){vec3 d=normalize(skyDirection);float longitude=atan(d.z,d.x),latitude=asin(clamp(d.y,-1.,1.));vec3 light=vec3(0.);
+// Additional smaller ribbons fill the sky; their angular size and luminance do not depend on camera distance.
+for(int i=0;i<6;i++){float layer=float(i),x=longitude-time*(.012+layer*.001)+layer*1.7;vec2 ring=vec2(cos(x),sin(x));
+float broad=noise3(vec3(ring*2.6,time*.045+layer*5.));float detail=noise3(vec3(ring*7.,time*.065+layer*9.));
+float edge=-.42+layer*.235+(broad-.5)*.48+(detail-.5)*.13;float h=latitude-edge;
+float width=.055+broad*.055;float curtain=smoothstep(-.012,.025,h)*exp(-max(h,0.)/width);
+float fold=noise3(vec3(ring*15.,latitude*2.-time*.09+layer*4.));
+float fine=noise3(vec3(ring*(37.+layer*3.)+fold*2.,latitude*3.+time*.11+layer*7.));
+float texture=.26+.44*fold+.30*fine;float patches=.5+.5*broad;
+vec3 color=mix(vec3(.20,.86,.60),vec3(.25,.49,.89),smoothstep(.07,.32,h));color=mix(color,vec3(.62,.32,.72),smoothstep(.24,.5,h)*.45);
+float halo=exp(-abs(h-.04)*18.)*.045;
+light+=color*(curtain*texture+halo)*patches*.87;
+}
+gl_FragColor=vec4(light,1.);}`});
 const auroraSky=new T.Mesh(new T.SphereGeometry(190,96,48),auroraMaterial);auroraSky.name='spherical-aurora-sky';auroraSky.frustumCulled=false;scene.add(auroraSky);auroras.push(auroraMaterial);
 const starsGeo=new T.BufferGeometry(),stars=[];for(let i=0;i<1600;i++){let x=rand()*2-1,y=rand()*.95+.04,z=rand()*2-1;const n=new T.Vector3(x,y,z).normalize().multiplyScalar(160);stars.push(...n.toArray())}starsGeo.setAttribute('position',new T.Float32BufferAttribute(stars,3));scene.add(new T.Points(starsGeo,new T.PointsMaterial({color:0xd0e5f5,size:.28,sizeAttenuation:true,transparent:true,opacity:.8})));
 ball(-22,18,-48,1.05,new T.MeshBasicMaterial({color:0xffedce}),scene);

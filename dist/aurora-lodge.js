@@ -16,8 +16,7 @@ export function createAuroraLodge(){
  for(let i=0;i<pos.count;i++){const nx=Math.abs(norm.getX(i)),ny=Math.abs(norm.getY(i)),nz=Math.abs(norm.getZ(i));const px=(pos.getX(i)-bounds.min.x)/size.x,py=(pos.getY(i)-bounds.min.y)/size.y,pz=(pos.getZ(i)-bounds.min.z)/size.z;if(ny>=nx&&ny>=nz)uv.setXY(i,px,pz);else if(nx>=nz)uv.setXY(i,pz,py);else uv.setXY(i,px,py)}
  return mesh(g,m,x,y-h/2,z)}
  const floor=mesh(new T.CylinderGeometry(3.5,3.6,.18,80),snow,0,-.085,0);
- // Surround the cutaway room with continuous snow instead of an isolated disc in the sky.
- const snowfield=mesh(new T.CircleGeometry(120,96),snow,0,-.012,0);snowfield.rotation.x=-Math.PI/2;snowfield.castShadow=false;
+ // The real planet's snow cap surrounds this floor; no separate backdrop plane.
 
  // Keep a consistent angular pitch across courses so every joint is staggered by half a brick.
  for(let row=0;row<10;row++){const lo=row/10*1.49,hi=(row+1)/10*1.49,pitch=Math.PI/12;

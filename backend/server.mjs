@@ -180,6 +180,7 @@ export const server=http.createServer(async(req,res)=>{
  res.setHeader('X-Frame-Options','DENY');
  try{
   const p=new URL(req.url,'http://local').pathname;
+  if(p==='/aurora.html'||p==='/aurora-preview.html'){res.setHeader('X-Frame-Options','SAMEORIGIN');res.setHeader('Content-Security-Policy',"frame-ancestors 'self'");}
   if(p.startsWith('/api/'))return await api(req,res,p);
   if(p==='/runtime.js'){res.writeHead(200,{'Content-Type':types['.js'],'Cache-Control':'no-store'});return res.end('window.PLANET_RUNTIME={mode:"cloud"};')}
   fail(req.method==='GET'||req.method==='HEAD','方法不支持',405);

@@ -1,3 +1,6 @@
+import {createAuroraLodgeService} from './aurora-lodge.mjs';
+import {auroraPersona,auroraOrderTool} from './aurora-host.mjs';
+import {auroraMenu} from '../dist/aurora-menu.js';
 import {cinemaStream} from './cinema-stream.mjs';
 import {createCafeChat} from './cafe-chat.mjs';
 import {createCafe} from './cafe.mjs';
@@ -38,6 +41,7 @@ setInterval(()=>void studio.tick(),10000).unref();
 const presence=createPresence(),social=createSocial();
 const cafe=createCafe(db,{partner:u=>hub.partner(u),profile:u=>{const {wearables,...appearance}=designService.current(u.id).design.outfit;return {outfit:hub.space(u.space).store.read().state.worlds[u.slot].life?.outfit||'plain',appearance}},deliver(u,item,id){const target=hub.space(u.space).store,row=target.read(),fridge=row.state.worlds[u.slot].fridge;const found=fridge.find(f=>f.food===item.id&&!f.event&&f.qty<999);if(found)found.qty++;else{fail(fridge.length<190,'冰箱满了，先整理一下再带走',409);fridge.push({id,food:item.id,qty:1})}target.db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state))}});
 const cafeChat=createCafeChat({cafe});
+const auroraLodge=createAuroraLodgeService(),auroraChat=createCafeChat({cafe:auroraLodge,persona:auroraPersona,menu:auroraMenu,orderTool:auroraOrderTool,orderReply:args=>'好，'+auroraMenu.find(x=>x.id===args.items[0]).name+'。我这就准备，做好后点吧台上的杯子就能拿。'});
 const ttl=7*86400000;
 const rates=new Map();
 function rate(req,kind,max=20){
@@ -132,6 +136,8 @@ async function api(req,res,p){
  fail(req.headers['x-csrf-token']===u.csrf,'会话验证失败，请刷新页面',403);
  fail(String(u.space)===req.headers['x-planet-space'],'账号或配对状态已更新，请刷新页面后重试',409);
 
+ if(p==='/api/aurora/chat'){fail(!travelService.active(u.id),'小熊正在旅行',409);return json(res,200,await auroraChat.send(u,b))}
+ if(p==='/api/aurora/lodge'){fail(b&&typeof b==='object','操作无效');fail(!travelService.active(u.id)||b.action==='leave','小熊正在旅行',409);return json(res,200,auroraLodge.update(u,b))}
  if(p==='/api/cafe/chat'){fail(!travelService.active(u.id),'小熊正在旅行',409);return json(res,200,await cafeChat.send(u,b))}
  if(p==='/api/cafe'){fail(b&&typeof b==='object','操作无效');fail(!travelService.active(u.id)||b.action==='leave','小熊正在旅行，回来后再来咖啡馆',409);if(b.action==='join')presence.update(u,{hidden:true});return json(res,200,cafe.update(u,b))}
  if(p==='/api/studio'){rate(req,'studio',30);return json(res,200,await studio.start(u.id,b))}

@@ -1,3 +1,4 @@
+import {auroraMenu} from './aurora-menu.js';
 import {iceMaterial,iceBrick} from './aurora-ice.js';
 import * as T from './vendor/three.module.js';
 import {createTeddy} from './teddy.js';
@@ -28,9 +29,8 @@ export function createAuroraLodge(){
  rounded(0,1.96,-2.63,2.65,.12,.38,ice);
  for(const x of [-1.05,1.05])rounded(x,1.72,-2.65,.13,.38,.25,ice);
  const glass=new T.MeshPhysicalMaterial({color:0xc6edf1,roughness:.13,metalness:.1,transparent:true,opacity:.65,side:T.DoubleSide});
- function cup(x,y,z){const c=mesh(new T.CylinderGeometry(.11,.09,.22,24,1,true),glass,x,y+.11,z);mesh(new T.CylinderGeometry(.083,.075,.14,24),new T.MeshStandardMaterial({color:0xc06c56,roughness:.2}),x,y+.08,z);hits.push({object:c,type:'cup'});return c}
+ function cup(x,y,z){const c=mesh(new T.CylinderGeometry(.11,.09,.22,24,1,true),glass,x,y+.11,z);mesh(new T.CylinderGeometry(.083,.075,.14,24),new T.MeshStandardMaterial({color:0xc06c56,roughness:.2}),x,y+.08,z);return c}
  for(let i=0;i<7;i++){const bottle=mesh(new T.CylinderGeometry(.075,.09,.29+(i%3)*.04,16),glass,-1.05+i*.35,2.17,-2.63);mesh(new T.CylinderGeometry(.03,.04,.11,12),ice,bottle.position.x,2.36,-2.63)}
- for(const x of [-1.1,0,1.1])cup(x,1.22,-1.35);
  const seatTop=.73;
  for(const x of [-1.1,0,1.1]){
   rounded(x,.30,-.40,.78,.60,.72,ice);
@@ -53,6 +53,21 @@ export function createAuroraLodge(){
   for(let i=0;i<19;i++){const p=curve.getPoint(i/18);mesh(new T.CylinderGeometry(.009,.009,.075,5),cord,p.x,p.y-.03,p.z);const bulb=mesh(new T.SphereGeometry(.033,8,6),glow,p.x,p.y-.085,p.z);bulb.castShadow=false;glows.push(bulb)}
  }
  for(const x of [-1.4,1.4]){const light=new T.PointLight(0xffd4a0,9,6,2);light.position.set(x,2,-.5);group.add(light)}
+ hits.push({object:host.avatar,type:'host'});
+ const served=cup(.5,1.22,-1.35),servedLiquid=group.children[group.children.indexOf(served)+1];served.visible=servedLiquid.visible=false;
+ hits.push({object:served,type:'served'});
+ const held=cup(-1.1,1.22,-1.1),heldLiquid=group.children[group.children.indexOf(held)+1];held.visible=heldLiquid.visible=false;hits.push({object:held,type:'drink'});
+ let order=null,drinking=false;const ceramic=material(0xe8e2cf);
+ function setOrder(guest){order=guest?.order||null;drinking=!!guest?.held;held.visible=heldLiquid.visible=drinking;if(!order)served.visible=servedLiquid.visible=false;
+ const drink=auroraMenu.find(x=>x.id===(order||guest?.held)?.items?.[0]);
+ if(drink){servedLiquid.material.color.set(drink.color);heldLiquid.material.color.set(drink.color);served.material=held.material=drink.id==='aurora_cocoa'?ceramic:glass;}}
  const exit=rounded(0,.04,3.15,1.25,.035,.42,snow);hits.push({object:exit,type:'exit'});
- return {group,hits,tick(t,camera){for(const w of walls){const a=w.userData.mid;w.visible=-Math.cos(a)*camera.x+Math.sin(a)*camera.z<0}host.body.rotation.z=Math.sin(t*.7)*.018;host.arms[0].rotation.x=-.1+Math.sin(t)*.035},state:()=>({cups:3,seats:3,seatTop,visitorSeatContact:visitor.avatar.position.y+.16*.9*.75})};
+ return {group,hits,setOrder,tick(t,camera){for(const w of walls){const a=w.userData.mid;w.visible=-Math.cos(a)*camera.x+Math.sin(a)*camera.z<0}host.body.rotation.z=Math.sin(t*.7)*.018;const preparing=order&&Date.now()<order.readyAt;
+ host.arms[0].rotation.x=preparing?-.9+Math.sin(t*5)*.28:-.1+Math.sin(t)*.035;
+ host.arms[1].rotation.x=preparing?-.7+Math.cos(t*5)*.18:-.1;
+ host.body.rotation.y=preparing?Math.sin(t*2)*.10:0;
+ served.visible=servedLiquid.visible=!!order&&!preparing;
+ visitor.arms[0].rotation.x=drinking?-.5-Math.max(0,Math.sin(t*1.4))*.8:0;
+ visitor.sipping(drinking&&Math.sin(t*1.4)>.6);
+ if(drinking){group.updateMatrixWorld(true);const hand=visitor.arms[0].localToWorld(new T.Vector3(0,-.29,.10));group.worldToLocal(hand);held.position.copy(hand);heldLiquid.position.copy(hand).y-=.03;}},state:()=>({cups:3,seats:3,seatTop,visitorSeatContact:visitor.avatar.position.y+.16*.9*.75})};
 }

@@ -2,3 +2,27 @@
 .in-aurora #photo-camera{z-index:110}.in-aurora .fm-mini{z-index:111;visibility:visible;pointer-events:auto}.in-aurora #panel{visibility:visible;pointer-events:auto}.in-aurora.photo-mode .fm-mini{visibility:hidden!important}
 
 .in-aurora .fm-mini{left:20px;right:auto;bottom:82px;transform:none;max-width:calc(100vw - 40px)}
+
+/* One quiet navigation shelf leaves the planet unobstructed. */
+body:not(.in-cafe):not(.in-aurora) #app footer{left:50%;transform:translateX(-50%);bottom:calc(22px + env(safe-area-inset-bottom));width:min(360px,calc(100vw - 36px));height:72px;border:1px solid #fff9;border-radius:28px;background:#f9faefe8;box-shadow:0 5px 22px #253d3910;backdrop-filter:blur(16px);padding:6px}
+#app footer nav{display:flex;width:100%;height:100%;align-items:stretch;gap:0}
+#app footer nav>[data-nav=journal]{display:none}
+#app footer nav>[data-nav=home],#app footer nav>#open-daybook,#app footer nav>#public-world-entry,#app footer nav>#home-camera{position:static;display:flex;flex:1;min-width:0;width:auto;height:auto;margin:0;padding:7px 2px;flex-direction:column;align-items:center;justify-content:center;gap:5px;transform:none;border:0;border-radius:20px;background:transparent;box-shadow:none;color:#456352;font:inherit;font-size:11px;line-height:1.2;letter-spacing:.02em}
+#app footer nav>button>span:first-child{display:grid;place-items:center;width:26px;height:26px;font-size:24px;line-height:1}
+#app footer nav>button svg{width:23px;height:23px}
+#app footer #open-daybook>span:last-child{display:none}
+#app footer nav>button:hover{background:#e6eddf80}
+#app footer nav>button:focus-visible{outline:2px solid #6d8a74;outline-offset:-2px}
+body:not(.in-cafe):not(.in-aurora):not(.photo-mode) #photo-camera .photo-shutter{display:none}
+body:not(.in-cafe):not(.in-aurora) .fm-mini{bottom:calc(108px + env(safe-area-inset-bottom));right:18px;max-width:calc(100vw - 36px)}
+body:not(.in-cafe):not(.in-aurora) #world-clock{top:calc(84px + env(safe-area-inset-top));left:24px;display:grid;grid-template-columns:auto auto;column-gap:10px;row-gap:5px;max-width:calc(100vw - 48px)}
+#world-clock .sky-place{font-size:12px;font-weight:500;align-self:center}
+#world-clock .sky-time{font-size:12px;align-self:center;letter-spacing:.03em}
+#world-clock .sky-weather{grid-column:1 / -1;gap:6px;margin:0;align-items:center}
+#world-clock .sky-symbol,#world-clock .sky-temperature{font-size:18px;line-height:1.2}
+#world-clock .sky-condition{font-size:11px;max-width:none}
+@media(max-height:500px){body:not(.in-cafe):not(.in-aurora) #app footer{height:60px;bottom:12px;width:300px}body:not(.in-cafe):not(.in-aurora) #world-clock{top:70px}}
+
+#app footer nav>#open-daybook>span:nth-child(2),#app footer nav>#public-world-entry>span:nth-child(2),#app footer nav>#home-camera>span:nth-child(2){font-size:11px;line-height:1.2;font-weight:500;letter-spacing:.02em}#app footer nav>#open-daybook{background:transparent}#world-clock .sky-weather{flex-wrap:nowrap}#world-clock .sky-condition{display:inline}
+
+body:not(.in-cafe):not(.in-aurora) #world-clock .sky-weather{grid-column:1;grid-row:2}body:not(.in-cafe):not(.in-aurora) #world-clock .sky-condition{grid-column:2;grid-row:2;align-self:center;margin:0}

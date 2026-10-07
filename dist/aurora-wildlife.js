@@ -1,3 +1,4 @@
+import {createRunningDeer} from './aurora-deer-gait.js';
 import {snowShore} from './aurora-terrain.js';
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
@@ -36,21 +37,31 @@ export function createAuroraWildlife(world){
    actors.push({kind:'penguin',mount,body,visual,mixer,actions,index:i,state:'idle',action:'idle',wake,walking:false});
   }}),
   loader.loadAsync('./assets/aurora/polar_bear.glb').then(gltf=>{const mount=anchor(-3.6,1.8),rig=bearRig(gltf.scene),body=rig.group;mount.add(body);actors.push({kind:'polar-bear',mount,body,rig,walking:true})}),
-  Promise.all(['sleigh','reindeer'].map(n=>loader.loadAsync('./assets/aurora/'+n+'.glb'))).then(([s,d])=>{const mount=anchor(-2,4.3),train=new T.Group();mount.add(train);const sleigh=normalize(s.scene,.75);train.add(sleigh);for(let i=0;i<2;i++){const deer=normalize(d.scene.clone(true),1.15);deer.rotation.y=Math.PI;deer.position.set((i?1:-1)*.43,0,1.65);train.add(deer)}
+  Promise.all(['sleigh','reindeer'].map(n=>loader.loadAsync('./assets/aurora/'+n+'.glb'))).then(([s,d])=>{const mount=anchor(-2,4.3),train=new T.Group();mount.add(train);const sleigh=normalize(s.scene,.75);train.add(sleigh);const deerRigs=[];for(let i=0;i<2;i++){const rig=createRunningDeer(d.scene),deer=rig.group;deerRigs.push(rig);deer.rotation.y=Math.PI;deer.position.set((i?1:-1)*.43,0,1.65);train.add(deer)}
    const rope=new T.MeshStandardMaterial({color:0x7c5940,roughness:1});
    for(const x of [-.43,.43]){const curve=new T.CatmullRomCurve3([new T.Vector3(x,.32,.55),new T.Vector3(x,.23,1),new T.Vector3(x,.39,1.65)]);train.add(new T.Mesh(new T.TubeGeometry(curve,20,.012,5,false),rope))}
-   train.rotation.y=-.3;actors.push({kind:'sleigh',mount,body:train});
+   train.rotation.y=-.3;actors.push({kind:'sleigh',mount,body:train,deerRigs});
   })
  ]);
+ let traffic=null;
+ function avoid(a,x,z,dt,water=0){
+  let desired=0;
+  if(traffic&&water===0){const p=new T.Vector3(x,Math.sqrt(Math.max(0,100-x*x-z*z)),z),line=new T.Line3(traffic.start,traffic.end),closest=new T.Vector3();line.closestPointToPoint(p,true,closest);const distance=p.distanceTo(closest);desired=(1-T.MathUtils.smoothstep(distance,1.5,3.8))*1.7}
+  a.avoid=T.MathUtils.damp(a.avoid||0,desired,3,dt);a.yielding=desired>.15;
+  const radius=Math.hypot(x,z),scale=Math.max(.2,(radius-a.avoid)/radius);let nx=x*scale,nz=z*scale;
+  // Small local spacing corrections keep neighbors from occupying the same spot.
+  if(water===0)for(const other of actors){if(other===a||other.kind==='sleigh')continue;const dx=nx-other.mount.position.x,dz=nz-other.mount.position.z,d=Math.hypot(dx,dz),gap=a.kind==='polar-bear'||other.kind==='polar-bear'?.85:.42;if(d>.001&&d<gap){nx+=dx/d*(gap-d)*Math.min(1,dt*3);nz+=dz/d*(gap-d)*Math.min(1,dt*3)}}
+  return {x:nx,z:nz};
+ }
  let last=null,elapsed=0;
- return {ready,tick(t){const dt=last===null?0:Math.min(.06,Math.max(0,t-last));last=t;elapsed+=dt;
+ return {ready,setTraffic(value){traffic=value},tick(t){const dt=last===null?0:Math.min(.06,Math.max(0,t-last));last=t;elapsed+=dt;
   for(const a of actors){
    if(a.kind==='penguin'){
     const r=penguinRoute(elapsed,a.index),next=penguinRoute(elapsed+.025,a.index),key=r.state==='walk'?'walk':r.state==='slide'?'slide':'idle';
     if(key!==a.action){a.actions[a.action].fadeOut(.65);a.actions[key].reset().fadeIn(.65).play();a.action=key}
     a.state=r.state;a.walking=key==='walk';a.mixer.update(dt*(r.state==='swim'?1.8:1));
     if(r.state==='swim'){for(const [name,sign] of [['Flipper1_l_010',1],['Flipper1_r_012',-1]]){const bone=a.visual.getObjectByName(name);if(bone)bone.rotation.z+=Math.sin(elapsed*10+a.index)*.24*sign}}
-    place(a.mount,r.x,r.z);const radius=T.MathUtils.lerp(a.mount.position.length(),9.62,r.water);a.mount.position.setLength(radius+r.lift);
+    const adjusted=avoid(a,r.x,r.z,dt,r.water);place(a.mount,adjusted.x,adjusted.z);const radius=T.MathUtils.lerp(a.mount.position.length(),9.62,r.water);a.mount.position.setLength(radius+r.lift);
     if(Math.hypot(next.x-r.x,next.z-r.z)>.00001){const old=a.body.rotation.y;face(a,next.x-r.x,next.z-r.z);const desired=a.body.rotation.y;a.body.rotation.y=old+Math.atan2(Math.sin(desired-old),Math.cos(desired-old))*Math.min(1,dt*(r.state==='swim'?14:5))}
     a.visual.rotation.x=T.MathUtils.damp(a.visual.rotation.x,r.pitch,7,dt);a.visual.position.y=0;
     const waddle=a.walking?Math.sin(a.actions.walk.time*2*Math.PI/a.actions.walk.getClip().duration)*.11:0;a.visual.rotation.z=T.MathUtils.damp(a.visual.rotation.z,waddle,12,dt);a.visual.position.z=-r.water*.23;
@@ -58,11 +69,11 @@ export function createAuroraWildlife(world){
     a.wake.material.opacity=(r.state==='dive'||r.state==='emerge')?Math.sin(r.water*Math.PI)*.3:0;a.wake.scale.setScalar(1+((elapsed*1.7+a.index)%1)*1.6);
    }else if(a.kind==='polar-bear'){
     const phase=elapsed%60,segment=Math.floor(phase/12),local=phase%12,points=[[-3.9,2.8],[-4.2,4.2],[-2.8,5.0],[-2.4,3.9],[-3.1,3.0]],from=points[segment],to=points[(segment+1)%points.length],u=ease(Math.min(local/8,1));a.walking=local<8;a.state=a.walking?'amble':segment%2?'look-around':'sniff';
-    place(a.mount,T.MathUtils.lerp(from[0],to[0],u),T.MathUtils.lerp(from[1],to[1],u));
+    const adjusted=avoid(a,T.MathUtils.lerp(from[0],to[0],u),T.MathUtils.lerp(from[1],to[1],u),dt);place(a.mount,adjusted.x,adjusted.z);
     const old=a.body.rotation.y;if(a.walking){face(a,to[0]-from[0],to[1]-from[1]);const desired=a.body.rotation.y;a.body.rotation.y=old+Math.atan2(Math.sin(desired-old),Math.cos(desired-old))*Math.min(1,dt*2)}
     const gait=a.walking?Math.sin(Math.PI*Math.min(local/8,1)):0;a.rig.animate(elapsed,gait,a.state);a.body.rotation.z=Math.sin(elapsed*2.8)*.015*gait;
 
    }
   }
- },state:()=>actors.map(a=>({kind:a.kind,height:a.kind==='penguin'?.49+(a.index%3)*.045:undefined,walking:a.walking,activity:a.state,position:a.mount.position.toArray(),heading:a.body.rotation.y})),actors};
+ },state:()=>actors.map(a=>({kind:a.kind,height:a.kind==='penguin'?.49+(a.index%3)*.045:undefined,walking:a.walking,activity:a.state,yielding:!!a.yielding,position:a.mount.position.toArray(),heading:a.body.rotation.y})),actors};
 }

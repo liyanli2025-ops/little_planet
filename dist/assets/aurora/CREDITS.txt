@@ -1,0 +1,16 @@
+Penguin
+Mateus Schwaab (https://sketchfab.com/Mehrus)
+CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+https://sketchfab.com/3d-models/penguin-2c079bc491fb4bb4942c0f87927f8d87
+
+Polar bear
+Gatotron (https://sketchfab.com/gatotron)
+CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+https://sketchfab.com/3d-models/polar-bear-53720baedd98448a8c71395a0a23cc5d
+
+Holiday Island
+Alanna Smylie (https://sketchfab.com/Animal0ver)
+CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+https://sketchfab.com/3d-models/holiday-island-3572303ad2564dc1a7da4b2f671ad6c5
+
+Holiday Island: reindeer and sleigh extracted; source placement removed and materials converted. Runtime scales and placement adjusted.

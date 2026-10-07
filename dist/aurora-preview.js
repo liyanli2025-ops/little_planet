@@ -22,7 +22,7 @@ const sea=mesh(new T.SphereGeometry(10,96,64),new T.MeshStandardMaterial({color:
 // Opaque deep water occludes the far hemisphere while the surface reveals nearby swimmers.
 const deepSea=mesh(new T.SphereGeometry(9.12,64,40),new T.MeshStandardMaterial({color:0x125563,roughness:.5}));deepSea.name='deep-ocean-core';deepSea.receiveShadow=false;
 const oceanTime={value:0};sea.material.onBeforeCompile=shader=>{shader.uniforms.oceanTime=oceanTime;shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>','#include <opaque_fragment>\n gl_FragColor.a=mix(gl_FragColor.a,1.,pow(1.-abs(dot(normal,normalize(vViewPosition))),1.5));');shader.fragmentShader='uniform float oceanTime;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_begin>','#include <normal_fragment_begin>\n normal=normalize(normal+vec3(sin(vViewPosition.x*9.+vViewPosition.y*4.+sin(vViewPosition.y*3.)+oceanTime*.6)*.027,cos(vViewPosition.x*6.+vViewPosition.y*11.+oceanTime*.5)*.009,0.));')};
-const geo=new T.BufferGeometry(),positions=[],indices=[],rows=48,cols=144;
+const geo=new T.BufferGeometry(),positions=[],indices=[],rows=48,cols=384;
 for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){const ph=i/cols*Math.PI*2,th=j/rows*shore(ph),r=10.055+.10*Math.sin(th*3)*Math.sin(ph*3)**2;positions.push(r*Math.sin(th)*Math.cos(ph),r*Math.cos(th),r*Math.sin(th)*Math.sin(ph))}
 for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){let a=j*(cols+1)+i,b=a+cols+1;indices.push(a,b,a+1,b,b+1,a+1)}geo.setAttribute('position',new T.Float32BufferAttribute(positions,3));geo.setIndex(indices);geo.computeVertexNormals();const cap=mesh(geo,snow);cap.material.side=T.DoubleSide;
 // Seal the snow cap all the way into the opaque deep-water core. The top ring
@@ -31,7 +31,9 @@ const edgePositions=[],edgeColors=[],edgeIndices=[],edgeRows=8;
 const upperIce=new T.Color(0xc7e0e9),lowerIce=new T.Color(0x42788d);
 for(let j=0;j<=edgeRows;j++){const t=j/edgeRows;for(let i=0;i<=cols;i++){
  const source=(rows*(cols+1)+i)*3,p=new T.Vector3(positions[source],positions[source+1],positions[source+2]);
- p.setLength(T.MathUtils.lerp(p.length(),9.04,t));edgePositions.push(...p.toArray());
+ // Preserve both sealed rings; recess the middle into irregular fracture faces.
+ const ph=i/cols*Math.PI*2,recess=.035*Math.sin(t*Math.PI)*(.5+.5*Math.sin(ph*37+Math.sin(ph*13)));
+ p.setLength(T.MathUtils.lerp(p.length(),9.04,t)-recess);edgePositions.push(...p.toArray());
  const color=upperIce.clone().lerp(lowerIce,Math.sqrt(t));edgeColors.push(color.r,color.g,color.b);
 }}
 for(let j=0;j<edgeRows;j++)for(let i=0;i<cols;i++){const a=j*(cols+1)+i,b=a+cols+1;edgeIndices.push(a,a+1,b,a+1,b+1,b)}

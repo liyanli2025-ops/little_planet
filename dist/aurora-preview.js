@@ -24,7 +24,10 @@ function rod(a,b,r,m,p=world){const av=new T.Vector3(...a),bv=new T.Vector3(...b
 const shore=snowShore;
 const sea=mesh(new T.SphereGeometry(10,96,64),new T.MeshStandardMaterial({color:0x125563,roughness:.32,metalness:.48,transparent:true,opacity:.64,depthWrite:false}));sea.name='spherical-ice-ocean';sea.renderOrder=5;sea.receiveShadow=false;
 // Opaque deep water occludes the far hemisphere while the surface reveals nearby swimmers.
-const deepSea=mesh(new T.SphereGeometry(9.12,64,40),new T.MeshStandardMaterial({color:0x125563,roughness:.5}));deepSea.name='deep-ocean-core';deepSea.receiveShadow=false;
+const deepGeometry=new T.SphereGeometry(1,96,64),deepPositions=deepGeometry.attributes.position;
+// Keep shallow-water visibility near the ice, without exposing a smaller sphere at the silhouette.
+for(let i=0;i<deepPositions.count;i++){const n=new T.Vector3().fromBufferAttribute(deepPositions,i),shallow=T.MathUtils.smoothstep(n.y,.42,.72),r=T.MathUtils.lerp(9.995,9.12,shallow);deepPositions.setXYZ(i,n.x*r,n.y*r,n.z*r)}deepGeometry.computeVertexNormals();
+const deepSea=mesh(deepGeometry,new T.MeshStandardMaterial({color:0x125563,roughness:.5}));deepSea.name='deep-ocean-core';deepSea.receiveShadow=false;
 const oceanTime={value:0};sea.material.onBeforeCompile=shader=>{shader.uniforms.oceanTime=oceanTime;shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>','#include <opaque_fragment>\n gl_FragColor.a=mix(gl_FragColor.a,1.,pow(1.-abs(dot(normal,normalize(vViewPosition))),1.5));');shader.fragmentShader='uniform float oceanTime;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_begin>','#include <normal_fragment_begin>\n normal=normalize(normal+vec3(sin(vViewPosition.x*9.+vViewPosition.y*4.+sin(vViewPosition.y*3.)+oceanTime*.6)*.027,cos(vViewPosition.x*6.+vViewPosition.y*11.+oceanTime*.5)*.009,0.));')};
 const geo=new T.BufferGeometry(),positions=[],indices=[],rows=48,cols=384;
 for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){const ph=i/cols*Math.PI*2,th=j/rows*shore(ph),r=10.055+.10*Math.sin(th*3)*Math.sin(ph*3)**2;positions.push(r*Math.sin(th)*Math.cos(ph),r*Math.cos(th),r*Math.sin(th)*Math.sin(ph))}

@@ -1,3 +1,4 @@
+import {createCafeMeteors} from './cafe-meteors.js';
 import * as T from './vendor/three.module.js';
 import {createCafeClouds} from './cafe-clouds.js';
 import {cafeSolar} from './cafe-solar.js';
@@ -16,13 +17,14 @@ export function createCafeSky(scene,horizon,sun,ambient){
  const halo=new T.Sprite(new T.SpriteMaterial({map:new T.CanvasTexture(haloCanvas),color:0xffeed1,transparent:true,blending:T.AdditiveBlending,depthWrite:false,toneMapped:false}));halo.name='Soft solar aureole';halo.scale.set(155,155,1);scene.add(halo);
  // A spatial crescent moon follows the island's stylized Beijing-time night cycle.
  const moon=new T.Mesh(new T.SphereGeometry(25,48,32),new T.ShaderMaterial({transparent:true,uniforms:{fade:{value:0},lightDir:{value:new T.Vector3(.92,.12,-.55).normalize()}},vertexShader:'varying vec3 n;void main(){n=normal;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);}',fragmentShader:'uniform float fade;uniform vec3 lightDir;varying vec3 n;void main(){vec3 v=normalize(n);float lit=smoothstep(-.04,.14,dot(v,lightDir));float mottling=.96+.04*sin(v.x*43.)*sin(v.y*37.);vec3 c=mix(vec3(.05,.08,.13),vec3(1.,.88,.66)*mottling,lit);gl_FragColor=vec4(c,fade);}',depthWrite:false}));moon.name='Island moon';scene.add(moon);
- const clouds=createCafeClouds(scene,uniforms);
+ const clouds=createCafeClouds(scene,uniforms),meteors=createCafeMeteors(scene);
  let seed=7321;const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296};const starPositions=[];for(let i=0;i<900;i++){const a=random()*Math.PI*2,up=.025+.965*random(),r=Math.sqrt(1-up*up)*650;starPositions.push(Math.cos(a)*r,up*650,Math.sin(a)*r)}
  const starCanvas=document.createElement('canvas');starCanvas.width=starCanvas.height=32;const ctx=starCanvas.getContext('2d'),gradient=ctx.createRadialGradient(16,16,0,16,16,16);gradient.addColorStop(0,'rgba(255,255,255,1)');gradient.addColorStop(.22,'rgba(255,255,255,1)');gradient.addColorStop(1,'rgba(255,255,255,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,32,32);
  const stars=new T.Points(new T.BufferGeometry().setAttribute('position',new T.Float32BufferAttribute(starPositions,3)),new T.PointsMaterial({color:0xffefd6,map:new T.CanvasTexture(starCanvas),size:4,transparent:true,opacity:0,depthWrite:false,toneMapped:false}));stars.name='Island stars';scene.add(stars);
  const dayTop=new T.Color(0x72b8d6),dayEdge=new T.Color(0xa8d6dd),nightTop=new T.Color(0x101e35),nightEdge=new T.Color(0x344c64),orange=new T.Color(0xeeb38b),rainTop=new T.Color(0x718895),rainEdge=new T.Color(0xb0bdc0);
  function tick(time,wet){const solar=cafeSolar(time),d=solar.direction,t=time/1000;
  const nightHour=solar.hour<12?solar.hour+24:solar.hour,moonProgress=T.MathUtils.clamp((nightHour-18)/12,0,1),moonAz=.34+(moonProgress-1/3)*1.8,moonElevation=.12+Math.sin(moonProgress*Math.PI)*.8;moon.position.set(Math.sin(moonAz)*Math.cos(moonElevation),Math.sin(moonElevation),Math.cos(moonAz)*Math.cos(moonElevation)).multiplyScalar(620);uniforms.moonDirection.value.copy(moon.position).normalize();moon.lookAt(0,0,0);moon.material.uniforms.fade.value=wet?0:1-solar.daylight;moon.visible=moon.material.uniforms.fade.value>.03;uniforms.moonLight.value=moon.material.uniforms.fade.value;
+ meteors.tick(performance.now()/1000,!wet&&solar.daylight<.08&&solar.twilight<.25);
  stars.material.opacity=wet?0:Math.max(0,1-solar.daylight*3-solar.twilight);stars.rotation.y=t*.00001;uniforms.time.value=t%100000;uniforms.direction.value.set(...d);uniforms.light.value=wet?0:solar.daylight;uniforms.warm.value=solar.twilight;
  uniforms.top.value.copy(nightTop).lerp(dayTop,solar.daylight);uniforms.edge.value.copy(nightEdge).lerp(dayEdge,solar.daylight);uniforms.middle.value.copy(uniforms.edge.value).lerp(uniforms.top.value,.45);
  if(!wet){const warmth=solar.twilight;uniforms.edge.value.lerp(new T.Color(0xffa24c),warmth);uniforms.middle.value.lerp(new T.Color(solar.hour<12?0xef9cac:0xe96f91),warmth);uniforms.top.value.lerp(new T.Color(0x60528f),warmth*.9)}else{uniforms.top.value.lerp(rainTop,.65);uniforms.edge.value.lerp(rainEdge,.65);uniforms.middle.value.copy(uniforms.edge.value).lerp(uniforms.top.value,.5)}

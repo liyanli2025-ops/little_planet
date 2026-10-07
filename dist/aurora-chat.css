@@ -7,3 +7,11 @@ body.aurora-preview .cafe-chat-log{min-height:0;max-height:16dvh;font-size:13px;
 body.aurora-preview .cafe-chat-log p{margin:6px 0}body.aurora-preview .cafe-chat-error:empty{display:none}
 body.aurora-preview .cafe-chat form{flex:none;margin-top:7px}body.aurora-preview .cafe-chat input{padding:8px 10px}body.aurora-preview .cafe-chat form button{padding:8px 12px;font-size:13px}
 body.aurora-preview .cafe-chat{position:fixed;bottom:110px;color:#294951}body.aurora-preview .cafe-chat small{letter-spacing:0;color:#45616a}body.aurora-preview .cafe-chat section{max-height:40dvh}
+
+/* Expanded conversations own the lower safe area; tools fold away. */
+body.aurora-preview .cafe-chat:has(section:not([hidden])){left:50%;right:auto;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom) + var(--chat-keyboard,0px));width:min(360px,calc(100% - 28px));z-index:15;text-align:left}
+body.aurora-preview .cafe-chat section{padding:14px 16px;border-radius:22px;max-height:55dvh;box-sizing:border-box}
+body.aurora-preview .cafe-chat-log{max-height:30dvh;min-height:0;overflow:auto}
+body.aurora-preview .cafe-chat form{gap:8px;align-items:center}body.aurora-preview .cafe-chat input{min-height:44px;box-sizing:border-box}body.aurora-preview .cafe-chat form button{min-height:44px;flex-shrink:0}
+
+body.public-chat-open #aurora-music{visibility:hidden}body.aurora-preview.aurora-embedded #aurora-music{display:none}

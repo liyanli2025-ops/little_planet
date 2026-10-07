@@ -26,3 +26,15 @@ body:not(.in-cafe):not(.in-aurora) #world-clock{top:calc(84px + env(safe-area-in
 #app footer nav>#open-daybook>span:nth-child(2),#app footer nav>#public-world-entry>span:nth-child(2),#app footer nav>#home-camera>span:nth-child(2){font-size:11px;line-height:1.2;font-weight:500;letter-spacing:.02em}#app footer nav>#open-daybook{background:transparent}#world-clock .sky-weather{flex-wrap:nowrap}#world-clock .sky-condition{display:inline}
 
 body:not(.in-cafe):not(.in-aurora) #world-clock .sky-weather{grid-column:1;grid-row:2}body:not(.in-cafe):not(.in-aurora) #world-clock .sky-condition{grid-column:2;grid-row:2;align-self:center;margin:0}
+
+#public-tools{display:none;position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:112;width:174px;height:66px;box-sizing:border-box;padding:6px;background:#f9faefed;border:1px solid #fff9;border-radius:26px;box-shadow:0 5px 22px #253d3910;backdrop-filter:blur(16px);gap:4px}
+:is(.in-cafe,.in-aurora) #public-tools{display:flex}
+#public-tools button{display:flex;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:0;background:transparent;color:#456352;border-radius:20px;font:inherit;font-size:11px;cursor:pointer}
+#public-tools button>span:first-child{display:grid;place-items:center;width:24px;height:24px;font-size:24px}#public-tools svg{width:23px;height:23px}#public-tools button:focus-visible{outline:2px solid #6d8a74}
+:is(.in-cafe,.in-aurora):not(.photo-mode) #photo-camera .photo-shutter{display:none}
+.in-cafe .cafe-music{display:none}.in-cafe #cafe .cafe-upper-controls{bottom:calc(104px + env(safe-area-inset-bottom));padding:0;background:transparent}.in-cafe #cafe .cafe-note{bottom:calc(156px + env(safe-area-inset-bottom))}
+:is(.in-cafe,.in-aurora) .fm-mini{bottom:calc(100px + env(safe-area-inset-bottom));left:18px;right:auto;max-width:calc(100vw - 36px)}
+.photo-mode #public-tools,.public-chat-open #public-tools,.public-chat-open #photo-camera,.public-chat-open .fm-mini,.public-chat-open #cafe .cafe-upper-controls,.public-chat-open #cafe .cafe-note{display:none!important}
+body:has(dialog[open]) #public-tools,body:has(#cafe .cafe-menu-book:not([hidden])) #public-tools,body:has(#cafe .cinema-strip:not([hidden])) #public-tools,.cinema-closeup #public-tools{display:none!important}
+
+.in-cafe:has(#cafe .cafe-menu-book:not([hidden])) :is(.fm-mini,#photo-camera),.in-cafe:has(#cafe .cinema-strip:not([hidden])) .fm-mini{display:none!important}.in-cafe:has(#cafe .cafe-menu-book:not([hidden])) .cafe-upper-controls,.in-cafe:has(#cafe .cinema-strip:not([hidden])) .cafe-upper-controls,.in-cafe:has(#cafe .cafe-actions:not([hidden])) .cafe-upper-controls{display:none!important}

@@ -11,6 +11,7 @@ import {createAuroraLodge} from './aurora-lodge.js';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
 import * as T from './vendor/three.module.js';
 import {createTeddy} from './teddy.js';
+if(parent!==window)document.body.classList.add('aurora-embedded');
 const scene=new T.Scene(),camera=new T.PerspectiveCamera(43,innerWidth/innerHeight,.1,450),renderer=new T.WebGLRenderer({antialias:true,alpha:false});
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.setClearColor(0x08172c);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;document.body.prepend(renderer.domElement);
 const world=new T.Group();scene.add(world);scene.add(camera);const snowfall=createAuroraSnow(camera);scene.add(new T.HemisphereLight(0xb4d7ff,0x234251,1.25));

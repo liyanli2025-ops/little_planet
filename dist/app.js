@@ -242,4 +242,4 @@ const photoUI=visual?createPhotoUI({visual:new Proxy(visual,{get(target,key){con
 cafeUI=createCafeUI({cloud,toast,onMusic:()=>mediaUI.show('music'),beforeOpen(){photoUI?.exit();close();closeDaybook();endOutdoor();designUI?.close();peerActions.hidden=true;visual?.stand()},onClose(){photoUI?.exit();refresh()}});
 
 auroraUI=createAuroraUI({cloud,toast,onMusic:()=>mediaUI.show('music'),beforeOpen(){photoUI?.exit();close();closeDaybook();endOutdoor();designUI?.close();peerActions.hidden=true;visual?.stand()},onClose(){refresh()}});
-createPublicWorlds({cafe:cafeUI,aurora:auroraUI});
+createPublicWorlds({cafe:cafeUI,aurora:auroraUI,onMusic:()=>mediaUI.show('music')});

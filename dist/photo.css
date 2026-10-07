@@ -4,3 +4,5 @@ body:has(dialog[open]):not(.photo-mode) #photo-camera,body:has(#planet-arrival:n
 #travel-album>img{object-fit:contain;background:#edeedf;max-height:36dvh}.album-filters{display:flex;gap:8px;margin-bottom:12px}.album-filters button,.album-photo-tools button,.album-photo-tools a{font:inherit!important;font-size:13px!important;width:auto!important;padding:8px 12px;border-radius:18px}.album-filters .selected{background:#e0e8d7}.album-photo-tools{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:8px}.album-photo-tools a{color:inherit}
 
 #travel-album>img{cursor:zoom-in}#travel-album.photo-expanded{width:min(680px,calc(100vw - 32px));max-height:85dvh;bottom:24px}#travel-album.photo-expanded>img{aspect-ratio:auto;max-height:62dvh;cursor:zoom-out}
+
+.in-aurora #photo-camera{z-index:110}.in-aurora #photo-camera .photo-shutter{bottom:calc(24px + env(safe-area-inset-bottom))}.in-aurora .fm-mini{z-index:111;visibility:visible}.in-aurora.photo-mode .fm-mini{visibility:hidden!important}

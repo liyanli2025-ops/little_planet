@@ -237,7 +237,7 @@ function openPeerActions(){close();peerActions.hidden=false}
 document.addEventListener('pointerdown',e=>{if(!peerActions.contains(e.target))peerActions.hidden=true},true);
 peerActions.onclick=e=>{const b=e.target.closest('[data-kind]');if(!b)return;peerActions.hidden=true;handlers['peer-'+b.dataset.kind]?.()};
 
-const photoUI=visual?createPhotoUI({visual:new Proxy(visual,{get(target,key){const source=cafeUI?.active&&['photo','photoPose','photoState','capture'].includes(key)?cafeUI.photoVisual:target;const value=source[key];return typeof value==='function'?value.bind(source):value}}),cloud,toast,onAlbum:()=>travelUI.openAlbum(false,'daily')}):null;
+const photoUI=visual?createPhotoUI({visual:new Proxy(visual,{get(target,key){const source=['photo','photoPose','photoState','capture'].includes(key)?auroraUI?.active?auroraUI.photoVisual:cafeUI?.active?cafeUI.photoVisual:target:target;const value=source[key];return typeof value==='function'?value.bind(source):value}}),cloud,toast,onAlbum:()=>travelUI.openAlbum(false,'daily')}):null;
 
 cafeUI=createCafeUI({cloud,toast,onMusic:()=>mediaUI.show('music'),beforeOpen(){photoUI?.exit();close();closeDaybook();endOutdoor();designUI?.close();peerActions.hidden=true;visual?.stand()},onClose(){photoUI?.exit();refresh()}});
 

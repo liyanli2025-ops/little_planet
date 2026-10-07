@@ -62,7 +62,7 @@ export function createAuroraLodge(){
  const drink=auroraMenu.find(x=>x.id===(order||guest?.held)?.items?.[0]);
  if(drink){servedLiquid.material.color.set(drink.color);heldLiquid.material.color.set(drink.color);served.material=held.material=drink.id==='aurora_cocoa'?ceramic:glass;}}
  const exit=rounded(0,.04,3.15,1.25,.035,.42,snow);hits.push({object:exit,type:'exit'});
- return {group,hits,setOrder,setIdentity:id=>visitor.setIdentity(id),setAppearance(appearance,outfit){visitor.design(appearance);visitor.outfit(outfit||'plain')},pose:()=>({position:visitor.avatar.position.toArray(),quaternion:visitor.avatar.quaternion.toArray(),seated:true}),sit(x){visitor.avatar.position.x=x},tick(t,camera){for(const w of walls){const a=w.userData.mid;w.visible=-Math.cos(a)*camera.x+Math.sin(a)*camera.z<0}host.body.rotation.z=Math.sin(t*.7)*.018;const preparing=order&&Date.now()<order.readyAt;
+ return {group,hits,visitor,setOrder,setIdentity:id=>visitor.setIdentity(id),setAppearance(appearance,outfit){visitor.design(appearance);visitor.outfit(outfit||'plain')},pose:()=>({position:visitor.avatar.position.toArray(),quaternion:visitor.avatar.quaternion.toArray(),seated:true}),sit(x){visitor.avatar.position.x=x},tick(t,camera){for(const w of walls){const a=w.userData.mid;w.visible=-Math.cos(a)*camera.x+Math.sin(a)*camera.z<0}host.body.rotation.z=Math.sin(t*.7)*.018;const preparing=order&&Date.now()<order.readyAt;
  host.arms[0].rotation.x=preparing?-.9+Math.sin(t*5)*.28:-.1+Math.sin(t)*.035;
  host.arms[1].rotation.x=preparing?-.7+Math.cos(t*5)*.18:-.1;
  host.body.rotation.y=preparing?Math.sin(t*2)*.10:0;

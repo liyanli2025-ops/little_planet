@@ -110,7 +110,7 @@ world.updateMatrixWorld(true);
 const batches=new Map();
 world.traverse(o=>{if(!o.isMesh||o===sea||o.userData.floe)return;for(let p=o;p;p=p.parent)if(p===bear.avatar)return;const key=o.material.uuid;let batch=batches.get(key);if(!batch)batches.set(key,batch=[]);batch.push(o)});
 for(const objects of batches.values()){if(objects.length<2)continue;const copies=objects.map(o=>{const g=o.geometry.clone().applyMatrix4(o.matrixWorld);if(!o.material.userData.sourceIce)g.deleteAttribute('uv');return g}),merged=mergeGeometries(copies);if(merged){const o=mesh(merged,objects[0].material);for(const old of objects)old.removeFromParent()}for(const g of copies)g.dispose()}
-const wildlife=createAuroraWildlife(world);let assetsReady=false;Promise.all([wildlife.ready,iceAssetsReady,replaceFloeAssets(floeSlots)]).then(()=>assetsReady=true).catch(e=>{document.querySelector('#loading').textContent='模型加载失败，请刷新重试';console.error(e)});
+const wildlife=createAuroraWildlife(world);let assetsReady=false;Promise.all([wildlife.ready,iceAssetsReady,replaceFloeAssets(floeSlots,world)]).then(()=>assetsReady=true).catch(e=>{document.querySelector('#loading').textContent='模型加载失败，请刷新重试';console.error(e)});
 const ride=createSleighRide(world,wildlife,bear);
 const interior=createAuroraLodge();scene.add(interior.group);
 const lodgeHit=new T.Mesh(new T.SphereGeometry(2.15,16,12),new T.MeshBasicMaterial({visible:false}));lodge.add(lodgeHit);

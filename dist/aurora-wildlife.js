@@ -1,3 +1,4 @@
+import {polarBearRoute} from './aurora-bear-route.js';
 import {createRunningDeer} from './aurora-deer-gait.js';
 import {snowShore} from './aurora-terrain.js';
 import * as T from './vendor/three.module.js';
@@ -27,7 +28,7 @@ export function createAuroraWildlife(world){
   scene.updateMatrixWorld(true);const box=new T.Box3().setFromObject(scene),center=box.getCenter(new T.Vector3()),scale=1.02/(box.max.y-box.min.y),group=new T.Group(),parts=[];
   scene.traverse(o=>{if(!o.isMesh)return;const g=o.geometry.clone();g.applyMatrix4(o.matrixWorld);g.translate(-center.x,-box.min.y,-center.z);g.scale(scale,scale,scale);const mesh=new T.Mesh(g,o.material);mesh.castShadow=mesh.receiveShadow=true;group.add(mesh);parts.push({g,rest:g.attributes.position.array.slice()})});
   // This supplied bear has no skeleton. Soft lower-leg deformation leaves the torso intact.
-  return {group,animate(t,walking,state){for(const {g,rest} of parts){const pos=g.attributes.position;for(let i=0;i<pos.count;i++){const j=i*3,x=rest[j],y=rest[j+1],z=rest[j+2],leg=1-T.MathUtils.smoothstep(y,.20,.53),phase=t*3.8+(x>0?Math.PI:0)+(z>0?Math.PI:0),stride=Math.sin(phase)*walking,head=T.MathUtils.smoothstep(z,.35,.65)*T.MathUtils.smoothstep(y,.42,.65),sniff=state==='sniff'?(.5+.5*Math.sin(t*1.1))*.09:0;pos.setXYZ(i,x+(state==='look-around'?Math.sin(t*.8)*.075*head:0),y+Math.max(0,stride)*.032*leg-sniff*head,z+stride*.095*leg+sniff*.3*head)}pos.needsUpdate=true;g.computeVertexNormals()}}};
+  return {group,animate(t,walking,state){for(const {g,rest} of parts){const pos=g.attributes.position;for(let i=0;i<pos.count;i++){const j=i*3,x=rest[j],y=rest[j+1],z=rest[j+2],leg=1-T.MathUtils.smoothstep(y,.20,.53),phase=t*3.8+(x>0?Math.PI:0)+(z>0?Math.PI:0),stride=Math.sin(phase)*walking,head=T.MathUtils.smoothstep(z,.35,.65)*T.MathUtils.smoothstep(y,.42,.65),sniff=state==='sniff'?(.5+.5*Math.sin(t*1.1))*.09:0;if(state==='swim'){const front=T.MathUtils.smoothstep(z,.08,.35)*leg,back=(1-T.MathUtils.smoothstep(z,-.3,.05))*leg,stroke=t*2.8+(x>0?Math.PI:0);pos.setXYZ(i,x+Math.sin(stroke)*.025*front,y+(.07+Math.cos(stroke)*.065)*front+.14*back,z+Math.sin(stroke)*.16*front-.13*back);continue}pos.setXYZ(i,x+(state==='look-around'?Math.sin(t*.8)*.075*head:0),y+Math.max(0,stride)*.032*leg-sniff*head,z+stride*.095*leg+sniff*.3*head)}pos.needsUpdate=true;g.computeVertexNormals()}}};
  }
  const ready=Promise.all([
   loader.loadAsync('./assets/aurora/penguin.glb').then(gltf=>{for(let i=0;i<8;i++){
@@ -36,7 +37,7 @@ export function createAuroraWildlife(world){
    actions.idle.play();const wake=new T.Mesh(new T.RingGeometry(.12,.15,24),new T.MeshBasicMaterial({color:0xb9eff4,transparent:true,opacity:0,depthWrite:false,side:T.DoubleSide}));wake.rotation.x=-Math.PI/2;mount.add(wake);
    actors.push({kind:'penguin',mount,body,visual,mixer,actions,index:i,state:'idle',action:'idle',wake,walking:false});
   }}),
-  loader.loadAsync('./assets/aurora/polar_bear.glb').then(gltf=>{const mount=anchor(-3.6,1.8),rig=bearRig(gltf.scene),body=rig.group;mount.add(body);actors.push({kind:'polar-bear',mount,body,rig,walking:true})}),
+  loader.loadAsync('./assets/aurora/polar_bear.glb').then(gltf=>{const mount=anchor(-3.6,1.8),rig=bearRig(gltf.scene),body=rig.group;mount.add(body);const wake=new T.Mesh(new T.RingGeometry(.48,.51,40),new T.MeshBasicMaterial({color:0xb9eff4,transparent:true,opacity:0,depthWrite:false,side:T.DoubleSide}));wake.rotation.x=-Math.PI/2;mount.add(wake);actors.push({kind:'polar-bear',mount,body,rig,wake,walking:true})}),
   Promise.all(['sleigh','reindeer'].map(n=>loader.loadAsync('./assets/aurora/'+n+'.glb'))).then(([s,d])=>{const mount=anchor(-2,4.3),train=new T.Group();mount.add(train);const sleigh=normalize(s.scene,.75);train.add(sleigh);const deerRigs=[];for(let i=0;i<2;i++){const rig=createRunningDeer(d.scene),deer=rig.group;deerRigs.push(rig);deer.rotation.y=Math.PI;deer.position.set((i?1:-1)*.43,0,1.65);train.add(deer)}
    const rope=new T.MeshStandardMaterial({color:0x7c5940,roughness:1});
    for(const x of [-.43,.43]){const curve=new T.CatmullRomCurve3([new T.Vector3(x,.32,.55),new T.Vector3(x,.23,1),new T.Vector3(x,.39,1.65)]);train.add(new T.Mesh(new T.TubeGeometry(curve,20,.012,5,false),rope))}
@@ -68,10 +69,13 @@ export function createAuroraWildlife(world){
     a.wake.position.y=r.water*.38;
     a.wake.material.opacity=(r.state==='dive'||r.state==='emerge')?Math.sin(r.water*Math.PI)*.3:0;a.wake.scale.setScalar(1+((elapsed*1.7+a.index)%1)*1.6);
    }else if(a.kind==='polar-bear'){
-    const phase=elapsed%60,segment=Math.floor(phase/12),local=phase%12,points=[[-3.9,2.8],[-4.2,4.2],[-2.8,5.0],[-2.4,3.9],[-3.1,3.0]],from=points[segment],to=points[(segment+1)%points.length],u=ease(Math.min(local/8,1));a.walking=local<8;a.state=a.walking?'amble':segment%2?'look-around':'sniff';
-    const adjusted=avoid(a,T.MathUtils.lerp(from[0],to[0],u),T.MathUtils.lerp(from[1],to[1],u),dt);place(a.mount,adjusted.x,adjusted.z);
-    const old=a.body.rotation.y;if(a.walking){face(a,to[0]-from[0],to[1]-from[1]);const desired=a.body.rotation.y;a.body.rotation.y=old+Math.atan2(Math.sin(desired-old),Math.cos(desired-old))*Math.min(1,dt*2)}
-    const gait=a.walking?Math.sin(Math.PI*Math.min(local/8,1)):0;a.rig.animate(elapsed,gait,a.state);a.body.rotation.z=Math.sin(elapsed*2.8)*.015*gait;
+    const r=polarBearRoute(elapsed),next=polarBearRoute(elapsed+.025);a.walking=r.walking;a.state=r.state;
+    const adjusted=avoid(a,r.x,r.z,dt,r.water);place(a.mount,adjusted.x,adjusted.z);a.mount.position.setLength(T.MathUtils.lerp(a.mount.position.length(),9.40,r.water));
+    if(Math.hypot(next.x-r.x,next.z-r.z)>.00001){const old=a.body.rotation.y;face(a,next.x-r.x,next.z-r.z);const desired=a.body.rotation.y;a.body.rotation.y=old+Math.atan2(Math.sin(desired-old),Math.cos(desired-old))*Math.min(1,dt*3)}
+    a.rig.animate(elapsed,a.walking?1:0,a.state);a.body.rotation.x=T.MathUtils.damp(a.body.rotation.x,r.state==='enter-water'?-.10*r.water:r.state==='climb-out'?.16*r.water:0,4,dt);
+    a.body.rotation.z=r.state==='shake-dry'?Math.sin(elapsed*18)*.055:r.water?Math.sin(elapsed*2.8)*.01:Math.sin(elapsed*2.8)*.015*(a.walking?1:0);
+    a.wake.position.y=10-a.mount.position.length()+.008;a.wake.material.opacity=r.water*.18;a.wake.scale.set(1+.10*Math.sin(elapsed*2),1.35+.12*Math.sin(elapsed*2),1);
+
 
    }
   }

@@ -16,7 +16,7 @@ export function createAuroraWildlife(world){
   if(q>=7&&q<23){state='walk';th=T.MathUtils.lerp(a,edge-.12,ease((q-7)/16))}
   else if(q>=23&&q<29){state='slide';th=T.MathUtils.lerp(edge-.12,edge-.025,ease((q-23)/6))}
   else if(q>=29&&q<31){state='dive';const u=(q-29)/2;th=T.MathUtils.lerp(edge-.025,edge+.105,ease(u));pitch=Math.PI/2*ease(u);lift=Math.sin(u*Math.PI)*.32;water=ease(u)}
-  else if(q>=31&&q<47){state='swim';const u=(q-31)/16*Math.PI*2;phi=ph+.19*Math.sin(u);th=shore(phi)+.105+.15*(1-Math.cos(u));pitch=Math.PI/2;water=1;lift=.025*Math.sin(q*6)}
+  else if(q>=31&&q<47){state='swim';const u=(q-31)/16*Math.PI*6;phi=ph+.19*Math.sin(u);th=shore(phi)+.105+.15*(1-Math.cos(u));pitch=Math.PI/2;water=1;lift=.035*Math.sin(q*2.5)}
   else if(q>=47&&q<50){state='emerge';const u=(q-47)/3;th=T.MathUtils.lerp(edge+.105,edge-.025,ease(u));pitch=Math.PI/2*(1-ease(u));water=1-ease(u);lift=Math.sin(u*Math.PI)*.24}
   else if(q>=50){state='walk';th=T.MathUtils.lerp(edge-.025,a,ease((q-50)/(duration-50)))}
   return {x:10*Math.sin(th)*Math.cos(phi),z:10*Math.sin(th)*Math.sin(phi),state,pitch,lift,water};
@@ -49,9 +49,11 @@ export function createAuroraWildlife(world){
     if(key!==a.action){a.actions[a.action].fadeOut(.65);a.actions[key].reset().fadeIn(.65).play();a.action=key}
     a.state=r.state;a.walking=key==='walk';a.mixer.update(dt*(r.state==='swim'?1.8:1));
     if(r.state==='swim'){for(const [name,sign] of [['Flipper1_l_010',1],['Flipper1_r_012',-1]]){const bone=a.visual.getObjectByName(name);if(bone)bone.rotation.z+=Math.sin(elapsed*10+a.index)*.24*sign}}
-    place(a.mount,r.x,r.z);const radius=T.MathUtils.lerp(a.mount.position.length(),10.015,r.water);a.mount.position.setLength(radius+r.lift);
-    if(Math.hypot(next.x-r.x,next.z-r.z)>.00001){const old=a.body.rotation.y;face(a,next.x-r.x,next.z-r.z);const desired=a.body.rotation.y;a.body.rotation.y=old+Math.atan2(Math.sin(desired-old),Math.cos(desired-old))*Math.min(1,dt*5)}
-    a.visual.rotation.x=T.MathUtils.damp(a.visual.rotation.x,r.pitch,7,dt);a.visual.position.y=r.water*.055;a.visual.position.z=-r.water*.23;
+    place(a.mount,r.x,r.z);const radius=T.MathUtils.lerp(a.mount.position.length(),9.62,r.water);a.mount.position.setLength(radius+r.lift);
+    if(Math.hypot(next.x-r.x,next.z-r.z)>.00001){const old=a.body.rotation.y;face(a,next.x-r.x,next.z-r.z);const desired=a.body.rotation.y;a.body.rotation.y=old+Math.atan2(Math.sin(desired-old),Math.cos(desired-old))*Math.min(1,dt*(r.state==='swim'?14:5))}
+    a.visual.rotation.x=T.MathUtils.damp(a.visual.rotation.x,r.pitch,7,dt);a.visual.position.y=0;
+    const waddle=a.walking?Math.sin(a.actions.walk.time*2*Math.PI/a.actions.walk.getClip().duration)*.11:0;a.visual.rotation.z=T.MathUtils.damp(a.visual.rotation.z,waddle,12,dt);a.visual.position.z=-r.water*.23;
+    a.wake.position.y=r.water*.38;
     a.wake.material.opacity=(r.state==='dive'||r.state==='emerge')?Math.sin(r.water*Math.PI)*.3:0;a.wake.scale.setScalar(1+((elapsed*1.7+a.index)%1)*1.6);
    }else if(a.kind==='polar-bear'){
     const phase=elapsed%60,segment=Math.floor(phase/12),local=phase%12,points=[[-3.9,2.8],[-4.2,4.2],[-2.8,5.0],[-2.4,3.9],[-3.1,3.0]],from=points[segment],to=points[(segment+1)%points.length],u=ease(Math.min(local/8,1));a.walking=local<8;a.state=a.walking?'amble':segment%2?'look-around':'sniff';

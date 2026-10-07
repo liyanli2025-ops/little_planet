@@ -1,3 +1,4 @@
+import {iceMaterial,iceBrick} from './aurora-ice.js';
 import {snowShore} from './aurora-terrain.js';
 import {createSleighRide} from './aurora-sleigh.js';
 import {createAuroraWildlife} from './aurora-wildlife.js';
@@ -29,12 +30,12 @@ for(let i=0;i<38;i++){const a=rand()*Math.PI*2,r=7.8+rand()*.65,x=Math.cos(a)*r,
  for(let k=0;k<5;k++){const y=.28+k*h*.16,w=(1-k*.16)*h*.29;for(let j=0;j<5;j++){const a=j/5*Math.PI*2+k*.7,branch=ball(Math.cos(a)*w*.50,y,Math.sin(a)*w*.5,1,dark,g);branch.scale.set(w*.67,h*.13,w*.23);branch.rotation.y=-a;branch.rotation.z=Math.cos(a)*-.18;const cap=ball(Math.cos(a)*w*.5,y+h*.055,Math.sin(a)*w*.5,1,snow,g);cap.scale.set(w*.64,h*.10,w*.25);cap.rotation.y=-a}}
  ball(0,h*.98,0,h*.085,snow,g);
 }
-const brickMats=Array.from({length:6},(_,i)=>{const m=ice.clone();m.color.setHSL(.535,.24,.63+i*.014);return m});
+const brickMats=[iceMaterial()];
 const lodge=surface(-1,-.4);lodge.name='warm-ice-lodge';
-const floor=mesh(new T.CylinderGeometry(2.2,2.3,.14,64),wood,lodge);floor.position.y=.03;
-// Individual curved ice bricks, with a front doorway left open.
-for(let row=0;row<8;row++){const low=row/8*Math.PI/2,high=(row+1)/8*Math.PI/2,count=Math.max(5,Math.round(24*Math.cos(low)));for(let i=0;i<count;i++){const angle=(i+(row%2)*.5)/count*Math.PI*2,mid=angle+Math.PI/count;if(row<4&&Math.abs(Math.atan2(Math.sin(mid-Math.PI/2),Math.cos(mid-Math.PI/2)))<.29)continue;
-const g=new T.SphereGeometry(2.04,10,4,angle+.003,Math.PI*2/count-.006,Math.PI/2-high+.003,high-low-.006);mesh(g,brickMats[Math.floor(rand()*brickMats.length)],lodge);}}
+const floor=mesh(new T.CylinderGeometry(2.2,2.3,.14,64),snow,lodge);floor.position.y=.03;
+// Closed, thick ice blocks with a half-brick offset between courses.
+for(let row=0;row<9;row++){const low=row/9*Math.PI/2,high=(row+1)/9*Math.PI/2,count=24;for(let i=0;i<count;i++){const angle=(i+(row%2)*.5)/count*Math.PI*2,mid=angle+Math.PI/count;if(row<4&&Math.abs(Math.atan2(Math.sin(mid-Math.PI/2),Math.cos(mid-Math.PI/2)))<.29)continue;
+mesh(iceBrick(2.04,angle+.004,Math.PI*2/count-.008,low+.004,high-.004,.14),brickMats[0],lodge)}}
 const door=mesh(new T.CircleGeometry(.64,40),new T.MeshStandardMaterial({color:0xc58b50,emissive:0xffa54c,emissiveIntensity:.6}),lodge);door.scale.y=1.25;door.position.set(0,.70,2.035);
 const arch=new T.Mesh(new T.TorusGeometry(.68,.18,10,28,Math.PI),ice);arch.position.set(0,.58,2.12);lodge.add(arch);box(-.68,.30,2.12,.3,.6,.48,ice,lodge);box(.68,.30,2.12,.3,.6,.48,ice,lodge);
 for(let i=0;i<11;i++)box(0,.035,2.1+i*.23,1.2,.055,.20,wood,lodge);

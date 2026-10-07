@@ -1,17 +1,20 @@
+import {iceMaterial,iceBrick} from './aurora-ice.js';
 import * as T from './vendor/three.module.js';
 import {createTeddy} from './teddy.js';
 export function createAuroraLodge(){
  const group=new T.Group(),hits=[],glows=[],walls=[];group.position.y=-50;group.visible=false;
  const material=(color)=>new T.MeshStandardMaterial({color,roughness:.78});
  const wood=material(0x654435),trim=material(0xbfa078),cream=material(0xe9d9b9),sage=material(0x638d8e),rose=material(0xb87968);
- const ice=new T.MeshPhysicalMaterial({color:0x99cbd4,roughness:.4,metalness:.08,side:T.DoubleSide});
+ const ice=iceMaterial();const snow=material(0xe5f0f4);
+ const snowCanvas=document.createElement('canvas');snowCanvas.width=snowCanvas.height=128;const snowContext=snowCanvas.getContext('2d'),pixels=snowContext.createImageData(128,128);for(let i=0;i<128*128;i++){const value=130+Math.sin(i*12.9898)*Math.sin(i*.731)*38;pixels.data.set([value,value,value,255],i*4)}snowContext.putImageData(pixels,0,0);const grain=new T.CanvasTexture(snowCanvas);grain.wrapS=grain.wrapT=T.RepeatWrapping;grain.repeat.set(9,9);snow.bumpMap=grain;snow.bumpScale=.018;snow.roughness=1;
  const glow=new T.MeshStandardMaterial({color:0xffd49e,emissive:0xffbc6b,emissiveIntensity:1.1});
  function mesh(g,m,x=0,y=0,z=0){const o=new T.Mesh(g,m);o.position.set(x,y,z);o.castShadow=o.receiveShadow=true;group.add(o);return o}
  function rounded(x,y,z,w,h,d,m){const s=new T.Shape(),r=Math.min(.13,w/4,d/4);s.moveTo(-w/2+r,-d/2);s.lineTo(w/2-r,-d/2);s.quadraticCurveTo(w/2,-d/2,w/2,-d/2+r);s.lineTo(w/2,d/2-r);s.quadraticCurveTo(w/2,d/2,w/2-r,d/2);s.lineTo(-w/2+r,d/2);s.quadraticCurveTo(-w/2,d/2,-w/2,d/2-r);s.lineTo(-w/2,-d/2+r);s.quadraticCurveTo(-w/2,-d/2,-w/2+r,-d/2);const g=new T.ExtrudeGeometry(s,{depth:h,bevelEnabled:true,bevelSize:.025,bevelThickness:.025,bevelSegments:2,steps:1});g.rotateX(-Math.PI/2);return mesh(g,m,x,y-h/2,z)}
- const floor=mesh(new T.CylinderGeometry(3.5,3.6,.16,80),wood,0,-.08,0);
- for(let z=-3.3;z<3.4;z+=.24){const w=2*Math.sqrt(3.45**2-z*z);rounded(0,.012,z,w,.022,.222,trim)}
- // Open-front dome reveals the room without putting a wall in the camera.
- for(let row=0;row<9;row++){const lo=row/9*1.43,hi=(row+1)/9*1.43;for(let i=0;i<18;i++){const a=Math.PI+i/18*Math.PI+.01,g=new T.SphereGeometry(3.48,8,4,a,Math.PI/18-.012,Math.PI/2-hi+.006,hi-lo-.012);const wall=mesh(g,ice);wall.userData.mid=a+Math.PI/36;walls.push(wall)}}
+ const floor=mesh(new T.CylinderGeometry(3.5,3.6,.18,80),snow,0,-.085,0);
+ // Keep a consistent angular pitch across courses so every joint is staggered by half a brick.
+ for(let row=0;row<10;row++){const lo=row/10*1.49,hi=(row+1)/10*1.49,pitch=Math.PI/12;
+ for(let i=-1;i<13;i++){const start=Math.max(Math.PI,Math.PI+(i+(row%2)*.5)*pitch),end=Math.min(Math.PI*2,Math.PI+(i+1+(row%2)*.5)*pitch);if(end-start<.02)continue;
+ const wall=mesh(iceBrick(3.48,start+.009,end-start-.018,lo+.006,hi-.006,.20),ice);wall.userData.mid=(start+end)/2;walls.push(wall)}}
  const carpet=mesh(new T.CylinderGeometry(1.6,1.6,.022,64),sage,0,.04,.8);carpet.scale.z=.67;
  for(let i=0;i<28;i++){const a=i/28*Math.PI*2;mesh(new T.SphereGeometry(.025,8,6),cream,Math.cos(a)*1.52,.063,.8+Math.sin(a)*1.02)}
  rounded(0,.63,-1.7,3.1,1.18,.65,ice);rounded(0,1.26,-1.7,3.3,.13,.85,wood);
@@ -30,6 +33,6 @@ export function createAuroraLodge(){
  const light=new T.PointLight(0xffbf7b,23,9,2);light.position.set(0,2.2,.6);group.add(light);
  const curve=new T.CatmullRomCurve3([new T.Vector3(-2.9,1.8,-.9),new T.Vector3(0,2.65,-2.9),new T.Vector3(2.9,1.8,-.9)]);
  mesh(new T.TubeGeometry(curve,48,.009,5,false),wood);for(let i=0;i<25;i++){const p=curve.getPoint(i/24);mesh(new T.SphereGeometry(.028,8,6),glow,p.x,p.y,p.z)}
- const exit=rounded(0,.04,3.15,1.25,.035,.42,trim);hits.push({object:exit,type:'exit'});
+ const exit=rounded(0,.04,3.15,1.25,.035,.42,snow);hits.push({object:exit,type:'exit'});
  return {group,hits,tick(t,camera){for(const w of walls){const a=w.userData.mid;w.visible=-Math.cos(a)*camera.x+Math.sin(a)*camera.z<0}host.body.rotation.z=Math.sin(t*.7)*.018;host.arms[0].rotation.x=-.1+Math.sin(t)*.035},state:()=>({cups:5})};
 }

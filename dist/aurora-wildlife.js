@@ -1,3 +1,4 @@
+import {snowShore} from './aurora-terrain.js';
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 export function createAuroraWildlife(world){
@@ -8,7 +9,7 @@ export function createAuroraWildlife(world){
  // Convert a world-space route tangent to the animal's local spherical frame.
  function face(a,dx,dz){const n=a.mount.position.clone().normalize(),v=new T.Vector3(dx,-(n.x*dx+n.z*dz)/n.y,dz);v.applyQuaternion(a.mount.quaternion.clone().invert());a.body.rotation.y=Math.atan2(v.x,v.z)}
  function cloneAnimal(source){const copy=source.clone(true),map=new Map();function pair(a,b){map.set(a,b);a.children.forEach((c,i)=>pair(c,b.children[i]))}pair(source,copy);source.traverse(o=>{if(o.isSkinnedMesh){const c=map.get(o);c.skeleton=o.skeleton.clone();c.skeleton.bones=o.skeleton.bones.map(b=>map.get(b));c.bind(c.skeleton,o.bindMatrix)}});return copy}
- const shore=ph=>1.01+.11*Math.sin(ph*2+.7)+.065*Math.cos(ph*3-1);
+ const shore=snowShore;
  const ease=x=>x*x*(3-2*x);
  function penguinRoute(t,i){
   const duration=66+i*.7,q=(t+i*8.2)%duration,ph=.53+i*.11,edge=shore(ph),a=.59+(i%3)*.045;

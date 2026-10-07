@@ -1,0 +1,7 @@
+export function createPublicWorlds({cafe,aurora}){
+ const style=document.createElement('link');style.rel='stylesheet';style.href='./public-worlds.css';document.head.append(style);
+ const button=document.createElement('button');button.id='public-world-entry';button.innerHTML='<span aria-hidden="true">✧</span> 去逛逛';button.setAttribute('aria-haspopup','dialog');button.setAttribute('aria-controls','public-worlds');document.querySelector('.scene-wrap').append(button);
+ const panel=document.createElement('dialog');panel.id='public-worlds';panel.setAttribute('aria-label','去逛逛');panel.innerHTML='<div class="places-head"><span>去逛逛</span><button class="places-close" aria-label="关闭">×</button></div><button class="place" data-place="cafe"><span class="place-symbol" aria-hidden="true">☕</span><span><strong>海风来信</strong><small>海边咖啡、沙滩电影</small></span><span class="arrow">↗</span></button><button class="place" data-place="aurora"><span class="place-symbol" aria-hidden="true">❄</span><span><strong>极光雪境</strong><small>冰屋小酌、雪橇巡游</small></span><span class="arrow">↗</span></button>';document.body.append(panel);
+ button.onclick=()=>panel.showModal();panel.querySelector('.places-close').onclick=()=>panel.close();panel.onclick=e=>{if(e.target===panel)panel.close();const choice=e.target.closest('[data-place]');if(choice){panel.close();(choice.dataset.place==='cafe'?cafe:aurora).open();}};
+ return {close:()=>panel.close()};
+}

@@ -1,0 +1,12 @@
+import * as T from './vendor/three.module.js';
+// Camera-local foreground snowfall: orbiting the globe cannot invert gravity.
+export function createAuroraSnow(camera){
+ const count=innerWidth<600?110:180,positions=new Float32Array(count*3),sizes=new Float32Array(count),tiles=new Float32Array(count*2),flakes=[];
+ let seed=771;const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296};
+ for(let i=0;i<count;i++){flakes.push({x:rand()*2-1,y:rand()*2-1,speed:.09+rand()*.14,phase:rand()*6.28,depth:3+rand()*2});sizes[i]=2.5+rand()*4.5;const tile=i%3;tiles[i*2]=tile===0?0:.5;tiles[i*2+1]=tile===2?.5:0;}
+ const geo=new T.BufferGeometry();geo.setAttribute('position',new T.BufferAttribute(positions,3));geo.setAttribute('flakeSize',new T.BufferAttribute(sizes,1));geo.setAttribute('tile',new T.BufferAttribute(tiles,2));
+ const material=new T.ShaderMaterial({transparent:true,depthWrite:false,depthTest:false,uniforms:{map:{value:null},pixelRatio:{value:Math.min(devicePixelRatio,1.5)}},vertexShader:`attribute float flakeSize;attribute vec2 tile;varying vec2 vTile;uniform float pixelRatio;void main(){vTile=tile;gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.);gl_PointSize=flakeSize*pixelRatio;}`,fragmentShader:`uniform sampler2D map;varying vec2 vTile;void main(){vec4 snow=texture2D(map,vTile+vec2(gl_PointCoord.x,1.-gl_PointCoord.y)*.5);float alpha=snow.a*.68;if(alpha<.03)discard;gl_FragColor=vec4(mix(snow.rgb,vec3(1.),.65),alpha);}`});
+ const points=new T.Points(geo,material);points.name='outdoor-foreground-snow';points.frustumCulled=false;points.renderOrder=1000;camera.add(points);points.visible=false;let loaded=false,active=false,time=0;
+ const ready=new T.TextureLoader().loadAsync('./assets/aurora/snowflake.png').then(t=>{material.uniforms.map.value=t;loaded=true});
+ return {ready,tick(dt,outdoors){active=outdoors;points.visible=loaded&&active;if(!active)return;time+=dt;const tangent=Math.tan(camera.fov*Math.PI/360);for(let i=0;i<count;i++){const f=flakes[i];f.y-=dt*f.speed;if(f.y< -1.1){f.y=1.1;f.x=rand()*2-1;}const h=tangent*f.depth;positions[i*3]=(f.x+Math.sin(time*.4+f.phase)*.025)*h*camera.aspect;positions[i*3+1]=f.y*h;positions[i*3+2]=-f.depth;}geo.attributes.position.needsUpdate=true;},state:()=>({loaded,visible:points.visible,count,firstY:flakes[0].y}),dispose(){points.removeFromParent();geo.dispose();material.uniforms.map.value?.dispose();material.dispose()}};
+}

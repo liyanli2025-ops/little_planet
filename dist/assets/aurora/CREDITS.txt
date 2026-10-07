@@ -21,3 +21,7 @@ License: Sketchfab Standard (source metadata). User-provided asset.
 Ice Glacier — Svenja (gwenchana3)
 https://sketchfab.com/3d-models/ice-glacier-933b3c2ee51c48bb958d06655d1ff8bd
 License: CC BY 4.0. Connected pieces extracted at runtime, including the largest iceberg; uniformly scaled and repositioned. Source textures and material retained.
+
+Looping Snow 2 — Elin (ElinHohler)
+https://sketchfab.com/3d-models/looping-snow-2-939d059c7a43424f93c3e8e44e1d5489
+CC BY 4.0. User-provided GLB. Snowflake atlas extracted; camera-local downward animation replaces the source motion.

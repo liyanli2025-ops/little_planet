@@ -37,3 +37,5 @@ Killer Whale by Abner Wu (https://sketchfab.com/dashdu)
 https://sketchfab.com/3d-models/killer-whale-63b680d7e58f463a9868ed7bf163094a
 Both CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
 User-supplied models; textures resized, unused data pruned, scene objects rearranged and scaled.
+
+Going Merry ship: user supplied one_piece_-going_merry.glb (2026-10-07). Original creator/license metadata was not included with the supplied file.

@@ -19,11 +19,24 @@ function rod(a,b,r,m,p=world){const av=new T.Vector3(...a),bv=new T.Vector3(...b
 const shore=snowShore;
 const sea=mesh(new T.SphereGeometry(10,96,64),new T.MeshStandardMaterial({color:0x125563,roughness:.32,metalness:.48,transparent:true,opacity:.64,depthWrite:false}));sea.name='spherical-ice-ocean';sea.renderOrder=5;sea.receiveShadow=false;
 // Opaque deep water occludes the far hemisphere while the surface reveals nearby swimmers.
-const deepSea=mesh(new T.SphereGeometry(9.12,64,40),new T.MeshStandardMaterial({color:0x06323e,roughness:1}));deepSea.name='deep-ocean-core';deepSea.receiveShadow=false;
-const oceanTime={value:0};sea.material.onBeforeCompile=shader=>{shader.uniforms.oceanTime=oceanTime;shader.fragmentShader='uniform float oceanTime;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_begin>','#include <normal_fragment_begin>\n normal=normalize(normal+vec3(sin(vViewPosition.x*9.+vViewPosition.y*4.+sin(vViewPosition.y*3.)+oceanTime*.6)*.027,cos(vViewPosition.x*6.+vViewPosition.y*11.+oceanTime*.5)*.009,0.));')};
+const deepSea=mesh(new T.SphereGeometry(9.12,64,40),new T.MeshStandardMaterial({color:0x125563,roughness:.5}));deepSea.name='deep-ocean-core';deepSea.receiveShadow=false;
+const oceanTime={value:0};sea.material.onBeforeCompile=shader=>{shader.uniforms.oceanTime=oceanTime;shader.fragmentShader=shader.fragmentShader.replace('#include <opaque_fragment>','#include <opaque_fragment>\n gl_FragColor.a=mix(gl_FragColor.a,1.,pow(1.-abs(dot(normal,normalize(vViewPosition))),1.5));');shader.fragmentShader='uniform float oceanTime;\n'+shader.fragmentShader;shader.fragmentShader=shader.fragmentShader.replace('#include <normal_fragment_begin>','#include <normal_fragment_begin>\n normal=normalize(normal+vec3(sin(vViewPosition.x*9.+vViewPosition.y*4.+sin(vViewPosition.y*3.)+oceanTime*.6)*.027,cos(vViewPosition.x*6.+vViewPosition.y*11.+oceanTime*.5)*.009,0.));')};
 const geo=new T.BufferGeometry(),positions=[],indices=[],rows=48,cols=144;
 for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){const ph=i/cols*Math.PI*2,th=j/rows*shore(ph),r=10.055+.10*Math.sin(th*3)*Math.sin(ph*3)**2;positions.push(r*Math.sin(th)*Math.cos(ph),r*Math.cos(th),r*Math.sin(th)*Math.sin(ph))}
 for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){let a=j*(cols+1)+i,b=a+cols+1;indices.push(a,b,a+1,b,b+1,a+1)}geo.setAttribute('position',new T.Float32BufferAttribute(positions,3));geo.setIndex(indices);geo.computeVertexNormals();const cap=mesh(geo,snow);cap.material.side=T.DoubleSide;
+// Seal the snow cap all the way into the opaque deep-water core. The top ring
+// reuses its exact boundary vertices so orbiting cannot reveal an open shell.
+const edgePositions=[],edgeColors=[],edgeIndices=[],edgeRows=8;
+const upperIce=new T.Color(0xc7e0e9),lowerIce=new T.Color(0x42788d);
+for(let j=0;j<=edgeRows;j++){const t=j/edgeRows;for(let i=0;i<=cols;i++){
+ const source=(rows*(cols+1)+i)*3,p=new T.Vector3(positions[source],positions[source+1],positions[source+2]);
+ p.setLength(T.MathUtils.lerp(p.length(),9.04,t));edgePositions.push(...p.toArray());
+ const color=upperIce.clone().lerp(lowerIce,Math.sqrt(t));edgeColors.push(color.r,color.g,color.b);
+}}
+for(let j=0;j<edgeRows;j++)for(let i=0;i<cols;i++){const a=j*(cols+1)+i,b=a+cols+1;edgeIndices.push(a,a+1,b,a+1,b+1,b)}
+const edgeGeometry=new T.BufferGeometry();edgeGeometry.setAttribute('position',new T.Float32BufferAttribute(edgePositions,3));edgeGeometry.setAttribute('color',new T.Float32BufferAttribute(edgeColors,3));edgeGeometry.setIndex(edgeIndices);edgeGeometry.computeVertexNormals();
+const iceCoast=mesh(edgeGeometry,new T.MeshStandardMaterial({vertexColors:true,roughness:.62,side:T.DoubleSide}));iceCoast.name='closed-submerged-ice-coast';iceCoast.castShadow=false;
+
 function surface(x,z,lift=0){const o=new T.Group(),n=new T.Vector3(x,Math.sqrt(Math.max(1,100-x*x-z*z)),z).normalize();o.position.copy(n).multiplyScalar(10.09+lift);o.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),n);world.add(o);return o}
 let seed=87;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
 for(let i=0;i<38;i++){const a=rand()*Math.PI*2,r=7.8+rand()*.65,x=Math.cos(a)*r,z=Math.sin(a)*r;if(z>3&&x>-5)continue;const g=surface(x,z),h=.95+rand()*1.25;rod([0,0,0],[0,h,0],.045,wood,g);

@@ -47,8 +47,24 @@ for(const x of [-.6,.65]){const cushion=ball(x,.48,-.16,1,mat(0xb59a83),nook);cu
 const bear=createTeddy(nook,0);bear.avatar.position.set(-.6,.28,0);bear.avatar.scale.setScalar(.63);bear.seatTick(true,1);bear.relax(true);
 const table=mesh(new T.CylinderGeometry(.30,.32,.10,24),wood,nook);table.position.set(.05,.4,.65);rod([.05,0,.65],[.05,.35,.65],.06,wood,nook);ball(.05,.57,.65,.075,gold,nook);
 const nookLight=new T.PointLight(0xffc985,7,4);nookLight.position.set(0,1,0);nook.add(nookLight);
-for(let i=0;i<22;i++){const x=-3.5+rand()*10,z=5.5+rand()*2.5;if(x*x+z*z>95||Math.asin(Math.hypot(x,z)/10)<shore(Math.atan2(z,x))+.02)continue;const g=surface(x,z,-.08),o=mesh(new T.CylinderGeometry(.18+rand()*.25,.32,.10,6),ice,g);o.rotation.y=rand()*6}
-for(let i=0;i<13;i++){const x=-5+rand()*10,z=7.7+rand()*1.5;if(x*x+z*z>97)continue;const g=surface(x,z,-.07),o=mesh(new T.CylinderGeometry(.3+rand()*.4,.5,.10,7),snow,g);o.rotation.y=rand()*6}
+// Broken floes: unique outlines, softened snow caps and submerged blue ice sides.
+const floeIce=new T.MeshStandardMaterial({color:0x83b9c9,roughness:.39,metalness:.03});
+const floeSnow=new T.MeshStandardMaterial({color:0xdceaf0,roughness:.93});
+const floeCenters=[];
+for(let attempt=0;attempt<160&&floeCenters.length<19;attempt++){
+ const ph=.76+rand()*1.5,th=shore(ph)+.11+rand()*.26,size=.22+rand()*.48;
+ const n=new T.Vector3(Math.sin(th)*Math.cos(ph),Math.cos(th),Math.sin(th)*Math.sin(ph)),center=n.clone().multiplyScalar(10.02);
+ if(floeCenters.some(f=>f.center.distanceTo(center)<f.size+size+.19))continue;
+ floeCenters.push({center,size});const g=new T.Group();g.position.copy(center);g.quaternion.setFromUnitVectors(new T.Vector3(0,1,0),n);world.add(g);
+ const shape=new T.Shape(),count=10+Math.floor(rand()*5),stretch=.68+rand()*.38,outline=[];
+ for(let j=0;j<count;j++){const angle=j/count*Math.PI*2,r=size*(.53+rand()*.47);outline.push(new T.Vector2(Math.cos(angle)*r,Math.sin(angle)*r*stretch))}
+ const contour=new T.CatmullRomCurve3(outline.map(v=>new T.Vector3(v.x,v.y,0)),true,'centripetal');const rim=contour.getPoints(count*4);shape.moveTo(rim[0].x,rim[0].y);for(let j=1;j<rim.length;j++)shape.lineTo(rim[j].x,rim[j].y);shape.closePath();
+ const thickness=.17+size*.19;
+ function layer(material,depth,bevel,y,scale){const geom=new T.ExtrudeGeometry(shape,{depth,steps:1,bevelEnabled:true,bevelSegments:3,bevelSize:bevel,bevelThickness:bevel,curveSegments:1});geom.rotateX(-Math.PI/2);geom.scale(scale,1,scale);geom.translate(0,y,0);const vertices=geom.attributes.position;for(let j=0;j<vertices.count;j++){const x=vertices.getX(j),z=vertices.getZ(j);vertices.setY(j,vertices.getY(j)+.018*Math.sin(x*9+z*5)+.012*Math.cos(z*13-x*3))}geom.computeVertexNormals();const o=mesh(geom,material,g);return o}
+ layer(floeIce,thickness,size*.075,-thickness*.7,1);
+ layer(floeSnow,.025,size*.07,thickness*.3-.016,.90);
+ g.rotateY(rand()*Math.PI*2);
+}
 // Warm suspended string lights around the outdoor nook.
 for(const x of [-1.5,1.5])rod([x,0,-.7],[x,2,-.7],.035,wood,nook);
 const curve=new T.CatmullRomCurve3([new T.Vector3(-1.5,2,-.7),new T.Vector3(0,1.65,-.7),new T.Vector3(1.5,2,-.7)]);

@@ -10,7 +10,7 @@ export function studioTool(scope){return {type:'function',function:{name:'edit_o
 export function checkStudioPlan(p,scope){
  if(!p||typeof p!=='object')throw Error('缺少设计');
  if(p.operation==='explain'){if(typeof p.reply!=='string'||!p.reply.trim())throw Error('缺少说明');return;}
- if(scope==='outfit'){if(['asset_create','asset_regenerate','asset_fit','asset_remove'].includes(p.operation)){if(p.operation!=='asset_create'&&(typeof p.target!=='string'||!p.target))throw Error('缺少目标作品');if(['asset_create','asset_regenerate'].includes(p.operation)&&(typeof p.description!=='string'||!p.description.trim()))throw Error('缺少生成描述');if(p.operation==='asset_create'){const id='11111111-1111-4111-8111-111111111111';validateWearables([{...p.wearable,id,asset:id,description:p.description}]);}return;}if(p.outfit)validateDesignPart('outfit',{...defaultDesign().outfit,...p.outfit});if(p.operation==='style'&&p.outfit&&Object.keys(p.outfit).length)return;if(p.operation!=='tailor'||!validateTailoring(p.tailoring))throw Error('缺少完整服饰');return;}
+ if(scope==='outfit'){if(['asset_create','asset_regenerate','asset_fit','asset_remove'].includes(p.operation)){if(p.operation!=='asset_create'&&(typeof p.target!=='string'||!p.target))throw Error('缺少目标作品');if(['asset_create','asset_regenerate'].includes(p.operation)&&(typeof p.description!=='string'||!p.description.trim()))throw Error('缺少生成描述');if(p.operation==='asset_create'){const id='11111111-1111-4111-8111-111111111111';validateWearables([{...p.wearable,id,asset:id,description:p.description}]);}return;}if(p.outfit)validateDesignPart('outfit',{...defaultDesign().outfit,...p.outfit});if(p.operation==='style'&&p.outfit&&Object.keys(p.outfit).length)return;if(p.operation!=='tailor')throw Error('缺少完整服饰');if(p.changedFields!==undefined){const v=p.tailoring;if(!v||!Array.isArray(p.changedFields)||!p.changedFields.length||new Set(p.changedFields).size!==p.changedFields.length||p.changedFields.some(k=>!outfitEditFields.includes(k)||!Object.hasOwn(v,k)))throw Error('修改字段不完整');validateTailoring({name:'校验',pattern:'plain',color:'#ffffff',accent:'#ffffff',length:.3,flare:.08,pleats:0,patternScale:.06,...(v.kind==='set'?{pantsColor:'#ffffff'}:{}),...v});}else if(!validateTailoring(p.tailoring))throw Error('缺少完整服饰');return;}
  if(!['create','regenerate','move','remove'].includes(p.operation))throw Error('家具操作不正确');
 }
 
@@ -20,8 +20,9 @@ export function standardOutfitTool(type){
  p.properties.operation.enum=['tailor','explain'];
  p.properties.tailoring=structuredClone(p.properties.tailoring);
  p.properties.tailoring.properties.kind.enum=[type];
- if(['skirt','dress'].includes(type))p.properties.tailoring.properties.length={type:'number',enum:[0.22,0.38]};
- if(type==='set')p.properties.tailoring.required.push('pantsColor');
+ // Length remains continuous so relative edits remain visible.
+ p.properties.tailoring.required=['kind'];
+ // Complete first creations are validated on the server; edits may send only changed fields.
  for(const key of ['target','description','wearable','outfit'])delete p.properties[key];
  tool.function.description='根据用户选择的标准类型设计可穿戴样式，不能生成独立3D物体';
  return tool;

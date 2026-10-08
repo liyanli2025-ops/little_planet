@@ -84,7 +84,7 @@ for(const kind of ['skirt','dress','top','set','hat','veil'])test('standard '+ki
  t.set({operation:'tailor',tailoring,reply:'试穿'});
  const j=await t.s.start(1,{scope:'outfit',outfitType:kind,version:0,prompt:'温馨小花风格',requestId:randomUUID()});
  const p=t.s.get(1,j.job).result,head=['hat','veil'].includes(kind);assert.equal((head?p.values.headwear:p.values.tailoring).kind,kind);
- if(['skirt','dress'].includes(kind))assert.equal(p.values.tailoring.length,.38);
+ if(['skirt','dress'].includes(kind))assert.equal(p.values.tailoring.length,.34);
  t.design.accept(1,{id:p.id,version:0});t.design.gift(1,{id:p.id,partnerId:2});assert.equal(t.design.view(2).gifts.length,1);assert.equal(t.submits(),0);t.db.close();
 });
 test('selected type prevents accidental paid generation and missing pants blocks a set',async()=>{
@@ -185,3 +185,14 @@ test('natural language can move a plant off the table despite the old UI mount s
  const t=setup(),object={name:'盆栽',standard:'plant',kind:'decor',variant:'monstera',mount:'table',width:.22,height:.45,depth:.22,seat:.55,tint:'#ffffff',accent:'#ffffff',shape:'round',pattern:'plain',floor:0,x:0,z:0,yaw:0};t.set({operation:'create',object});const b={scope:'home',homeType:'plant',homeMount:'table',version:0,prompt:'桌上盆栽',requestId:randomUUID()},j=await t.s.start(1,b),p=t.s.get(1,j.job).result;
  t.set({operation:'move',target:p.values.objects[0].id,changedFields:['mount','x','z'],object:{...object,mount:'floor',x:-2.5,z:.9}});const q=await t.s.start(1,{...b,draft:p.id,prompt:'放到地上',requestId:randomUUID()}),o=t.s.get(1,q.job).result.values.objects[0];assert.equal(o.mount,'floor');assert.equal(o.y,undefined);assert.equal(o.variant,'monstera');t.db.close();
 });
+
+for(const kind of ['skirt','dress','top','set','hat','veil'])test(`partial ${kind} edit preserves unspecified properties and continuous length`,async()=>{
+ const t=setup(),tailoring={kind,name:'原款',pattern:'dots',color:'#6677aa',accent:'#ffffff',length:.34,flare:.07,pleats:12,patternScale:.05,...(kind==='set'?{pantsColor:'#112233'}:{})};
+ t.set({operation:'tailor',tailoring,reply:'预览'});const b={scope:'outfit',outfitType:kind,version:0,requestId:randomUUID(),prompt:'做一款蓝色圆点'};
+ const j=await t.s.start(1,b),p=t.s.get(1,j.job).result;
+ t.set({operation:'tailor',tailoring:{kind,color:'#e9aabb'},changedFields:['color'],reply:'改成粉色，其余不变'});
+ const j2=await t.s.start(1,{...b,requestId:randomUUID(),draft:p.id,prompt:'只改成粉色'}),p2=t.s.get(1,j2.job).result;
+ assert.deepEqual(p2.values[['hat','veil'].includes(kind)?'headwear':'tailoring'],{...tailoring,color:'#e9aabb'});
+ assert.equal(t.submits(),0);assert.equal(t.design.current(1).version,0);t.db.close();
+});
+test('partial first creation fails without inventing absent clothing parameters',async()=>{const t=setup();t.set({operation:'tailor',tailoring:{kind:'skirt',color:'#e9aabb'},changedFields:['color'],reply:'预览'});await assert.rejects(t.s.start(1,{scope:'outfit',outfitType:'skirt',version:0,requestId:randomUUID(),prompt:'粉色裙子'}));assert.equal(t.design.current(1).version,0);assert.equal(t.submits(),0);t.db.close()});

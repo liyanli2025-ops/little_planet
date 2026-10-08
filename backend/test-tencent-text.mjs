@@ -15,8 +15,8 @@ try{
  const design=createDesignService(db,{env});
  const fetcher=(url,options)=>{if(String(url)!=='https://tokenhub.tencentmaas.com/v1/chat/completions')throw Error('文字自检禁止发起 3D 生成');return fetch(url,options)};
  const s=createStudio(db,{env,fetcher,design,theme:()=>0,partner:()=>null});
- const j=await s.start(1,{scope:'outfit',version:0,prompt:'使用基础剪裁设计一条可随熊动作变形的浅蓝色条纹半身裙，不调用 3D 生成',requestId:randomUUID()});
+ const j=await s.start(1,{scope:'outfit',version:0,outfitType:'top',prompt:process.argv[2]||'始祖鸟',requestId:randomUUID()});
  const p=s.get(1,j.job).result;
- if(!p?.values?.tailoring)throw Error('缺少服饰参数');
- console.log('通过：腾讯已返回完整服饰参数，并通过网页使用的方案校验。');
+ if(!p?.values?.tailoring){const result=s.get(1,j.job);throw Error(result.reply||'缺少服饰参数');}
+ console.log('通过：真实文字服务已返回可穿上衣方案。');console.log(JSON.stringify(p.values.tailoring,null,2));
 }catch(e){console.error(String(e.message).replaceAll(env.AI_API_KEY,'[隐藏]'));process.exitCode=1}finally{db.close()}

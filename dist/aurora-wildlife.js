@@ -1,3 +1,4 @@
+import {separatePoint} from './aurora-collision.js';
 import {polarBearRoute} from './aurora-bear-route.js';
 import {createRunningDeer} from './aurora-deer-gait.js';
 import {snowShore} from './aurora-terrain.js';
@@ -45,7 +46,7 @@ export function createAuroraWildlife(world){
    train.rotation.y=-.3;actors.push({kind:'sleigh',mount,body:train,deerRigs});
   })
  ]);
- let traffic=null;
+ let traffic=null,obstacles=[],visitors=[];
  function avoid(a,x,z,dt,water=0){
   let desired=0;
   if(traffic&&water===0){const p=new T.Vector3(x,Math.sqrt(Math.max(0,100-x*x-z*z)),z),line=new T.Line3(traffic.start,traffic.end),closest=new T.Vector3();line.closestPointToPoint(p,true,closest);const distance=p.distanceTo(closest);desired=(1-T.MathUtils.smoothstep(distance,1.5,3.8))*1.7}
@@ -53,10 +54,10 @@ export function createAuroraWildlife(world){
   const radius=Math.hypot(x,z),scale=Math.max(.2,(radius-a.avoid)/radius);let nx=x*scale,nz=z*scale;
   // Small local spacing corrections keep neighbors from occupying the same spot.
   if(water===0)for(const other of actors){if(other===a||other.kind==='sleigh')continue;const dx=nx-other.mount.position.x,dz=nz-other.mount.position.z,d=Math.hypot(dx,dz),gap=a.kind==='polar-bear'||other.kind==='polar-bear'?.85:.42;if(d>.001&&d<gap){nx+=dx/d*(gap-d)*Math.min(1,dt*3);nz+=dz/d*(gap-d)*Math.min(1,dt*3)}}
-  return {x:nx,z:nz};
+  if(water===0)return separatePoint(nx,nz,[...obstacles,...visitors.map(p=>({x:p.x,z:p.z,radius:.32})),...actors.filter(o=>o!==a&&o.kind!=='sleigh'&&!['swim','dive','emerge'].includes(o.state)).map(o=>({x:o.mount.position.x,z:o.mount.position.z,radius:o.kind==='polar-bear'?.95:.22}))],a.kind==='polar-bear'?.95:.22);return {x:nx,z:nz};
  }
  let last=null,elapsed=0;
- return {ready,makeRemoteSleigh(){if(!sleighTemplate)return null;const mount=new T.Group(),body=new T.Group();world.add(mount);mount.add(body);body.add(normalize(sleighTemplate.clone(true),.75));const deerRigs=[0,1].map(i=>{const rig=createRunningDeer(deerSource);rig.group.rotation.y=Math.PI;rig.group.position.set((i?1:-1)*.43,0,1.65);body.add(rig.group);return rig});return {mount,body,tick(dt,speed){deerRigs.forEach((r,i)=>r.tick(dt,speed,i))},dispose(){mount.removeFromParent();deerRigs.forEach(r=>r.group.traverse(o=>o.geometry?.dispose()))}};},setTraffic(value){traffic=value},tick(t){const dt=last===null?0:Math.min(.06,Math.max(0,t-last));last=t;elapsed+=dt;
+ return {ready,get obstacles(){return obstacles},setObstacles(v){obstacles=v},setVisitors(v){visitors=v},makeRemoteSleigh(){if(!sleighTemplate)return null;const mount=new T.Group(),body=new T.Group();world.add(mount);mount.add(body);body.add(normalize(sleighTemplate.clone(true),.75));const deerRigs=[0,1].map(i=>{const rig=createRunningDeer(deerSource);rig.group.rotation.y=Math.PI;rig.group.position.set((i?1:-1)*.43,0,1.65);body.add(rig.group);return rig});return {mount,body,tick(dt,speed){deerRigs.forEach((r,i)=>r.tick(dt,speed,i))},dispose(){mount.removeFromParent();deerRigs.forEach(r=>r.group.traverse(o=>o.geometry?.dispose()))}};},setTraffic(value){traffic=value},tick(t){const dt=last===null?0:Math.min(.06,Math.max(0,t-last));last=t;elapsed+=dt;
   for(const a of actors){
    if(a.kind==='penguin'){
     const r=penguinRoute(elapsed,a.index),next=penguinRoute(elapsed+.025,a.index),key=r.state==='walk'?'walk':r.state==='slide'?'slide':'idle';

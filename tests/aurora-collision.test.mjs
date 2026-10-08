@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {snowRoute,clearOf,separatePoint} from '../dist/aurora-collision.js';
+test('snow walk diverts around lodge, trees and animals without entering sea',()=>{const obstacles=[{x:0,z:0,radius:2.4},{x:3,z:1,radius:.4},{x:3,z:2,radius:.95}],route=snowRoute({x:-4,z:0},{x:4,z:0},obstacles);assert.ok(route.length);for(const p of route)assert.ok(clearOf(p.x,p.z,obstacles));assert.deepEqual(snowRoute({x:0,z:3},{x:0,z:0},obstacles),[]);assert.deepEqual(snowRoute({x:0,z:3},{x:10,z:0},[]),[]);});
+test('close animal and visitor footprints are separated',()=>{const obstacles=[{x:0,z:0,radius:.95},{x:1.5,z:0,radius:.32}],p=separatePoint(.4,.1,obstacles,.22);assert.ok(clearOf(p.x,p.z,obstacles,.22));});

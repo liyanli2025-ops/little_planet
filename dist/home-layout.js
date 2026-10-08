@@ -22,6 +22,11 @@ homeLayouts[0].lower.seats={sit:{pose:homeLayouts[0].sit,stand:homeLayouts[0].st
 homeLayouts[1].lower.seats={sit:{pose:homeLayouts[1].sit,stand:homeLayouts[1].stand},'sit-floor-0':{pose:[-1,.20,.85,0],stand:[-1,.15]},'sit-floor-1':{pose:[.2,.20,.25,.3],stand:[.2,1]}};
 homeLayouts[0].upper.seats=[[2.02,3.02,.65,Math.PI/2]];
 homeLayouts[1].upper.seats=[[-.23,3.15,-1.37,Math.PI],[1.93,3.15,-1.37,Math.PI]];
+// Dining meshes and navigation share one seat definition.
+for(const [theme,L] of homeLayouts.entries()){
+ const [x,z]=L.lower.table,points=[[x,z-(theme?1.03:1.28),0],[x+(theme?1.18:1.30),z,-Math.PI/2],...(!theme?[[x-1.30,z,Math.PI/2]]:[])];
+ L.lower.dining=points.map(([x,z,yaw],i)=>{const id='sit-dining-'+i,stand=[x-Math.sin(yaw)*.68,z-Math.cos(yaw)*.68];L.lower.seats[id]={pose:[x,.40,z,yaw],stand};L.lower.stops[id]=stand;return {id,x,z,yaw};});
+}
 // Individual bathroom fixtures leave the front-left doorway and washbasin approach walkable.
 export const bathroomObstacles=[[-.83,-.73,-.67,.66],[.73,.80,-.67,.66],[-.73,.73,-.70,-.62],[-.68,-.04,-.54,-.05],[.17,.66,-.32,.38],[.20,.78,.60,.66]];
 for(const layout of homeLayouts){const [x,z]=layout.upper.bath;layout.upper.rects.push(...bathroomObstacles.map(([a,b,c,d])=>[x+a,x+b,z+c,z+d]));}

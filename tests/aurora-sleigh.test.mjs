@@ -14,6 +14,6 @@ test('sleigh lands on nearby snow standing, and can resume without returning to 
  assert.equal(ride.stop(),true);assert.equal(ride.stop(),false);advance(6);
  assert.equal(ride.state().phase,'idle');assert.equal(seated,false);assert.notEqual(avatar.parent,chair);assert.equal(traffic,null);
  const n=land.clone().normalize();assert.ok(Math.abs(land.length()-snowRadius(Math.acos(n.y),Math.atan2(n.z,n.x))-.025)<1e-6);
- const parked=mount.position.clone();assert.equal(ride.start(),true);advance(6);assert.ok(mount.position.distanceTo(parked)<.03);assert.ok(ride.state().progress>=progress);
+ const parked=mount.position.clone();assert.equal(ride.start(),true);for(let i=0;i<1200&&ride.state().phase==='boarding';i++)ride.tick(1/30);assert.equal(ride.state().phase,'riding');assert.ok(mount.position.distanceTo(parked)<.03);assert.ok(ride.state().progress>=progress);
  advance(110);assert.equal(ride.state().phase,'idle');assert.equal(seated,false);assert.notEqual(avatar.parent,chair);
 });

@@ -20,7 +20,7 @@ export function poseCafeTray(bear,tray,time,sipItem=null,sip=0){
 
  for(const food of tray.userData.foods){food.position.copy(food.userData.trayPosition);food.rotation.set(0,0,0)}
  tray.userData.spoon.visible=false;
- if(sip>0){const food=tray.userData.foods.find(f=>f.userData.food===sipItem);if(food){const dessert=cafeMenu.find(i=>i.id===sipItem)?.kind==='dessert',arm=dessert?1:0,goal=bear.avatar.localToWorld(v(dessert?.11:-.12,.83,.36)),rest=tray.localToWorld(food.userData.trayPosition.clone());aimCafePaw(bear,arm,rest.lerp(goal,sip));bear.arms[arm].updateWorldMatrix(true,false);const paw=bear.arms[arm].localToWorld(v(0,-.34*(bear.arms[arm].userData.cafeReach||1),0));if(dessert){const spoon=tray.userData.spoon;spoon.visible=true;spoon.position.copy(tray.worldToLocal(paw));spoon.rotation.set(-sip*.25,Math.PI,0)}else{food.position.copy(tray.worldToLocal(paw));food.rotation.x=-sip*.45}}}
+ if(sip>0){const food=tray.userData.foods.find(f=>f.userData.food===sipItem);if(food){const dessert=cafeMenu.find(i=>i.id===sipItem)?.kind==='dessert',arm=dessert?1:0,goal=bear.body.localToWorld(v(dessert?.11:-.12,dessert?.74:.59,.36)),rest=tray.localToWorld(food.userData.trayPosition.clone());aimCafePaw(bear,arm,rest.lerp(goal,sip));bear.arms[arm].updateWorldMatrix(true,false);const paw=bear.arms[arm].localToWorld(v(0,-.34*(bear.arms[arm].userData.cafeReach||1),0));if(dessert){const spoon=tray.userData.spoon;spoon.visible=true;spoon.position.copy(tray.worldToLocal(paw));spoon.rotation.set(-sip*.25,Math.PI,0)}else{food.position.copy(tray.worldToLocal(paw));food.rotation.x=-sip*.20}}}
 
 }
 export function createHostService(building,bear){

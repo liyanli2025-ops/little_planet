@@ -22,6 +22,8 @@ export function createCafe(db,{partner=()=>null,deliver=()=>{},profile=u=>({outf
   if(b.action==='join'){const g=join(u);if(b.fresh){g.held=null;g.dining=null;g.seat=null;g.floor=0;g.x=0;g.z=4.5;save(g)}return view(u)}
   const g=guests.get(u.id);fail(g,'请重新进入咖啡馆',409);g.seen=now();
   if(b.action==='sync'){
+   g.moving=!!b.moving;
+   if(b.ship){const v=b.ship;fail(['boarding','sailing','returning','disembarking'].includes(v.phase)&&[v.angle,v.time,v.speed].every(Number.isFinite)&&Math.abs(v.angle)<100000&&v.time>=0&&v.time<1e12&&v.speed>=0&&v.speed<=2,'航行状态无效');fail(Number.isFinite(v.deckY)&&v.deckY>=-.1&&v.deckY<=.8,'甲板位置无效');const vec=(a,n,max)=>Array.isArray(a)&&a.length===n&&a.every(x=>Number.isFinite(x)&&Math.abs(x)<=max);if(v.position||v.quaternion)fail(vec(v.position,3,20)&&vec(v.quaternion,4,1.01),'乘客位置无效');g.ship={phase:v.phase,angle:v.angle,time:v.time,speed:v.speed,deckY:v.deckY,position:v.position,quaternion:v.quaternion};}else g.ship=null;
    if(!g.seat&&(!g.handoff||now()>=g.handoff.endsAt)&&[b.x,b.z,b.yaw].every(Number.isFinite)){if(cafeRouteWalkable(b.x,b.z,g.floor)){g.x=b.x;g.z=b.z;}g.yaw=b.yaw%(Math.PI*2)}
   }else if(b.action==='floor'){
    fail([0,1].includes(b.floor)&&!g.seat&&Math.hypot(g.x-STAIR_BOTTOM.x,g.z-STAIR_BOTTOM.z)<.65,'请先走到楼梯入口',409);g.floor=b.floor;

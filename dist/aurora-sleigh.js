@@ -14,7 +14,7 @@ export function createSleighRide(world,wildlife,bear,{onDisembark=()=>{}}={}){
  function stop(){if(!actor||phase==='idle'||phase==='disembarking')return false;world.updateMatrixWorld(true);wildlife.setTraffic(null);actor.deerRigs.forEach((rig,i)=>rig.tick(0,0,i));const p=bear.avatar.getWorldPosition(new T.Vector3());home.depart=p.clone();const landing=actor.body.localToWorld(new T.Vector3(.85,0,-.08)).normalize();home.landing=landing.multiplyScalar(snowRadius(Math.acos(landing.y),Math.atan2(landing.z,landing.x))+.025);holder.add(bear.avatar);bear.avatar.position.set(0,0,0);bear.avatar.quaternion.identity();setHolder(p);bear.seatTick(false,1);phase='disembarking';time=0;return true}
  function seatPoint(){actor.body.updateWorldMatrix(true,true);return actor.body.localToWorld(new T.Vector3(0,.34,-.08))}
  return {focus,get active(){return phase!=='idle'},hit(ray){return !!actor&&ray.intersectObject(actor.body,true).length>0},start,stop,
- state:()=>({phase,progress,ready:!!actor}),
+ state:()=>({phase,progress,ready:!!actor}),network:()=>actor&&phase==='riding'?{kind:'sleigh',position:actor.mount.position.toArray(),quaternion:actor.mount.quaternion.toArray(),rotation:actor.body.rotation.toArray().slice(0,3),speed:1}:null,
  tick(dt){if(!actor||phase==='idle')return;time+=dt;
  if(phase==='boarding'){
   const u=Math.min(time/5,1),e=u*u*(3-2*u),destination=actor.mount.position.clone(),p=home.world.clone().lerp(destination,e);setHolder(p);const local=destination.clone().sub(p).applyQuaternion(holder.quaternion.clone().invert());bear.avatar.rotation.y=Math.atan2(local.x,local.z);

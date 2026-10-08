@@ -4,6 +4,7 @@ import {snowShore} from './aurora-terrain.js';
 import * as T from './vendor/three.module.js';
 import {GLTFLoader} from './vendor/GLTFLoader.js';
 export function createAuroraWildlife(world){
+ let sleighTemplate=null,deerSource=null;
  const loader=new GLTFLoader(),actors=[],up=new T.Vector3(0,1,0);
  function anchor(x,z){const g=new T.Group();world.add(g);place(g,x,z);return g}
  function place(g,x,z){const n=new T.Vector3(x,Math.sqrt(100-x*x-z*z),z).normalize();const th=Math.acos(n.y),ph=Math.atan2(n.z,n.x),r=10.055+.10*Math.sin(th*3)*Math.sin(ph*3)**2;g.position.copy(n).multiplyScalar(r+.006);g.quaternion.setFromUnitVectors(up,n)}
@@ -38,7 +39,7 @@ export function createAuroraWildlife(world){
    actors.push({kind:'penguin',mount,body,visual,mixer,actions,index:i,state:'idle',action:'idle',wake,walking:false});
   }}),
   loader.loadAsync('./assets/aurora/polar_bear.glb').then(gltf=>{const mount=anchor(-3.6,1.8),rig=bearRig(gltf.scene),body=rig.group;mount.add(body);const wake=new T.Mesh(new T.RingGeometry(.48,.51,40),new T.MeshBasicMaterial({color:0xb9eff4,transparent:true,opacity:0,depthWrite:false,side:T.DoubleSide}));wake.rotation.x=-Math.PI/2;mount.add(wake);actors.push({kind:'polar-bear',mount,body,rig,wake,walking:true})}),
-  Promise.all(['sleigh','reindeer'].map(n=>loader.loadAsync('./assets/aurora/'+n+'.glb'))).then(([s,d])=>{const mount=anchor(-2,4.3),train=new T.Group();mount.add(train);const sleigh=normalize(s.scene,.75);train.add(sleigh);const deerRigs=[];for(let i=0;i<2;i++){const rig=createRunningDeer(d.scene),deer=rig.group;deerRigs.push(rig);deer.rotation.y=Math.PI;deer.position.set((i?1:-1)*.43,0,1.65);train.add(deer)}
+  Promise.all(['sleigh','reindeer'].map(n=>loader.loadAsync('./assets/aurora/'+n+'.glb'))).then(([s,d])=>{sleighTemplate=s.scene.clone(true);deerSource=d.scene;const mount=anchor(-2,4.3),train=new T.Group();mount.add(train);const sleigh=normalize(s.scene,.75);train.add(sleigh);const deerRigs=[];for(let i=0;i<2;i++){const rig=createRunningDeer(d.scene),deer=rig.group;deerRigs.push(rig);deer.rotation.y=Math.PI;deer.position.set((i?1:-1)*.43,0,1.65);train.add(deer)}
    const rope=new T.MeshStandardMaterial({color:0x7c5940,roughness:1});
    for(const x of [-.43,.43]){const curve=new T.CatmullRomCurve3([new T.Vector3(x,.32,.55),new T.Vector3(x,.23,1),new T.Vector3(x,.39,1.65)]);train.add(new T.Mesh(new T.TubeGeometry(curve,20,.012,5,false),rope))}
    train.rotation.y=-.3;actors.push({kind:'sleigh',mount,body:train,deerRigs});
@@ -55,7 +56,7 @@ export function createAuroraWildlife(world){
   return {x:nx,z:nz};
  }
  let last=null,elapsed=0;
- return {ready,setTraffic(value){traffic=value},tick(t){const dt=last===null?0:Math.min(.06,Math.max(0,t-last));last=t;elapsed+=dt;
+ return {ready,makeRemoteSleigh(){if(!sleighTemplate)return null;const mount=new T.Group(),body=new T.Group();world.add(mount);mount.add(body);body.add(normalize(sleighTemplate.clone(true),.75));const deerRigs=[0,1].map(i=>{const rig=createRunningDeer(deerSource);rig.group.rotation.y=Math.PI;rig.group.position.set((i?1:-1)*.43,0,1.65);body.add(rig.group);return rig});return {mount,body,tick(dt,speed){deerRigs.forEach((r,i)=>r.tick(dt,speed,i))},dispose(){mount.removeFromParent();deerRigs.forEach(r=>r.group.traverse(o=>o.geometry?.dispose()))}};},setTraffic(value){traffic=value},tick(t){const dt=last===null?0:Math.min(.06,Math.max(0,t-last));last=t;elapsed+=dt;
   for(const a of actors){
    if(a.kind==='penguin'){
     const r=penguinRoute(elapsed,a.index),next=penguinRoute(elapsed+.025,a.index),key=r.state==='walk'?'walk':r.state==='slide'?'slide':'idle';

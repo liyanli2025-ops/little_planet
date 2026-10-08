@@ -1,5 +1,6 @@
 import {auroraMenu} from './aurora-menu.js';
 import {iceMaterial,iceBrick} from './aurora-ice.js';
+import {sipAmount} from './sipping-drink.js';
 import * as T from './vendor/three.module.js';
 import {createTeddy} from './teddy.js';
 export function createAuroraLodge(){
@@ -70,12 +71,12 @@ export function createAuroraLodge(){
  const drink=auroraMenu.find(x=>x.id===(order||guest?.held)?.items?.[0]);
  if(drink){servedLiquid.material.color.set(drink.color);heldLiquid.material.color.set(drink.color);served.material=held.material=drink.id==='aurora_cocoa'?ceramic:glass;}}
  const exit=rounded(0,.04,3.15,1.25,.035,.42,snow);hits.push({object:exit,type:'exit'});
- return {group,hits,visitor,host,setOrder,setIdentity:id=>visitor.setIdentity(id),setAppearance(appearance,outfit){visitor.design(appearance);visitor.outfit(outfit||'plain')},pose:()=>({position:visitor.avatar.position.toArray(),quaternion:visitor.avatar.quaternion.toArray(),seated:true}),sit(x){visitor.avatar.position.x=x},tick(t,camera){for(const w of walls){const a=w.userData.mid;w.visible=-Math.cos(a)*camera.x+Math.sin(a)*camera.z<0}host.body.rotation.z=Math.sin(t*.7)*.018;const preparing=order&&Date.now()<order.readyAt;
+ return {group,hits,visitor,host,setOrder,setIdentity:id=>visitor.setIdentity(id),setAppearance(appearance,outfit){visitor.design(appearance);visitor.outfit(outfit||'plain')},pose:()=>({position:visitor.avatar.position.toArray(),quaternion:visitor.avatar.quaternion.toArray(),seated:true,animation:{arms:visitor.arms.map(a=>a.rotation.toArray().slice(0,3)),legs:visitor.legs.map(a=>a.rotation.toArray().slice(0,3)),bodyPosition:visitor.body.position.toArray(),bodyRotation:visitor.body.rotation.toArray().slice(0,3),drinking}}),sit(x){visitor.avatar.position.x=x},tick(t,camera){for(const w of walls){const a=w.userData.mid;w.visible=-Math.cos(a)*camera.x+Math.sin(a)*camera.z<0}host.body.rotation.z=Math.sin(t*.7)*.018;const preparing=order&&Date.now()<order.readyAt;
  host.arms[0].rotation.x=preparing?-.9+Math.sin(t*5)*.28:-.1+Math.sin(t)*.035;
  host.arms[1].rotation.x=preparing?-.7+Math.cos(t*5)*.18:-.1;
  host.body.rotation.y=preparing?Math.sin(t*2)*.10:0;
  served.visible=servedLiquid.visible=!!order&&!preparing;
- visitor.arms[0].rotation.x=drinking?-.5-Math.max(0,Math.sin(t*1.4))*.8:0;
- visitor.sipping(drinking&&Math.sin(t*1.4)>.6);
+ const sip=drinking?sipAmount(t):0;visitor.arms[0].rotation.x=drinking?-.55-sip*.63:0;
+ visitor.sipping(sip>.85);
  if(drinking){group.updateMatrixWorld(true);const hand=visitor.arms[0].localToWorld(new T.Vector3(0,-.29,.10));group.worldToLocal(hand);held.position.copy(hand);heldLiquid.position.copy(hand).y-=.03;}},state:()=>({hostFootHeight:host.avatar.position.y,hostStanding:true,cups:3,seats:3,seatTop,visitorSeatContact:visitor.avatar.position.y+.16*.9*.75})};
 }

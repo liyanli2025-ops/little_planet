@@ -196,3 +196,11 @@ for(const kind of ['skirt','dress','top','set','hat','veil'])test(`partial ${kin
  assert.equal(t.submits(),0);assert.equal(t.design.current(1).version,0);t.db.close();
 });
 test('partial first creation fails without inventing absent clothing parameters',async()=>{const t=setup();t.set({operation:'tailor',tailoring:{kind:'skirt',color:'#e9aabb'},changedFields:['color'],reply:'预览'});await assert.rejects(t.s.start(1,{scope:'outfit',outfitType:'skirt',version:0,requestId:randomUUID(),prompt:'粉色裙子'}));assert.equal(t.design.current(1).version,0);assert.equal(t.submits(),0);t.db.close()});
+
+test('free illustrated fabric survives preview, partial edit, save, gift and reload',async()=>{
+ const t=setup(),artwork={layout:'front',layers:[{type:'path',points:[[.2,.2],[.3,.05],[.5,.2],[.7,.05],[.8,.2],[.7,.7],[.5,.9],[.3,.7]],fill:'#cc7722'},{type:'ellipse',x:.37,y:.5,w:.05,h:.08,fill:'#111111'},{type:'ellipse',x:.63,y:.5,w:.05,h:.08,fill:'#111111'},{type:'text',x:.5,y:.95,size:.07,text:'FOX',fill:'#111111'}]},tailoring={kind:'top',name:'狐狸丝绒上衣',pattern:'plain',color:'#6677aa',accent:'#ffffff',length:.3,flare:.07,pleats:0,patternScale:.05,fabric:'velvet',artwork};
+ t.set({operation:'tailor',tailoring,reply:'狐狸丝绒上衣预览'});const b={scope:'outfit',outfitType:'top',version:0,requestId:randomUUID(),prompt:'丝绒上衣，画一只狐狸'};
+ const j=await t.s.start(1,b),p=t.s.get(1,j.job).result;t.set({operation:'tailor',tailoring:{kind:'top',color:'#e9aabb'},changedFields:['color'],reply:'只改粉色'});
+ const j2=await t.s.start(1,{...b,requestId:randomUUID(),draft:p.id,prompt:'只改粉色'}),p2=t.s.get(1,j2.job).result;assert.deepEqual(p2.values.tailoring.artwork,artwork);assert.equal(p2.values.tailoring.fabric,'velvet');
+ t.design.accept(1,{id:p2.id,version:0});t.design.gift(1,{id:p2.id,partnerId:2});t.design.wearGift(2,{id:t.design.view(2).gifts[0].id,version:0});assert.deepEqual(t.design.current(2).design.outfit.tailoring.artwork,artwork);assert.equal(createStudio(t.db,t.opts).get(1,j2.job).result.values.tailoring.fabric,'velvet');assert.equal(t.submits(),0);t.db.close();
+});

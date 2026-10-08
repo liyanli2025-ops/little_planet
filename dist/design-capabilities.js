@@ -1,8 +1,8 @@
 export const homeEditFields=['name','variant','mount','floor','x','z','yaw','width','height','depth','seat','tint','accent','shape','pattern','planter'];
-export const outfitEditFields=['name','pattern','color','accent','length','flare','pleats','patternScale','pantsColor'];
+export const outfitEditFields=['name','pattern','color','accent','length','flare','pleats','patternScale','pantsColor','fabric','artwork'];
 export const patternedFurniture=['sofa','lamp','rug','cushion','blanket','curtain'];
 export function designCapability(scope,type){
- if(scope==='outfit')return type==='hat'?'贝雷帽：配色、纯色/条纹/格纹/圆点/花朵、花纹大小；不支持改变帽型':type==='veil'?'头纱：配色、花纹、垂落长度；不支持蕾丝或刺绣':type==='set'?'两件套：上衣配色和花纹、裤子纯色；不支持改变袖型或裤型':'配色、纯色/条纹/格纹/圆点/小花、花纹大小、衣长及下摆；不支持改袖型、领口、文字或蕾丝';
+ if(scope==='outfit')return '自由设计配色、布料质感和原创图案：动物、品牌风格、文字、组合纹样；保持所选服饰类型';
  if(type==='sofa')return '替换一层窗边沙发';
  if(['plant','floorPlant'].includes(type))return '可选龟背竹、绿萝、虎尾兰、丝兰、金钱树、仙人掌、多肉';
  if(type==='hangingPlant')return '垂吊绿萝，放在固定墙面位置';

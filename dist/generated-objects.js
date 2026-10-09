@@ -12,7 +12,7 @@ export function buildGeneratedSofa(root,v,seatTop=.70){const base=cloth(v.color)
  for(const side of [-1,1]){const p=rounded(root,accent,side*usable*.30,seatTop+.20,-d*.18,.31,.34,.15,.055);p.rotation.z=side*.13;p.rotation.x=-.13;}
  root.traverse(o=>{if(o.isMesh)o.userData.action='sit'});
 }
-export function createGeneratedSkirt(body,legs){const root=new T.Group();root.name='generated-skirt';body.add(root);let key='',spec=null,clothMesh=null,rest=null,sleeping=false,rain=false;
+export function createGeneratedSkirt(body,legs){const root=new T.Group();root.name='generated-skirt';root.userData.wardrobeSlot='garment';body.add(root);let key='',spec=null,clothMesh=null,rest=null,sleeping=false,rain=false;
  function set(v){const k=JSON.stringify(v||null);if(k===key)return;key=k;disposeObject(root);spec=v;clothMesh=null;rest=null;if(!v)return;
  const c=document.createElement('canvas');c.width=c.height=256;const g=c.getContext('2d');g.fillStyle=v.color;g.fillRect(0,0,256,256);g.fillStyle=v.accent;g.globalAlpha=.5;g.fillRect(0,0,128,256);g.fillRect(0,0,256,128);g.globalAlpha=.8;g.fillRect(57,0,7,256);g.fillRect(0,57,256,7);g.globalAlpha=.22;for(let i=0;i<256;i+=4){g.fillRect(i,0,1,256);g.fillRect(0,i,256,1)}
  const tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;tex.wrapS=tex.wrapT=T.RepeatWrapping;tex.anisotropy=4;tex.repeat.set(2*Math.PI*.38/(v.checkSize*2),v.length/(v.checkSize*2));const mat=cloth('#ffffff');mat.map=tex;mat.side=T.DoubleSide;

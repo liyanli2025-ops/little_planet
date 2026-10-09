@@ -57,7 +57,7 @@ export function createTeddy(parent,identity=0){
  for(const side of [-1,1]){const curve=new T.CatmullRomCurve3([new T.Vector3(side*.1,.035,.30),new T.Vector3(side*.245,.012,.10),new T.Vector3(side*.1,-.05,.30)]);mask.add(new T.Mesh(new T.TubeGeometry(curve,24,.004,8,false),padMat));}
  const rainGear=createRainGear({body,head,arms});let rainy=false,currentIdentity=identity;
  function setIdentity(i){currentIdentity=i;const white=i===0;fur.color.set(white?0xf3f2ed:0x70432f);earMat.color.set(white?0xe0ddd6:0x753c28);muzzleMat.color.set(white?0xf3f2ed:0xf3e9d9);nose.scale.set(white?.041:.032,white?.032:.026,white?.028:.023);torso.scale.x=white?1.02:1;avatar.userData.identity=i}
- const scarf=new T.Group();body.add(scarf);scarf.visible=false;const cloth=new T.MeshPhysicalMaterial({color:0x82b3a0,roughness:.98,sheen:.7,side:T.DoubleSide});const collar=new T.Mesh(scarfGeometry(),cloth);scarf.add(collar);for(const side of [-1,1]){const tail=new T.Mesh(scarfTail(side),cloth);tail.castShadow=tail.receiveShadow=true;scarf.add(tail)}
+ const scarf=new T.Group();body.add(scarf);scarf.userData.wardrobeSlot="garment";scarf.visible=false;const cloth=new T.MeshPhysicalMaterial({color:0x82b3a0,roughness:.98,sheen:.7,side:T.DoubleSide});const collar=new T.Mesh(scarfGeometry(),cloth);scarf.add(collar);for(const side of [-1,1]){const tail=new T.Mesh(scarfTail(side),cloth);tail.castShadow=tail.receiveShadow=true;scarf.add(tail)}
 
  const wearables=createWearableModels(body,head);const standardHeadwear=createStandardHeadwear(head);const tailoring=createTailoring(body,legs,arms);const generatedSkirt=createGeneratedSkirt(body,legs);const clothing=createClothing(body,arms,legs),accessories=createDesignAccessories(body,head,legs);
  setIdentity(identity);

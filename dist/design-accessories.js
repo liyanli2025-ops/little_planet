@@ -1,7 +1,7 @@
 import * as T from './vendor/three.module.js';
 import {designColors} from './design-schema.js';
 export function createDesignAccessories(body,head,legs){
- const hat=new T.Group(),jewel=new T.Group(),feet=legs.map(l=>{const g=new T.Group();l.add(g);return g});head.add(hat);body.add(jewel);
+ const hat=new T.Group(),jewel=new T.Group(),feet=legs.map(l=>{const g=new T.Group();l.add(g);return g});hat.userData.wardrobeSlot="hat";jewel.userData.wardrobeSlot="accessory";feet.forEach(g=>g.userData.wardrobeSlot="shoes");head.add(hat);body.add(jewel);
  let key='',hidden=false;const primary=new T.MeshStandardMaterial({roughness:.92}),trim=new T.MeshStandardMaterial({roughness:.85}),sole=new T.MeshStandardMaterial({color:0xe7ddc5,roughness:1});
  function ell(g,m,x,y,z,a,b,c){const o=new T.Mesh(new T.SphereGeometry(1,32,20),m);o.position.set(x,y,z);o.scale.set(a,b,c);o.castShadow=o.receiveShadow=true;g.add(o);return o}
  function tube(g,m,points,r){const o=new T.Mesh(new T.TubeGeometry(new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p))),24,r,8,false),m);o.castShadow=true;g.add(o)}

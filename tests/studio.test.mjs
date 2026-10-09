@@ -219,3 +219,18 @@ test('missing edit mask is repaired before preview construction and preserves th
  const s=createStudio(t.db,t.opts),j=await s.start(1,{scope:'outfit',outfitType:'top',version:0,draft:draft.id,prompt:'只改成橙色',requestId:randomUUID()}),after=s.get(1,j.job).result.values.tailoring;
  assert.equal(calls,2);assert.equal(after.color,'#ff8800');assert.equal(after.fabric,'velvet');assert.equal(after.length,base.length);assert.equal(t.submits(),0);assert.equal(t.design.current(1).version,0);t.db.close();
 });
+
+test('short clarification of an existing top survives artwork review without resetting garment',async()=>{
+ const t=setup(),top={kind:'top',name:'旧上衣',pattern:'plain',color:'#123456',accent:'#ffffff',length:.3,flare:.08,pleats:0,patternScale:.06,fabric:'cotton'};
+ const saved=t.design.make(1,'outfit',{...t.design.current(1).design.outfit,tailoring:top},0,'test');t.design.accept(1,{id:saved.id,version:0});
+ let calls=0;const requests=[],artwork={layout:'front',layers:[{type:'text',x:.5,y:.5,text:'NIKE',size:.2,fill:'#ffffff'}]};
+ t.opts.fetcher=async(url,o)=>{requests.push(JSON.parse(o.body));calls++;const p=calls===1?{operation:'explain',reply:'标志放胸前还是满版？'}:calls===2?{operation:'tailor',tailoring:{...top,color:'#ff8800',artwork},changedFields:['color','artwork'],reply:'预览'}:{operation:'tailor',tailoring:{...top,artwork},reply:'图案已复核'};return Response.json({choices:[{message:{tool_calls:[{function:{name:'edit_object',arguments:JSON.stringify(p)}}]}}]});};
+ const s=createStudio(t.db,t.opts),q=await s.start(1,{scope:'outfit',outfitType:'top',version:1,prompt:'带耐克logo，橙色',requestId:randomUUID()}),j=await s.start(1,{scope:'outfit',outfitType:'top',version:1,prompt:'胸前',replyTo:q.job,requestId:randomUUID()}),result=s.get(1,j.job);
+ assert.equal(result.status,'ready');assert.equal(result.result.values.tailoring.color,'#ff8800');assert.equal(result.result.values.tailoring.fabric,'cotton');assert.ok(result.result.values.tailoring.artwork);assert.equal(requests[1].messages[1].content,'带耐克logo，橙色');assert.equal(requests[1].messages[3].content,'胸前');assert.equal(t.submits(),0);t.db.close();
+});
+
+test('successive clarification replies inherit the unsaved draft without asking user to resend it',async()=>{
+ const t=setup(),top={kind:'top',name:'尚未保存的上衣',pattern:'plain',color:'#123456',accent:'#ffffff',length:.3,flare:.08,pleats:0,patternScale:.06};const draft=t.design.make(1,'outfit',{...t.design.current(1).design.outfit,tailoring:top},0,'test');
+ t.set({operation:'explain',reply:'要什么颜色？'});const q=await t.s.start(1,{scope:'outfit',outfitType:'top',version:0,prompt:'改颜色',draft:draft.id,requestId:randomUUID()});t.set({operation:'explain',reply:'衣服底色还是图案？'});const q2=await t.s.start(1,{scope:'outfit',outfitType:'top',version:0,prompt:'橙色',replyTo:q.job,requestId:randomUUID()});assert.equal(t.s.get(1,q2.job).draft,draft.id);
+ t.set({operation:'tailor',tailoring:{kind:'top',color:'#ff8800'},changedFields:['color'],reply:'预览'});const j=await t.s.start(1,{scope:'outfit',outfitType:'top',version:0,prompt:'底色',replyTo:q2.job,requestId:randomUUID()});const v=t.s.get(1,j.job).result.values.tailoring;assert.equal(v.name,top.name);assert.equal(v.color,'#ff8800');assert.equal(t.design.current(1).version,0);t.db.close();
+});

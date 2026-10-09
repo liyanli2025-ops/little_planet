@@ -69,5 +69,7 @@ export function createDesignService(db,{env=process.env,fetcher=fetch,clock=Date
  function baseOutfit(account,id){fail(designFields.outfit.garment.includes(id)&&id!=='original','款式不存在');const d=current(account).design;if(d.outfit.garment===id&&!d.outfit.creation)return;d.outfit.garment=id;d.outfit.creation=null;delete d.outfit.tailoring;write(account,d,'更换衣服')}
  // A process restart cannot leave a request permanently holding the single generation slot.
  db.prepare("UPDATE design_requests SET status='failed' WHERE status='pending'").run();
- return {current,view,generate,accept,rollback,gift,wearGift,baseOutfit,previewItem,wardrobePreview,make,proposal};
+ function wardrobeView(account,owner=account){fail(owner===account||partner(account)?.id===owner,'无法查看这个衣柜',403);return {owner,readOnly:owner!==account,wardrobe:wardrobe(owner)};}
+ function unequip(account,b){return txn(()=>{checkBase(account,b.version);const d=current(account).design,o=d.outfit;fail(['hat','garment','shoes','accessory'].includes(b.slot)||typeof b.slot==='string'&&b.slot.startsWith('wearable:'),'衣物位置不正确');if(b.slot.startsWith('wearable:')){const id=b.slot.slice(9);fail(o.wearables?.some(x=>x.id===id),'这件配饰已收起',409);o.wearables=o.wearables.filter(x=>x.id!==id);}else if(b.slot==='hat'){o.hat='none';o.headwear=null;o.wearables=(o.wearables||[]).filter(x=>x.slot!=='hat');}else if(b.slot==='garment'){o.garment='plain';o.tailoring=null;o.creation=null;o.wearables=(o.wearables||[]).filter(x=>x.slot!=='garment');}else o[b.slot]='none';write(account,d,'收回衣物');return view(account);})}
+ return {current,view,generate,accept,rollback,gift,wearGift,baseOutfit,previewItem,wardrobePreview,wardrobeView,unequip,make,proposal};
 }

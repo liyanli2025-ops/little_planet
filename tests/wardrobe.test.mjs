@@ -28,3 +28,19 @@ test('older saved outfits in retained history are recovered into wardrobe, unsav
  s.make(1,'outfit',{...defaultDesign().outfit,tailoring:{...skirt,name:'未保存'}},0,'ai');
  assert.ok(s.view(1).wardrobe.some(x=>x.name===skirt.name));assert.ok(!s.view(1).wardrobe.some(x=>x.name==='未保存'));assert.ok(!s.view(2).wardrobe.some(x=>x.name===skirt.name));db.close();
 });
+
+test('friend wardrobe reads owner inventory and denies unrelated accounts',()=>{
+ const db=new DatabaseSync(':memory:'),s=createDesignService(db,{partner:id=>({id:id===1?2:1})});
+ for(const [id,name]of [[1,'自己的裙'],[2,'好友的裙']]){const p=s.make(id,'outfit',{...defaultDesign().outfit,tailoring:{...skirt,name}},0,'test');s.accept(id,{id:p.id,version:0});}
+ const friend=s.wardrobeView(1,2);assert.equal(friend.owner,2);assert.equal(friend.readOnly,true);assert.ok(friend.wardrobe.some(x=>x.name==='好友的裙'));assert.ok(!friend.wardrobe.some(x=>x.name==='自己的裙'));assert.throws(()=>s.wardrobeView(1,3),/无法查看/);db.close();
+});
+test('click unequip preserves all saved pieces and only removes the chosen worn slot',()=>{
+ const db=new DatabaseSync(':memory:'),s=createDesignService(db),p=s.make(1,'outfit',{...defaultDesign().outfit,tailoring:skirt,headwear:{...skirt,kind:'veil',name:'头纱'},shoes:'boots',accessory:'brooch'},0,'test');s.accept(1,{id:p.id,version:0});
+ for(const [i,slot]of ['hat','accessory','shoes','garment'].entries()){const v=s.unequip(1,{slot,version:i+1});assert.equal(v.version,i+2);if(slot==='hat'){assert.equal(v.design.outfit.headwear,null);assert.equal(v.design.outfit.tailoring.name,skirt.name)}assert.ok(v.wardrobe.some(x=>x.name==='头纱'));assert.ok(v.wardrobe.some(x=>x.name===skirt.name));}
+ assert.equal(s.current(1).design.outfit.garment,'plain');assert.throws(()=>s.unequip(1,{slot:'hat',version:1}),/别处更新/);assert.equal(s.current(2).version,0);db.close();
+});
+
+test('generated accessories are removed separately and remain available to wear again',()=>{
+ const db=new DatabaseSync(':memory:'),s=createDesignService(db),id='11111111-1111-4111-8111-111111111111',asset='22222222-2222-4222-8222-222222222222';const wearable={id,asset,name:'手表',slot:'wrist',width:.16,height:.08,depth:.18,x:-.035,y:-.28,z:0,yaw:0,tint:'#ffffff',description:'手表'};
+ const p=s.make(1,'outfit',{...defaultDesign().outfit,wearables:[wearable],hat:'beanie'},0,'test');s.accept(1,{id:p.id,version:0});const d=s.unequip(1,{slot:'wearable:'+id,version:1});assert.equal(d.design.outfit.wearables.length,0);assert.equal(d.design.outfit.hat,'beanie');assert.ok(d.wardrobe.some(x=>x.name==='手表'));const item=d.wardrobe.find(x=>x.name==='手表'),preview=s.wardrobePreview(1,{key:item.key,version:2});assert.equal(preview.values.wearables[0].id,id);db.close();
+});

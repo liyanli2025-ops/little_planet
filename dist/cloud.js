@@ -100,6 +100,7 @@ export async function connectCloud(){
  async cafe(data){return api('/api/cafe',data,session.csrf)},
   async studio(data){return api('/api/studio',data,session.csrf)},
     async studioJob(id){return api('/api/studio/jobs/'+encodeURIComponent(id))},
+    async wardrobe(friend=false){return api('/api/wardrobe?owner='+(friend?'friend':'self'))},
     async design(data){return api('/api/design',data,session.csrf)},
   async media(data){return this.life(data,'/api/media')},
   async weread(data){return this.life(data,'/api/weread')},

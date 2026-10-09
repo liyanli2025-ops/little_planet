@@ -8,7 +8,7 @@ export function createStandardHeadwear(head){
  let texture=null;if(['stripe','check','dots'].includes(v.pattern)){const c=document.createElement('canvas');c.width=c.height=128;const ctx=c.getContext('2d');ctx.fillStyle=v.color;ctx.fillRect(0,0,128,128);ctx.fillStyle=v.accent;if(v.pattern==='dots'){for(const [x,y]of [[32,32],[96,96]]){ctx.beginPath();ctx.arc(x,y,10,0,Math.PI*2);ctx.fill()}}else{ctx.fillRect(0,0,128,24);ctx.fillRect(0,64,128,24);if(v.pattern==='check'){ctx.globalAlpha=.5;ctx.fillRect(0,0,24,128);ctx.fillRect(64,0,24,128)}}texture=new T.CanvasTexture(c);texture.colorSpace=T.SRGBColorSpace;texture.wrapS=texture.wrapT=T.RepeatWrapping;texture.repeat.set(.06/v.patternScale,.06/v.patternScale);}
  const cloth=new T.MeshPhysicalMaterial({color:texture?'#ffffff':v.color,map:texture,roughness:.95,sheen:.5,side:T.DoubleSide});
  applyGarmentSurface(cloth,v,{headwear:true});
- const band=mesh(new T.TorusGeometry(.19,.013,12,64),cloth,0,.235,0);band.rotation.x=Math.PI/2;band.scale.y=.9;
+ if(v.kind==='hat'){const band=mesh(new T.TorusGeometry(.19,.013,12,64),cloth,0,.235,0);band.rotation.x=Math.PI/2;band.scale.y=.9;}
  if(v.kind==='hat'){const crown=mesh(new T.SphereGeometry(1,56,32),cloth,0,.275,-.015);crown.scale.set(.23,.075,.195);mesh(new T.SphereGeometry(.019,24,16),cloth,0,.353,-.015)}else{
  const pos=[],uv=[],index=[],rows=28,cols=64;
  for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){const t=j/rows,a=Math.PI/3+i/cols*Math.PI*4/3,r=.205+t*.25+Math.sin(i/cols*Math.PI*12)*.014*t;pos.push(Math.sin(a)*r,.235-t*(.5+v.length*.3),Math.cos(a)*r*.85-.018);uv.push(i/cols,t)}

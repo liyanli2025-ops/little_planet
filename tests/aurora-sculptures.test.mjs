@@ -19,3 +19,6 @@ test('snowman and duck geometry is grounded and merged into at most three materi
 
 import {snowMotion} from '../dist/aurora-snow-play.js';
 test('first-person strafe follows camera right rather than reversing the mobile drag',()=>{for(const yaw of [0,.5,2.35,Math.PI]){const forward=snowMotion(yaw,1,0),right=forward.clone().cross(new T.Vector3(0,1,0)).normalize();assert.ok(snowMotion(yaw,0,1).distanceTo(right)<1e-10);assert.ok(snowMotion(yaw,-1,0).dot(forward)<-.99);}});
+
+import {snowBallLimit,snowBodyLimit} from '../dist/aurora-snow-play.js';
+test('rolling has a finite body limit and a proportionate head limit',()=>{assert.equal(snowBodyLimit,.22);assert.equal(snowBallLimit(),.22);assert.equal(snowBallLimit(.22),.22*.63);assert.ok(snowBallLimit(.22)>.08);});

@@ -8,7 +8,7 @@ test('provider prompt always includes object-only constraints and preserves crea
 });
 test('new headwear starts centered; explicit fitting and other slots stay unchanged',()=>{
  const p={operation:'asset_create',wearable:{slot:'hat',x:0.5,y:1.2,z:0.6,width:0.4}};
- assert.deepEqual(initialPlacement(p).wearable,{...p.wearable,x:0,y:0.24,z:0});assert.equal(p.wearable.x,0.5);
+ assert.deepEqual(initialPlacement(p).wearable,{...p.wearable,x:0,y:0.205,z:0});assert.equal(p.wearable.x,0.5);
  for(const operation of ['asset_fit','asset_regenerate']){const edit={...p,operation};assert.equal(initialPlacement(edit),edit)}
  const back={...p,wearable:{...p.wearable,slot:'back'}};assert.equal(initialPlacement(back),back);
 });

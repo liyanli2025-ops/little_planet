@@ -4,7 +4,7 @@ export function createTencent3D({key=process.env.TENCENT_3D_API_KEY,fetcher=fetc
   if(!key?.trim())throw new Error('容器没有读取到 TENCENT_3D_API_KEY');
   let r;try{r=await fetcher(BASE+'/'+action,{method:'POST',redirect:'error',headers:{Authorization:'Bearer '+key.trim(),'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(45000)})}catch{throw new Error('请求未获确认：网络失败或超时；不要重新提交生成任务')}
   const data=await r.json().catch(()=>null);
-  if(!r.ok){const code=String(data?.error?.code||'').replace(/[^a-zA-Z0-9_.-]/g,'').slice(0,80);const e=new Error('腾讯接口 HTTP '+r.status+(code?'，错误码 '+code:'')+'。请检查模型权限、额度和网络。');e.definite=true;throw e}
+  if(!r.ok){const code=String(data?.error?.code||'').replace(/[^a-zA-Z0-9_.-]/g,'').slice(0,80);const e=new Error('腾讯接口 HTTP '+r.status+(code?'，错误码 '+code:'')+'。请检查模型权限、额度和网络。');e.definite=true;e.status=r.status===402?503:502;throw e}
   if(!data||typeof data!=='object')throw new Error('腾讯接口返回格式不正确');
   return data;
  }

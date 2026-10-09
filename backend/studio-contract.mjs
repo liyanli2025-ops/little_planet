@@ -50,3 +50,16 @@ export function standardHomeTool(type){
  tool.function.description='设计可直接使用的标准家具样式和摆放位置；移动或收起现有家具需填写 target';
  return tool;
 }
+
+export function automaticOutfitTool(type){
+ const tool=studioTool('outfit'),p=tool.function.parameters;
+ p.properties.operation.enum=['tailor','asset_create','asset_regenerate','asset_fit','asset_remove','explain'];
+ delete p.properties.outfit;
+ p.properties.changedFields={type:'array',items:{type:'string',enum:outfitEditFields},minItems:1,uniqueItems:true};
+ p.properties.tailoring=structuredClone(p.properties.tailoring);
+ p.properties.tailoring.required=['kind'];
+ if(type&&type!=='accessory')p.properties.tailoring.properties.kind.enum=[type];
+ if(type==='accessory')delete p.properties.tailoring;
+ tool.function.description='一个设计入口：表面修改用tailor，新立体造型用asset_create，现有模型尺寸位置配色用asset_fit；不让用户选择引擎。';
+ return tool;
+}

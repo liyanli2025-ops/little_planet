@@ -1,3 +1,4 @@
+import {snowMaterial,createSnowSpruce} from './snow-play-models.js';
 import {createSnowPlay,snowPoint} from './aurora-snow-play.js';
 import {snowRoute,separatePoint,clearOf} from './aurora-collision.js';
 import {photoPose as applyPhotoPose} from './photo-pose.js';
@@ -18,8 +19,10 @@ const scene=new T.Scene(),camera=new T.PerspectiveCamera(43,innerWidth/innerHeig
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));renderer.setSize(innerWidth,innerHeight);renderer.setClearColor(0x08172c);renderer.outputColorSpace=T.SRGBColorSpace;renderer.toneMapping=T.ACESFilmicToneMapping;renderer.toneMappingExposure=1.18;renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;document.body.prepend(renderer.domElement);
 const world=new T.Group();scene.add(world);scene.add(camera);const snowfall=createAuroraSnow(camera);scene.add(new T.HemisphereLight(0xb4d7ff,0x234251,1.25));
 const moonlight=new T.DirectionalLight(0xb6d9ff,1.5);moonlight.position.set(-12,26,10);moonlight.castShadow=true;moonlight.shadow.mapSize.set(1024,1024);Object.assign(moonlight.shadow.camera,{left:-15,right:15,top:15,bottom:-15,near:.5,far:70});moonlight.shadow.normalBias=.035;scene.add(moonlight);
+moonlight.shadow.bias=-.00025;
 const mat=(color,roughness=.85)=>new T.MeshStandardMaterial({color,roughness});
-const snow=mat(0xe3edf3),wood=mat(0x614739),dark=mat(0x274a50),ice=new T.MeshPhysicalMaterial({color:0xa9dce4,roughness:.48,metalness:.06}),gold=new T.MeshStandardMaterial({color:0xffd49a,emissive:0xffae4e,emissiveIntensity:2.2});
+const snow=snowMaterial(),wood=mat(0x614739),dark=mat(0x274a50),ice=new T.MeshPhysicalMaterial({color:0xa9dce4,roughness:.48,metalness:.06}),gold=new T.MeshStandardMaterial({color:0xffd49a,emissive:0xffae4e,emissiveIntensity:2.2});
+dark.side=T.DoubleSide;
 function mesh(g,m,p=world){const o=new T.Mesh(g,m);o.castShadow=o.receiveShadow=true;p.add(o);return o}
 function ball(x,y,z,r,m,p=world){const o=mesh(new T.SphereGeometry(r,12,8),m,p);o.position.set(x,y,z);return o}
 function box(x,y,z,w,h,d,m,p=world){const o=mesh(new T.BoxGeometry(w,h,d),m,p);o.position.set(x,y,z);return o}
@@ -57,9 +60,7 @@ function groundedRod(parent,x,z,top,r,material){return rod([x,groundY(parent,x,z
 let seed=87;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296}
 let sculptureObstacles=[];
 const snowObstacles=[{x:-1,z:-.4,radius:2.45}];
-for(let i=0;i<50;i++){const a=rand()*Math.PI*2,r=i<38?7.8+rand()*.65:4.7+rand()*.8,x=Math.cos(a)*r,z=Math.sin(a)*r;if(z>3&&x>-5)continue;snowObstacles.push({x,z,radius:.36});const g=surface(x,z),h=.95+rand()*1.25;rod([0,0,0],[0,h,0],.045,wood,g);
- for(let k=0;k<5;k++){const y=.28+k*h*.16,w=(1-k*.16)*h*.29;for(let j=0;j<5;j++){const a=j/5*Math.PI*2+k*.7,branch=ball(Math.cos(a)*w*.50,y,Math.sin(a)*w*.5,1,dark,g);branch.scale.set(w*.67,h*.13,w*.23);branch.rotation.y=-a;branch.rotation.z=Math.cos(a)*-.18;const cap=ball(Math.cos(a)*w*.5,y+h*.055,Math.sin(a)*w*.5,1,snow,g);cap.scale.set(w*.64,h*.10,w*.25);cap.rotation.y=-a}}
- ball(0,h*.98,0,h*.085,snow,g);
+for(let i=0;i<50;i++){const a=rand()*Math.PI*2,r=i<38?7.8+rand()*.65:4.7+rand()*.8,x=Math.cos(a)*r,z=Math.sin(a)*r;if(z>3&&x>-5)continue;snowObstacles.push({x,z,radius:.36});const g=surface(x,z),h=.95+rand()*1.25;createSnowSpruce(g,h,i,{wood,leaf:dark,snow});
 }
 const brickMats=[iceMaterial()];
 const lodge=surface(-1,-.4);lodge.name='warm-ice-lodge';
@@ -129,7 +130,7 @@ const hazeCanvas=document.createElement('canvas');hazeCanvas.width=hazeCanvas.he
 world.updateMatrixWorld(true);
 const batches=new Map();
 world.traverse(o=>{if(!o.isMesh||o===sea||o.userData.floe)return;for(let p=o;p;p=p.parent)if(p===bear.avatar||p===lodge)return;const key=o.material.uuid;let batch=batches.get(key);if(!batch)batches.set(key,batch=[]);batch.push(o)});
-for(const objects of batches.values()){if(objects.length<2)continue;const copies=objects.map(o=>{const g=o.geometry.clone().applyMatrix4(o.matrixWorld);if(!o.material.userData.sourceIce)g.deleteAttribute('uv');return g}),merged=mergeGeometries(copies);if(merged){const o=mesh(merged,objects[0].material);for(const old of objects)old.removeFromParent()}for(const g of copies)g.dispose()}
+for(const objects of batches.values()){if(objects.length<2)continue;const copies=objects.map(o=>{const g=o.geometry.clone().applyMatrix4(o.matrixWorld);if(o.material===snow){if(!g.attributes.uv){const p=g.attributes.position,uv=[];for(let i=0;i<p.count;i++)uv.push(p.getX(i),p.getZ(i));g.setAttribute('uv',new T.Float32BufferAttribute(uv,2));}}else if(!o.material.userData.sourceIce)g.deleteAttribute('uv');return g}),merged=mergeGeometries(copies);if(merged){const o=mesh(merged,objects[0].material);for(const old of objects)old.removeFromParent()}for(const g of copies)g.dispose()}
 const wildlife=createAuroraWildlife(world);wildlife.setObstacles(snowObstacles);let assetsReady=false;const loadingSteps=new Set(['飘雪','动物与雪橇','冰砖贴图','冰山与浮冰']);const reportLoad=()=>{if(parent!==window)parent.postMessage({type:'echoo-aurora-progress',message:'正在加载雪境：'+[...loadingSteps].join('、')},location.origin)};const tracked=(name,promise)=>new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(Error(name+'加载超时，请检查网络后重试')),45000);promise.then(v=>{clearTimeout(timer);loadingSteps.delete(name);reportLoad();resolve(v)},e=>{clearTimeout(timer);reject(Error(name+'加载失败：'+e.message))})});reportLoad();Promise.all([tracked('飘雪',snowfall.ready),tracked('动物与雪橇',wildlife.ready),tracked('冰砖贴图',iceAssetsReady),tracked('冰山与浮冰',replaceFloeAssets(floeSlots,world))]).then(()=>assetsReady=true).catch(e=>{document.querySelector('#loading').textContent=e.message;if(parent!==window)parent.postMessage({type:'echoo-aurora-error',message:e.message},location.origin);console.error(e)});
 let pendingWalk=null;const ride=createSleighRide(world,wildlife,bear,{onDisembark(point){walkTo(point);walkingTarget=null;bear.seatTick(false,1);if(pendingWalk){walkTo(pendingWalk);pendingWalk=null;}}});
 const interior=createAuroraLodge();interior.group.position.copy(lodge.position);interior.group.quaternion.copy(lodge.quaternion);interior.group.scale.setScalar(.65);scene.add(interior.group);const lodgeChat=createAuroraChat(interior);

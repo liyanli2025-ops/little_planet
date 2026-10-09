@@ -1,3 +1,5 @@
+import {repeatStamps} from '../dist/garment-surface.js';
+import {garmentReference,garmentReferences} from '../dist/garment-references.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {validateSurface,surfaceFields,drawArtwork,fabricKinds} from '../dist/garment-surface.js';
@@ -9,3 +11,6 @@ test('reject unsafe or unbounded illustration data and unsupported materials',()
 test('drawing uses bounded canvas primitives without executing text',()=>{let lines=0,text='';const ctx={save(){},restore(){},scale(){},translate(){},rotate(){},beginPath(){},moveTo(){},lineTo(){lines++},closePath(){},fill(){},stroke(){},fillText(v){text=v}};drawArtwork(ctx,{layers:[shape,{type:'text',x:.5,y:.5,text:'品牌风格',size:.1,fill:'#ffffff'}]},512);assert.equal(lines,2);assert.equal(text,'品牌风格');});
 
 test('open skeletal lines and smooth outlines are drawable without filling polygons',()=>{const artwork={layout:'front',layers:[{type:'line',fill:'none',stroke:'#ffffff',smooth:true,lineWidth:.01,points:[[.1,.2],[.4,.5],[.8,.3]]}]};assert.doesNotThrow(()=>validateSurface({artwork}));let filled=0,stroked=0,curved=0;const ctx={save(){},restore(){},scale(){},translate(){},rotate(){},beginPath(){},moveTo(){},quadraticCurveTo(){curved++},fill(){filled++},stroke(){stroked++}};drawArtwork(ctx,artwork,512);assert.equal(filled,0);assert.equal(stroked,1);assert.equal(curved,2);});
+
+test('official brand reference is sourced and explicit no-logo request is preserved',()=>{assert.equal(garmentReference('始祖鸟'),'arcteryx');assert.equal(garmentReference('始祖鸟，不要logo'),null);assert.match(garmentReferences.arcteryx.source,/arcteryx.com/);assert.ok(garmentReferences.arcteryx.paths.length>1);assert.doesNotThrow(()=>validateSurface({artwork:{layout:'front',reference:'arcteryx',layers:[shape]}}));assert.throws(()=>validateSurface({artwork:{layout:'front',reference:'unknown',layers:[shape]}}));});
+test('organic repeat placement is varied, deterministic and wraps at texture boundaries',()=>{const stamps=repeatStamps();assert.deepEqual(stamps,repeatStamps());assert.equal(stamps.length,81);assert.ok(new Set(stamps.map(s=>s.angle)).size>5);assert.ok(new Set(stamps.map(s=>s.size)).size>5);assert.ok(stamps.some(s=>s.x<0));});

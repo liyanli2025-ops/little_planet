@@ -1,3 +1,4 @@
+import {createSculptures} from './aurora-sculptures.mjs';
 import {createAuroraLodgeService} from './aurora-lodge.mjs';
 import {auroraPersona,auroraOrderTool} from './aurora-host.mjs';
 import {auroraMenu} from '../dist/aurora-menu.js';
@@ -41,7 +42,8 @@ setInterval(()=>void studio.tick(),10000).unref();
 const presence=createPresence(),social=createSocial();
 const cafe=createCafe(db,{partner:u=>hub.partner(u),profile:u=>{const {wearables,...appearance}=designService.current(u.id).design.outfit;return {outfit:hub.space(u.space).store.read().state.worlds[u.slot].life?.outfit||'plain',appearance}},deliver(u,item,id){const target=hub.space(u.space).store,row=target.read(),fridge=row.state.worlds[u.slot].fridge;const found=fridge.find(f=>f.food===item.id&&!f.event&&f.qty<999);if(found)found.qty++;else{fail(fridge.length<190,'冰箱满了，先整理一下再带走',409);fridge.push({id,food:item.id,qty:1})}target.db.prepare('UPDATE saves SET revision=revision+1,state=? WHERE id=1').run(JSON.stringify(row.state))}});
 const cafeChat=createCafeChat({cafe});
-const auroraLodge=createAuroraLodgeService({profile:u=>({appearance:designService.current(u.id).design.outfit,outfit:hub.space(u.space).store.read().state.worlds[u.slot].life?.outfit||'plain'})}),auroraChat=createCafeChat({cafe:auroraLodge,persona:auroraPersona,menu:auroraMenu,orderTool:auroraOrderTool,orderReply:args=>'好，'+auroraMenu.find(x=>x.id===args.items[0]).name+'。我这就准备，做好后点吧台上的杯子就能拿。'});
+const sculptures=createSculptures(db);
+const auroraLodge=createAuroraLodgeService({sculptures,profile:u=>({appearance:designService.current(u.id).design.outfit,outfit:hub.space(u.space).store.read().state.worlds[u.slot].life?.outfit||'plain'})}),auroraChat=createCafeChat({cafe:auroraLodge,persona:auroraPersona,menu:auroraMenu,orderTool:auroraOrderTool,orderReply:args=>'好，'+auroraMenu.find(x=>x.id===args.items[0]).name+'。我这就准备，做好后点吧台上的杯子就能拿。'});
 const ttl=7*86400000;
 const rates=new Map();
 function rate(req,kind,max=20){

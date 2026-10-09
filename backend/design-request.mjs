@@ -1,10 +1,11 @@
 import {setTimeout as delay} from 'node:timers/promises';
 // Never persist response bodies: providers may echo private prompts or credentials.
-export async function requestDesign(url,payload,{key,fetcher=fetch,record=()=>{},pause=delay}={}){
+export async function requestDesign(url,payload,{key,fetcher=fetch,record=()=>{},pause=delay,deadline=Infinity}={}){
  let body=structuredClone(payload);
  for(let attempt=0;attempt<2;attempt++){
+  if(Date.now()>=deadline)throw Error('文字设计等待时间过长，请重试，原设计保留');
   let r;
-  try{r=await fetcher(url,{method:'POST',signal:AbortSignal.timeout(35000),headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify(body)});}
+  try{r=await fetcher(url,{method:'POST',signal:AbortSignal.timeout(Math.max(1,Math.min(35000,Math.floor(deadline-Date.now())))),headers:{Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify(body)});}
   catch(e){record({reason:'provider_transport',attempt,timeout:['TimeoutError','AbortError'].includes(e.name)});if(attempt===0){await pause(500);continue;}throw Error('文字设计连接超时或网络失败，原设计保留');}
   if(r.ok)return r;
   const raw=(await r.text()).slice(0,8000),compat=r.status===400&&/tool_choice/i.test(raw)&&/unsupported|not support|invalid|不支持/i.test(raw);

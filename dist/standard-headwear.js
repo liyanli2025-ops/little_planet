@@ -11,10 +11,16 @@ export function createStandardHeadwear(head){
  const band=mesh(new T.TorusGeometry(.19,.013,12,64),cloth,0,.235,0);band.rotation.x=Math.PI/2;band.scale.y=.9;
  if(v.kind==='hat'){const crown=mesh(new T.SphereGeometry(1,56,32),cloth,0,.275,-.015);crown.scale.set(.23,.075,.195);mesh(new T.SphereGeometry(.019,24,16),cloth,0,.353,-.015)}else{
  const pos=[],uv=[],index=[],rows=28,cols=64;
- for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){const t=j/rows,a=Math.PI/2+i/cols*Math.PI,r=.19+t*.19+Math.sin(i/cols*Math.PI*12)*.009*t;pos.push(Math.sin(a)*r,.235-t*(.5+v.length*.3),Math.cos(a)*r*.85-.018);uv.push(i/cols,t)}
+ for(let j=0;j<=rows;j++)for(let i=0;i<=cols;i++){const t=j/rows,a=Math.PI/3+i/cols*Math.PI*4/3,r=.205+t*.25+Math.sin(i/cols*Math.PI*12)*.014*t;pos.push(Math.sin(a)*r,.235-t*(.5+v.length*.3),Math.cos(a)*r*.85-.018);uv.push(i/cols,t)}
  for(let j=0;j<rows;j++)for(let i=0;i<cols;i++){const a=j*(cols+1)+i,b=a+cols+1;index.push(a,b,a+1,a+1,b,b+1)}
  const geo=new T.BufferGeometry();geo.setAttribute('position',new T.Float32BufferAttribute(pos,3));geo.setAttribute('uv',new T.Float32BufferAttribute(uv,2));geo.setIndex(index);geo.computeVertexNormals();
- const gauze=cloth.clone();gauze.transparent=true;gauze.opacity=.45;gauze.depthWrite=false;mesh(geo,gauze,0,0,0);
+ const gauze=cloth.clone();gauze.transparent=true;gauze.opacity=.3;gauze.depthWrite=false;mesh(geo,gauze,0,0,0);
+ // Follow the actual draped edge rather than placing decoration on the headband.
+ const edge=[];for(let i=0;i<=cols;i++){const a=Math.PI/3+i/cols*Math.PI*4/3,r=.455+Math.sin(i/cols*Math.PI*12)*.014;edge.push(new T.Vector3(Math.sin(a)*r,.235-(.5+v.length*.3),Math.cos(a)*r*.85-.018));}
+ const lace=new T.MeshStandardMaterial({color:v.accent,roughness:1,transparent:true,opacity:.7});
+ mesh(new T.TubeGeometry(new T.CatmullRomCurve3(edge),96,.003,5,false),lace,0,0,0);
+ if(/雏菊|daisy/i.test(v.name)){const petals=new T.MeshStandardMaterial({color:'#fffaf0',roughness:1}),center=new T.MeshStandardMaterial({color:'#e5bf64',roughness:1});for(let i=2;i<cols;i+=6){const pos=edge[i];for(let n=0;n<7;n++){const a=n*Math.PI*2/7,p=mesh(new T.SphereGeometry(1,10,6),petals,pos.x+Math.cos(a)*.009,pos.y+Math.sin(a)*.009,pos.z);p.scale.set(.007,.004,.002);p.rotation.z=a;}mesh(new T.SphereGeometry(.004,10,6),center,pos.x,pos.y,pos.z+.003);}}
+
  }
  if(v.pattern==='flower'){const petal=new T.MeshStandardMaterial({color:v.accent,roughness:.9});for(let i=0;i<7;i++){const a=-Math.PI*.4+i*Math.PI*.8/6,x=Math.sin(a)*.18,z=Math.cos(a)*.16;for(let n=0;n<5;n++){const b=n*Math.PI*2/5;const p=mesh(new T.SphereGeometry(1,16,12),petal,x+Math.cos(b)*.015,.247+Math.sin(b)*.015,z);p.scale.set(.012,.012,.006)}}}
  root.visible=!blocked;

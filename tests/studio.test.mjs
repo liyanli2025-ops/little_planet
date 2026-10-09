@@ -211,3 +211,11 @@ test('known brand uses sourced reference while preserving model choices and edit
 
 test('automatic route blocks a paid task for a color-only edit',async()=>{const t=setup();t.set({operation:'asset_create',description:'帽子',wearable});await assert.rejects(t.s.start(1,{scope:'outfit',outfitType:'hat',version:0,prompt:'只改颜色为绿色',requestId:randomUUID()}),/快速预览/);assert.equal(t.submits(),0);t.db.close()});
 test('accessory wrist anchor is generated while preserving the outfit',async()=>{const t=setup();t.set({operation:'asset_create',description:'独立手表',wearable:{...wearable,name:'手表',slot:'wrist',width:.16,height:.08,depth:.18,x:-.035,y:-.28,z:0}});const j=await t.s.start(1,{scope:'outfit',outfitType:'accessory',version:0,prompt:'一块手表',requestId:randomUUID()});await t.s.tick();assert.equal(t.s.get(1,j.job).result.values.wearables[0].slot,'wrist');assert.equal(t.submits(),1);t.db.close()});
+
+test('missing edit mask is repaired before preview construction and preserves the prior garment',async()=>{
+ const t=setup(),base={kind:'top',name:'上衣',pattern:'plain',color:'#222222',accent:'#ffffff',length:.3,flare:.07,pleats:0,patternScale:.06,fabric:'velvet'};
+ t.set({operation:'tailor',tailoring:base,reply:'预览'});const first=await t.s.start(1,{scope:'outfit',outfitType:'top',version:0,prompt:'上衣',requestId:randomUUID()});const draft=t.s.get(1,first.job).result;let calls=0;
+ t.opts.fetcher=async()=>{calls++;return Response.json({choices:[{message:{tool_calls:[{function:{name:'edit_object',arguments:JSON.stringify(calls===1?{operation:'tailor',tailoring:{...base,color:'#ff8800',fabric:'cotton'},reply:'改色'}:{operation:'tailor',tailoring:{kind:'top',color:'#ff8800'},changedFields:['color'],reply:'改色'})}}]}}]})};
+ const s=createStudio(t.db,t.opts),j=await s.start(1,{scope:'outfit',outfitType:'top',version:0,draft:draft.id,prompt:'只改成橙色',requestId:randomUUID()}),after=s.get(1,j.job).result.values.tailoring;
+ assert.equal(calls,2);assert.equal(after.color,'#ff8800');assert.equal(after.fabric,'velvet');assert.equal(after.length,base.length);assert.equal(t.submits(),0);assert.equal(t.design.current(1).version,0);t.db.close();
+});

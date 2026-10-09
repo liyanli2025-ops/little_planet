@@ -55,6 +55,13 @@ export function createStudio(db,{design,theme,partner,env=process.env,fetcher=fe
   const payload={model:env.AI_MODEL,...designThinking(url,env.AI_MODEL),max_tokens:type?6000:(attempt===0?2400:4000),temperature:.3,messages,tools:[type?automaticOutfitTool(type):b.homeType?standardHomeTool(b.homeType):studioTool(b.scope)],tool_choice:{type:'function',function:{name:'edit_object'}}};
   let r;try{r=await requestDesign(url,payload,{key:env.AI_API_KEY,fetcher,deadline:providerDeadline,record:data=>{db.prepare('INSERT OR REPLACE INTO studio_diagnostics VALUES(?,?,?,?)').run(job,attempt*10+(data.attempt||0),JSON.stringify(data),clock());db.exec('DELETE FROM studio_diagnostics WHERE rowid NOT IN (SELECT rowid FROM studio_diagnostics ORDER BY created DESC LIMIT 500)');}});}catch(e){fail(false,e.message,502);}
   const raw=await r.text();fail(raw.length<(type?80000:32000),'设计回复过长',502);try{const parsed=parseStudioReply(raw,b.scope);if(type&&parsed.outfit||b.homeType&&parsed.object?.pattern&&parsed.object.pattern!=='plain'&&!patternedFurniture.includes(b.homeType)&&(parsed.operation==='create'||!parsed.changedFields||parsed.changedFields.includes('pattern'))){const e=new Error('这项样式超出当前类型的能力');e.planCode='invalid_plan';e.diagnostic={reason:'unsupported_style'};throw e;}if(type&&parsed.operation!=='explain'&&(!parsed.operation.startsWith('asset_')&&(parsed.operation!=='tailor'||parsed.tailoring?.kind!==type))){const e=new Error('请选择的类型未返回完整样式');e.planCode='invalid_plan';e.diagnostic={reason:'selected_type_mismatch'};throw e}if(b.homeType&&parsed.operation!=='explain'&&(!['create','move','remove'].includes(parsed.operation)||parsed.object&&parsed.object.standard!==b.homeType))throw Error('家具类型与选择不一致');
+   if(parsed.operation==='tailor'){
+ const prior=['hat','veil'].includes(b.outfitType)?values.headwear:values.tailoring;
+ if(prior?.kind===parsed.tailoring?.kind){
+ if(!parsed.changedFields){const e=new Error('已有衣服的修改回复缺少changedFields，请根据本轮需求补齐修改字段并保留其余数据');e.planCode='invalid_plan';e.repairArguments=JSON.stringify(parsed);throw e;}
+ validateTailoring(mergeDesignEdit(prior,parsed.tailoring,parsed.changedFields,outfitEditFields));
+ }
+ }
    if(type&&parsed.operation.startsWith('asset_')){const expected=type==='hat'||type==='veil'?['hat']:type==='accessory'?['chest','wrist','back']:['garment'];if(parsed.wearable?.slot&&!expected.includes(parsed.wearable.slot))throw Error('生成物与所选类别的装配位置不一致');if(['asset_create','asset_regenerate'].includes(parsed.operation)&&/^(只|仅).{0,6}(改|换|调整).{0,8}(颜色|底色|配色|材质|布料)/u.test(b.prompt))throw Error('仅表面修改应使用快速预览或asset_fit，不重新生成');}
    const reference=type&&parsed.operation==='tailor'&&garmentReference(b.prompt);if(reference&&parsed.tailoring?.artwork&&(!parsed.changedFields||parsed.changedFields.includes('artwork'))){parsed.tailoring.artwork={...parsed.tailoring.artwork,layout:'front',reference};return parsed;}
    if(type&&attempt===0&&parsed.operation==='tailor'&&parsed.tailoring?.artwork&&(!parsed.changedFields||parsed.changedFields.includes('artwork'))){illustrationDraft=structuredClone(parsed);messages.push({role:'assistant',content:JSON.stringify(parsed)},{role:'user',content:'这是图案草稿审查，不是新的用户需求。逐层检查上面的实际轮廓：主体能否连贯识别、耳朵和脸是否连在一起、是否缺少身体主色；品牌标志是否被一个无意义多边形替代；重复纹样是否都复制同一个方块；文字是否过小。修正实际layers，优先完整可识别的简洁轮廓。骨架必须使用多条开放line，圆滑斑环使用smooth=true。只修改artwork，其余数据原样返回，继续使用tailor，不追问用户、不改类型、不生成独立模型。'});continue;}
@@ -62,11 +69,11 @@ export function createStudio(db,{design,theme,partner,env=process.env,fetcher=fe
    return parsed;
   }catch(e){
    if(!e.planCode)throw e;
-   db.prepare('INSERT OR REPLACE INTO studio_diagnostics VALUES(?,?,?,?)').run(job,attempt,JSON.stringify(e.diagnostic),clock());
+   db.prepare('INSERT OR REPLACE INTO studio_diagnostics VALUES(?,?,?,?)').run(job,attempt,JSON.stringify(e.diagnostic||{reason:'invalid_edit'}),clock());
    db.exec('DELETE FROM studio_diagnostics WHERE rowid NOT IN (SELECT rowid FROM studio_diagnostics ORDER BY created DESC LIMIT 500)');
    if(attempt===1)fail(false,'设计未完成：'+e.message+'。原设计保留，尚未提交 3D 生成。',422);
    if(e.repairArguments&&e.repairArguments.length<=16000)messages.push({role:'assistant',content:'上一份未通过校验的设计内容：\n'+e.repairArguments});
-   messages.push({role:'user',content:repairInstruction(b.scope,e.planCode)});
+   messages.push({role:'user',content:repairInstruction(b.scope,e.planCode)+(b.scope==='outfit'?' 当前修改已有同类衣物时必须返回changedFields数组，只列出用户本轮要求修改的字段，例如改底色为color，换logo为artwork（并用pattern=plain避免叠纹），不得改变未要求的材质和剪裁；原有同类衣物见系统当前设计。即使返回完整服饰，也必须提供该数组。':'')});
   }
   }
  }

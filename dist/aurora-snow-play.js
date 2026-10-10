@@ -1,3 +1,4 @@
+import {bindPointerRecovery} from './pointer-recovery.js';
 import {ensureTeddyArmRigs,poseTeddySnowArms} from './teddy-arm-rig.js';
 import {snowMaterial,snowGeometry,duckGeometry,createDuckClamp,createSnowToolStation} from './snow-play-models.js';
 import {mergeGeometries} from './vendor/BufferGeometryUtils.js';
@@ -43,6 +44,7 @@ export function createSnowPlay({world,camera,bear,canvas,obstacles,onSave,onEnte
   try{await onSave(item);completed=true;lastPiecePosition=snowPoint(item.x,item.z);for(const v of pointers.values())v.finished=true;baseMesh?.removeFromParent();baseMesh=null;base=null;baseRadius=0;reset();retreat=.9;}catch(e){rolling=false;for(const v of pointers.values())v.finished=true;console.warn('雪地作品保存失败',e.message);const msg=document.createElement('div');msg.textContent=e.message;msg.style.cssText='position:fixed;bottom:20%;left:15%;right:15%;text-align:center;color:#eef5f4;background:#274a50cc;padding:12px;border-radius:20px;pointer-events:none';document.body.append(msg);setTimeout(()=>msg.remove(),4000);}finally{saving=false;}
  }
  function pick(e){const ray=new T.Raycaster();ray.setFromCamera(new T.Vector2(e.clientX/innerWidth*2-1,1-e.clientY/innerHeight*2),camera);if(ray.intersectObjects(active?[ballTool,clampTool]:[basket],true).length){if(!active)return 'enter';tool=ray.intersectObject(clampTool,true).length?'duck':'ball';reset();return 'tool';}return null;}
+ bindPointerRecovery(canvas,pointers,()=>{keys.clear();rolling=false;lastTapHandled=true;});
  canvas.addEventListener('pointerdown',e=>{if(!active)return;canvas.setPointerCapture(e.pointerId);lastTapHandled=false;const picked=pick(e);if(pointers.size){for(const v of pointers.values())v.moved=true;rolling=false;}pointers.set(e.pointerId,{x:e.clientX,y:e.clientY,sx:e.clientX,sy:e.clientY,left:false,picked,moved:pointers.size>0,at:clock});},true);
  canvas.addEventListener('pointermove',e=>{if(!active)return;const p=pointers.get(e.pointerId);if(p){const dx=e.clientX-p.x,dy=e.clientY-p.y;p.x=e.clientX;p.y=e.clientY;if(Math.hypot(p.x-p.sx,p.y-p.sy)>8)p.moved=true;if(p.moved)rolling=false;}},true);
  for(const event of ['pointerup','pointercancel'])canvas.addEventListener(event,e=>{if(!active)return;const p=pointers.get(e.pointerId);lastTapHandled=!!(p&&(p.picked||p.moved||rolling||p.finished||tool==='duck'));pointers.delete(e.pointerId);if(event==='pointerup'&&p&&!p.picked&&!p.left){if(tool==='ball'&&rolling){rolling=false;void place();}else if(tool==='duck'&&!p.moved){clamping=1;}}},true);

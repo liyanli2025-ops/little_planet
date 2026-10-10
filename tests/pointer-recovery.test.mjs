@@ -1,0 +1,8 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {bindPointerRecovery} from '../dist/pointer-recovery.js';
+const event=(name,props={})=>Object.assign(new Event(name),props);
+function setup(){const canvas=new EventTarget();canvas.style={};const win=new EventTarget(),doc=new EventTarget(),p=new Map();let resets=0;const dispose=bindPointerRecovery(canvas,p,()=>resets++,{window:win,document:doc});return {canvas,win,doc,p,dispose,get resets(){return resets}};}
+test('fresh primary touch clears orphaned contacts; genuine second finger remains',()=>{const s=setup();s.p.set(8,{});s.canvas.dispatchEvent(event('pointerdown',{pointerId:9,isPrimary:true}));assert.equal(s.p.size,0);s.p.set(9,{});s.canvas.dispatchEvent(event('pointerdown',{pointerId:10,isPrimary:false}));assert.equal(s.p.size,1);assert.equal(s.resets,1);s.dispose()});
+test('capture loss, tab switching and blur recover without dispatching a tap',()=>{const s=setup();for(const [target,e]of [[s.canvas,event('lostpointercapture',{pointerId:1})],[s.win,event('blur')],[s.win,event('pagehide')],[s.doc,event('visibilitychange')]]){s.p.set(1,{});s.doc.hidden=true;target.dispatchEvent(e);assert.equal(s.p.size,0)}assert.equal(s.resets,4);s.dispose()});
+test('normal release does not clear the remaining pinch contact; mouse button loss does',()=>{const s=setup();s.p.set(2,{});s.canvas.dispatchEvent(event('lostpointercapture',{pointerId:1}));assert.equal(s.p.size,1);s.canvas.dispatchEvent(event('pointermove',{pointerId:2,pointerType:'mouse',buttons:0}));assert.equal(s.p.size,0);s.dispose();s.p.set(3,{});s.win.dispatchEvent(event('blur'));assert.equal(s.p.size,1)});

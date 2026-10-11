@@ -1,3 +1,4 @@
+import {imageArtistPrompt} from './clothing-brief.mjs';
 // Server-only adapter. Never fall back to a paid provider or repeat a submission.
 import {textureSeed} from './texture-seed.mjs';
 export function createModelScopeImage({token,model='Qwen/Qwen-Image-Edit',fetcher=fetch}={}){
@@ -23,10 +24,11 @@ export function createModelScopeImage({token,model='Qwen/Qwen-Image-Edit',fetche
 export function imageTextureRequest(p,prompt){
  if(p.operation!=='tailor')return null;
  if(p.changedFields&&!p.changedFields.some(f=>['artwork','pattern'].includes(f)))return null;
- const v=p.tailoring;if(!v||v.artwork?.reference)return null;
+ const v=p.tailoring;if(!v||(v.artwork?.reference||v.artwork?.brand))return null;
  if(p.changedFields?.some(f=>['artwork','pattern'].includes(f))&&v.artwork===null&&v.pattern==='plain')return null;
+ if(v.artwork?.layers?.length&&v.artwork.layers.every(layer=>layer.type==='text'))return null;
  const text=String(prompt||'');
- if(!v.artwork&&!/(图案|印花|纹样|刺绣|豹纹|斑马|动物|猫|狗|蝴蝶|星空|山水|花卉|卡通|logo|pattern|print|embroider)/i.test(text))return null;
+ if(!p.imageBrief&&!v.artwork&&!/(图案|印花|纹样|刺绣|豹纹|斑马|动物|猫|狗|蝴蝶|星空|山水|花卉|卡通|logo|pattern|print|embroider)/i.test(text))return null;
  const layout=v.artwork?.layout||'repeat';
- return {layout,prompt:`Create a production-quality flat 2D textile print texture, square image. User design brief: ${text}. Garment: ${v.kind}; fabric: ${v.fabric||'cotton'}; background exactly ${v.color}; accent ${v.accent}. ${layout==='repeat'?'Seamless repeating pattern, detailed balanced motifs, consistent scale, perfectly matching tile edges.':'One detailed centered chest graphic, generous plain background margins matching the base color, no additional motifs.'} Flat orthographic artwork only. No bear, person, clothing silhouette, mannequin, mockup, folded cloth, perspective, shadow, watermark, border or added text. Preserve the requested subject and fine details.`};
+ return {layout,prompt:imageArtistPrompt(v,text,p.imageBrief,layout),reviewPrompt:imageArtistPrompt(v,'',p.imageBrief,layout)};
 }

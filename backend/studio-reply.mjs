@@ -9,6 +9,9 @@ export function parseDesignArguments(value,meta={}){
  const fence=text.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
  if(fence){text=fence[1];meta.fenced=true}
  try{return JSON.parse(text)}catch{}
+ // Some providers unnecessarily escape apostrophes inside double-quoted JSON strings.
+ text=text.replace(/\\'/g,"'");
+ try{return JSON.parse(text)}catch{}
  let normalized='',start=0,quoted=false,escaped=false;
  // Only an object scalar immediately after ':' can use this compatibility rule.
  // Arrays, quoted text, and ambiguous nonzero comma-grouped integers stay untouched.
@@ -45,6 +48,9 @@ export function parseStudioReply(raw,scope){
   const content=typeof m?.content==='string'?m.content.trim():'';
   try{p=parseDesignArguments(content,meta)}catch(e){if(content.startsWith('{')||content.startsWith('```'))throw e;reject('no_plan',meta)}
  }
+ if(Array.isArray(p?.changedFields))p.changedFields=p.changedFields.filter(k=>k!=='kind');
+ // Optional no-op paint values from JSON-compatible providers are not new design features.
+ if(p?.tailoring?.artwork){const a=p.tailoring.artwork;for(const k of ['reference','distribution'])if(a[k]===null)delete a[k];if(Array.isArray(a.layers))for(const layer of a.layers){for(const k of ['stroke','lineWidth','rotation','smooth'])if(layer[k]===null)delete layer[k];if(layer.stroke==='none')delete layer.stroke;if(layer.lineWidth===0&&!layer.stroke&&layer.type!=='line')delete layer.lineWidth;}}
  try{checkStudioPlan(p,scope)}catch{reject('invalid_plan',meta,JSON.stringify(p))}
  return p;
 }

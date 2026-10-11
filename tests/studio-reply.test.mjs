@@ -35,3 +35,10 @@ test('comma decimal compatibility preserves text and arrays and rejects ambiguou
  assert.throws(()=>parseStudioReply(tool(array),'outfit'),e=>{assert.equal(e.planCode,'invalid_plan');assert.deepEqual(JSON.parse(e.repairArguments).wearable.x,[0,5]);return true});
  for(const value of ['1,000','0,5,6','0, 5'])assert.throws(()=>parseStudioReply(tool(JSON.stringify(p).replace('"x":0','"x":'+value)),'outfit'),e=>e.planCode==='arguments_json');
 });
+
+test('optional empty paint attributes and discriminator in changedFields normalize without guessing geometry',()=>{
+ const spec={kind:'hat',name:'test hat',pattern:'plain',color:'#ffffff',accent:'#111111',length:.25,flare:.08,pleats:0,patternScale:.05,artwork:{layout:'front',reference:null,distribution:null,layers:[{type:'text',x:.5,y:.5,text:'HELLO',size:.08,fill:'#111111',stroke:'none',lineWidth:0}]}};const result=parseStudioReply(wrap({content:JSON.stringify({operation:'tailor',tailoring:spec,changedFields:['kind','artwork']})}),'outfit');assert.deepEqual(result.changedFields,['artwork']);assert.equal(result.tailoring.artwork.reference,undefined);assert.equal(result.tailoring.artwork.layers[0].stroke,undefined);assert.equal(result.tailoring.artwork.layers[0].lineWidth,undefined);
+});
+test('invalid apostrophe escapes inside JSON strings are repaired without changing the requested text',()=>{
+ const result=parseStudioReply(wrap({content:'{"operation":"explain","reply":"Print \\\'HELLO\\\'"}'}),'outfit');assert.equal(result.reply,"Print 'HELLO'");
+});

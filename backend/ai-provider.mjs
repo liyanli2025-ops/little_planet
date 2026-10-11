@@ -9,5 +9,6 @@ export function resolveDesignEnv(env){
 }
 export function designThinking(endpoint,model){
  const host=new URL(endpoint).hostname;
+ if(host==='api-inference.modelscope.cn'&&/^Qwen\/Qwen3/i.test(model||''))return {enable_thinking:false};
  return host==='tokenhub.tencentmaas.com'&&['hy3','hy4-preview'].includes(model?.toLowerCase())||host==='open.bigmodel.cn'&&model?.toLowerCase()==='glm-4.7-flash'?{thinking:{type:'disabled'}}:{};
 }

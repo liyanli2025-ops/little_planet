@@ -1,7 +1,7 @@
 #wardrobe-confirm{position:fixed;z-index:124;left:4%;right:4%;bottom:110px;display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap;color:#405d4c}
 #wardrobe-confirm p{margin:0;width:100%;text-align:center;font-size:14px}
 #wardrobe-confirm button{border:0;border-radius:24px;padding:12px 16px;font:inherit;font-size:14px;background:#e6ebde;color:#405d4c}
-#wardrobe-confirm button:last-child{background:#40664e;color:#fff}
+#wardrobe-confirm>button:last-child{background:#40664e;color:#fff}
 #wardrobe-confirm button:disabled{opacity:.5}
 #wardrobe-fitting[hidden],#wardrobe-confirm[hidden]{display:none}
 #wardrobe-confirm p{width:auto}

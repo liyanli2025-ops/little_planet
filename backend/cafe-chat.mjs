@@ -1,4 +1,4 @@
-import {hostSceneContext} from './host-conversation.mjs';
+import {hostSceneContext,hostReplyCheck} from './host-conversation.mjs';
 import {createHash} from 'node:crypto';
 import {hostPersona,cafeOrderTool} from './cafe-host.mjs';
 import {fail,AppError} from './store.mjs';
@@ -22,7 +22,7 @@ export function createCafeChat({cafe,env=process.env,fetcher=fetch,now=Date.now,
   fail(url.protocol==='https:','聊天接口需要 HTTPS',503);
   s.busy=true;s.at=now();running++;
   try{
-   const response=await fetcher(url,{method:'POST',redirect:'error',headers:{Authorization:'Bearer '+e.AI_API_KEY,'Content-Type':'application/json'},signal:AbortSignal.timeout(45000),body:JSON.stringify({model:e.AI_MODEL,messages:[{role:'system',content:persona+'\n'+hostSceneContext(menu)+'\n当前客人状态（仅据此确认订单，不推测客人的位置或视线）：'+JSON.stringify({hour:state.sky?.hour,weather:state.sky?.weather,night:state.sky?.night,order:own.order?.items||null,held:own.held?.items||null})},...s.history,{role:'user',content:b.message.trim()}],tools:[orderTool],tool_choice:'auto',max_tokens:800,...designThinking(url,e.AI_MODEL)})});
+   const response=await fetcher(url,{method:'POST',redirect:'error',headers:{Authorization:'Bearer '+e.AI_API_KEY,'Content-Type':'application/json'},signal:AbortSignal.timeout(45000),body:JSON.stringify({model:e.AI_MODEL,messages:[{role:'system',content:persona+'\n'+hostSceneContext(menu)+'\n当前客人状态（仅据此确认订单，不推测客人的位置或视线）：'+JSON.stringify({hour:state.sky?.hour,weather:state.sky?.weather,night:state.sky?.night,order:own.order?.items||null,held:own.held?.items||null})+'\n'+hostReplyCheck},...s.history,{role:'user',content:b.message.trim()}],tools:[orderTool],tool_choice:'auto',max_tokens:800,...designThinking(url,e.AI_MODEL)})});
    if(!response.ok)throw new AppError(response.status===429?429:502,response.status===429?'主理熊暂时忙不过来，请稍后再聊':'聊天服务暂时没有回应，请稍后重试');
    const result=await response.json(),message=result.choices?.[0]?.message;let reply=message?.content,ordered=false;
    const calls=message?.tool_calls||[];

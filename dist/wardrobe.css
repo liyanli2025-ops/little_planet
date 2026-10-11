@@ -9,3 +9,8 @@
 #wardrobe-design{position:fixed;z-index:124;left:30%;bottom:165px;transform:translateX(-50%);border:0;border-radius:24px;padding:11px 20px;background:#f7f7e9;color:#405d4c;font:inherit;font-size:14px;box-shadow:0 2px 10px #324c3010}#wardrobe-design[hidden]{display:none}
 
 #wardrobe-inventory{flex-basis:100%;max-width:280px;border:1px solid #ccd6c5;border-radius:18px;background:#f7f7e9;color:#405d4c;padding:9px 14px;font:inherit;font-size:14px}#wardrobe-design{bottom:205px}
+
+#wardrobe-confirm{bottom:100px;gap:7px}#wardrobe-confirm>button:last-child{background:#40664e;color:#fff}
+#wardrobe-inventory{flex-basis:100%;max-width:560px;max-height:140px;overflow-y:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:9px;background:#f7f7e9e8;overscroll-behavior:contain;scrollbar-width:thin}
+#wardrobe-inventory button{padding:9px 7px;border-radius:12px;font-size:12px;background:#e6ebde;color:#405d4c;min-height:38px;overflow-wrap:anywhere}#wardrobe-inventory button[aria-pressed=true]{background:#40664e;color:#fff}#wardrobe-design{bottom:310px}
+#wardrobe-inventory{max-height:90px}#wardrobe-design{bottom:245px}

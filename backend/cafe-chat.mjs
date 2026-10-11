@@ -1,3 +1,4 @@
+import {hostSceneContext} from './host-conversation.mjs';
 import {createHash} from 'node:crypto';
 import {hostPersona,cafeOrderTool} from './cafe-host.mjs';
 import {fail,AppError} from './store.mjs';
@@ -21,14 +22,14 @@ export function createCafeChat({cafe,env=process.env,fetcher=fetch,now=Date.now,
   fail(url.protocol==='https:','聊天接口需要 HTTPS',503);
   s.busy=true;s.at=now();running++;
   try{
-   const response=await fetcher(url,{method:'POST',redirect:'error',headers:{Authorization:'Bearer '+e.AI_API_KEY,'Content-Type':'application/json'},signal:AbortSignal.timeout(45000),body:JSON.stringify({model:e.AI_MODEL,messages:[{role:'system',content:persona+'\n当前客人状态：'+JSON.stringify({hour:state.sky?.hour,weather:state.sky?.weather,night:state.sky?.night,order:own.order?.items||null,held:own.held?.items||null})},...s.history,{role:'user',content:b.message.trim()}],tools:[orderTool],tool_choice:'auto',max_tokens:800,...designThinking(url,e.AI_MODEL)})});
+   const response=await fetcher(url,{method:'POST',redirect:'error',headers:{Authorization:'Bearer '+e.AI_API_KEY,'Content-Type':'application/json'},signal:AbortSignal.timeout(45000),body:JSON.stringify({model:e.AI_MODEL,messages:[{role:'system',content:persona+'\n'+hostSceneContext(menu)+'\n当前客人状态（仅据此确认订单，不推测客人的位置或视线）：'+JSON.stringify({hour:state.sky?.hour,weather:state.sky?.weather,night:state.sky?.night,order:own.order?.items||null,held:own.held?.items||null})},...s.history,{role:'user',content:b.message.trim()}],tools:[orderTool],tool_choice:'auto',max_tokens:800,...designThinking(url,e.AI_MODEL)})});
    if(!response.ok)throw new AppError(response.status===429?429:502,response.status===429?'主理熊暂时忙不过来，请稍后再聊':'聊天服务暂时没有回应，请稍后重试');
    const result=await response.json(),message=result.choices?.[0]?.message;let reply=message?.content,ordered=false;
    const calls=message?.tool_calls||[];
    if(calls.length){
     fail(calls.length===1&&calls[0].function?.name==='place_cafe_order','这份点单没有听清，请再说一次',502);
     let args;try{args=JSON.parse(calls[0].function.arguments)}catch{throw new AppError(502,'点单内容没有整理好，请再说一次')}
-    fail(args&&Array.isArray(args.items)&&args.items.length>=1&&args.items.length<=2&&new Set(args.items).size===args.items.length&&args.items.every(id=>menu.some(i=>i.id===id))&&['here','takeaway'].includes(args.mode),'菜单里没有这份完整的餐食，请换一种说法',502);
+    fail(args&&Array.isArray(args.items)&&args.items.length>=1&&args.items.length<=orderTool.function.parameters.properties.items.maxItems&&new Set(args.items).size===args.items.length&&args.items.every(id=>menu.some(i=>i.id===id))&&orderTool.function.parameters.properties.mode.enum.includes(args.mode),'菜单里没有这份完整的餐食，请换一种说法',502);
     const current=cafe.view(u).guests.find(g=>g.id===u.id);
     fail(!!current,'你已经离开咖啡馆，回来再点吧',409);
     const command='chat-'+createHash('sha256').update(String(u.id)+':'+b.command).digest('hex').slice(0,48);

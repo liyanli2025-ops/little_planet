@@ -65,7 +65,7 @@ export function parseStudioReply(raw,scope,{imageArtwork=false}={}){
  }
  // Optional no-op paint values from JSON-compatible providers are not new design features.
  if(p?.tailoring?.artwork){const a=p.tailoring.artwork;for(const k of ['reference','distribution','brand'])if(a[k]===null||a[k]==='')delete a[k];if(Array.isArray(a.layers))for(const layer of a.layers){for(const k of ['stroke','lineWidth','rotation','smooth'])if(layer[k]===null)delete layer[k];if(layer.stroke==='none')delete layer.stroke;if(layer.lineWidth===0&&!layer.stroke&&layer.type!=='line')delete layer.lineWidth;}}
- try{checkStudioPlan(p,scope)}catch{reject('invalid_plan',meta,JSON.stringify(p))}
+ try{checkStudioPlan(p,scope)}catch(e){reject('invalid_plan',{...meta,validation:String(e.message).slice(0,180)},JSON.stringify(p))}
  return p;
 }
 export function repairInstruction(scope,code){return '上次返回未通过校验：'+(reasonText[code]||'参数不完整')+'。只提交一次 edit_object 调用，严格按照工具定义。arguments 必须是合法 JSON：键名和字符串用双引号，小数必须带整数部分且使用英文句点（0.4、-0.2），禁止用逗号写小数（0,4），不要尾逗号或 Markdown。保留用户的设计意图，修正上一份输出。'+(scope==='outfit'?'服饰新3D生成已关闭，只能使用tailor或已有配饰style。保留用户原意和imageBrief语义说明。首次创建完整填写衣物字段；已有衣物修改时changedFields必须位于顶层，列出修改字段，不能放进tailoring。空的reference、brand、distribution应省略。复杂图案保持pattern=plain，交给图片画师；不能用dots代替豹纹。':'新增家具使用 create，提供 description 和完整 object；修改或收起须指定 target。')+'需要澄清时使用 explain。不要只回复一段说明，不要同时提交多项操作。';}

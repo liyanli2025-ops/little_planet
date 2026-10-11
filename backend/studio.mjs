@@ -76,7 +76,7 @@ Existing clothing models only: use tailor for garment/headwear surface edits and
  if(prior?.kind!==parsed.tailoring?.kind)delete parsed.changedFields;
  if(prior?.kind===parsed.tailoring?.kind){
  if(!parsed.changedFields){const e=new Error('已有衣服的修改回复缺少changedFields，请根据本轮需求补齐修改字段并保留其余数据');e.planCode='invalid_plan';e.repairArguments=JSON.stringify(parsed);throw e;}
- validateTailoring(mergeDesignEdit(prior,parsed.tailoring,parsed.changedFields,outfitEditFields));
+ try{validateTailoring(mergeDesignEdit(prior,parsed.tailoring,parsed.changedFields,outfitEditFields));}catch(cause){const e=Error('本轮修改字段不符合服饰要求：'+cause.message);e.planCode='invalid_plan';e.repairArguments=JSON.stringify(parsed);e.diagnostic={reason:'invalid_edit',validation:cause.message};throw e;}
  }
  }
    if(type&&parsed.operation.startsWith('asset_')){const expected=type==='hat'||type==='veil'?['hat']:type==='accessory'?['chest','wrist','back']:['garment'];if(parsed.wearable?.slot&&!expected.includes(parsed.wearable.slot))throw Error('生成物与所选类别的装配位置不一致');if(['asset_create','asset_regenerate'].includes(parsed.operation)&&/^(只|仅).{0,6}(改|换|调整).{0,8}(颜色|底色|配色|材质|布料)/u.test(b.prompt))throw Error('仅表面修改应使用快速预览或asset_fit，不重新生成');}
@@ -91,9 +91,9 @@ Existing clothing models only: use tailor for garment/headwear surface edits and
    if(!e.planCode)throw e;
    db.prepare('INSERT OR REPLACE INTO studio_diagnostics VALUES(?,?,?,?)').run(job,attempt,JSON.stringify(e.diagnostic||{reason:'invalid_edit'}),clock());
    db.exec('DELETE FROM studio_diagnostics WHERE rowid NOT IN (SELECT rowid FROM studio_diagnostics ORDER BY created DESC LIMIT 500)');
-   if(attempt===1)fail(false,'设计未完成：'+e.message+'。原设计保留，尚未提交 3D 生成。',422);
+   if(attempt===1)fail(false,'设计未完成：'+e.message+'。原设计保留，请继续描述想修改的效果。',422);
    if(e.repairArguments&&e.repairArguments.length<=16000)messages.push({role:'assistant',content:'上一份未通过校验的设计内容：\n'+e.repairArguments});
-   messages.push({role:'user',content:(type?'上份设计输出未通过校验：'+e.message+'。结合完整对话直接继续设计所选类型 '+type+'。仅一次调用edit_object。普通配色、材质、文字、印花使用tailor，不生成独立模型；新创作补齐全部剪裁字段，修改同类衣物返回changedFields并保留其余数据。需要新造型才按自动路由生成模型。不要要求用户填写程序字段。修复上份返回的数据。':repairInstruction(b.scope,e.planCode))+(b.scope==='outfit'?' 当前修改已有同类衣物时必须返回changedFields数组，只列出用户本轮要求修改的字段，例如改底色为color，换logo为artwork（并用pattern=plain避免叠纹），不得改变未要求的材质和剪裁；原有同类衣物见系统当前设计。即使返回完整服饰，也必须提供该数组。':'')});
+   messages.push({role:'user',content:(type?'上份设计输出未通过校验：'+e.message+'。结合完整对话直接继续设计所选类型 '+type+'。仅一次调用edit_object。普通配色、材质、文字、印花使用tailor，不生成独立模型；新创作补齐全部剪裁字段，修改同类衣物返回changedFields并保留其余数据。新3D生成已关闭，始终使用已有衣型；花朵装饰等作为平面印花处理，不生成独立模型。不要要求用户填写程序字段。修复上份返回的数据。':repairInstruction(b.scope,e.planCode))+(b.scope==='outfit'?' 当前修改已有同类衣物时必须返回changedFields数组，只列出用户本轮要求修改的字段，例如改底色为color，换logo为artwork（并用pattern=plain避免叠纹），不得改变未要求的材质和剪裁；原有同类衣物见系统当前设计。即使返回完整服饰，也必须提供该数组。':'')});
   }
   }
  }

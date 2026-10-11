@@ -44,3 +44,5 @@ test('invalid apostrophe escapes inside JSON strings are repaired without changi
 });
 
 test('moves declared nested edit fields without guessing and rejects conflicting lists',()=>{const tailoring={kind:'top',color:'#123456',changedFields:['color']};const result=parseStudioReply(wrap({content:JSON.stringify({operation:'tailor',tailoring})}),'outfit');assert.deepEqual(result.changedFields,['color']);assert.equal(result.tailoring.changedFields,undefined);assert.throws(()=>parseStudioReply(wrap({content:JSON.stringify({operation:'tailor',tailoring,changedFields:['fabric']})}),'outfit'));});
+
+test('multi-turn partial edits ignore invalid unselected carryover but reject invalid selected values',()=>{const reply=p=>JSON.stringify({choices:[{message:{tool_calls:[{function:{name:'edit_object',arguments:JSON.stringify(p)}}]}}]});const p={operation:'tailor',changedFields:['color'],tailoring:{kind:'dress',color:'#e8dfcc',length:99,patternScale:0}};assert.equal(parseStudioReply(reply(p),'outfit').tailoring.color,'#e8dfcc');assert.throws(()=>parseStudioReply(reply({...p,changedFields:['length']}),'outfit'),e=>e.planCode==='invalid_plan'&&!!e.diagnostic.validation);});

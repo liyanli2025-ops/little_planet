@@ -21,7 +21,7 @@ export function createDesignService(db,{env=process.env,fetcher=fetch,clock=Date
  const txn=fn=>{db.exec('BEGIN IMMEDIATE');try{const result=fn();db.exec('COMMIT');return result}catch(e){db.exec('ROLLBACK');throw e}};
  function current(account){const row=db.prepare('SELECT * FROM account_designs WHERE account=?').get(account);return row?{version:row.version,design:validateDesign(JSON.parse(row.data))}:{version:0,design:defaultDesign()}}
  function rememberOutfit(account,outfit,created=clock()){
- if(!outfit||!(outfit.tailoring||outfit.headwear||outfit.creation||outfit.wearables?.length))return;
+ if(!outfit||!(outfit.tailoring||outfit.headwear||outfit.creation||outfit.wearables?.length||['hat','shoes','accessory'].some(slot=>outfit[slot]&&outfit[slot]!=='none')||(outfit.garment&&!['plain','original'].includes(outfit.garment))))return;
  const safe=validateDesignPart('outfit',outfit),data=JSON.stringify(safe);
  if(db.prepare("SELECT id FROM design_items WHERE account=? AND scope='outfit' AND data=?").get(account,data))return;
  const name=safe.wearables?.at(-1)?.name||safe.headwear?.name||safe.tailoring?.name||safe.creation?.name||'保存的装扮';

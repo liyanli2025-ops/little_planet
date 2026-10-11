@@ -7,3 +7,5 @@
 #wardrobe-confirm p{width:auto}
 
 #wardrobe-design{position:fixed;z-index:124;left:30%;bottom:165px;transform:translateX(-50%);border:0;border-radius:24px;padding:11px 20px;background:#f7f7e9;color:#405d4c;font:inherit;font-size:14px;box-shadow:0 2px 10px #324c3010}#wardrobe-design[hidden]{display:none}
+
+#wardrobe-inventory{flex-basis:100%;max-width:280px;border:1px solid #ccd6c5;border-radius:18px;background:#f7f7e9;color:#405d4c;padding:9px 14px;font:inherit;font-size:14px}#wardrobe-design{bottom:205px}

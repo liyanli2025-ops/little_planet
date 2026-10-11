@@ -28,7 +28,7 @@ export function createClothing(body,arms,legs=[]){
    const cuff=mesh(g,new T.TorusGeometry(.126,.008,8,40),trim,0,-.175,.02);cuff.rotation.x=Math.PI/2;cuff.scale.y=1.13;
   }
  for(const side of [-1,1]){
-  const path=new T.CatmullRomCurve3([new T.Vector3(side*.13,.637,.262),new T.Vector3(side*.24,.735,.16),new T.Vector3(side*.305,.745,0),new T.Vector3(side*.24,.70,-.18),new T.Vector3(side*.13,.55,-.26)]);const strap=clothSurface((u,v)=>{const p=path.getPoint(v);return [p.x+(u-.5)*.037,p.y,p.z]},8,48);mesh(root,strap,cloth);
+  const path=new T.CatmullRomCurve3([new T.Vector3(side*.13,.637,frontSurface(side*.13,.637)+.005),new T.Vector3(side*.19,.694,.19),new T.Vector3(side*.23,.716,0),new T.Vector3(side*.19,.69,-.19),new T.Vector3(side*.13,.55,-frontSurface(side*.13,.55))]);const strap=clothSurface((u,v)=>{const p=path.getPoint(v);return [p.x+(u-.5)*.037,p.y,p.z]},8,48);mesh(root,strap,cloth);
   ell(root,trim,side*.13,.63,.255,.009,.009,.004);
  }
  const pocket=new T.Shape();pocket.moveTo(-.078,.585);pocket.lineTo(.078,.585);pocket.lineTo(.074,.514);pocket.quadraticCurveTo(0,.475,-.074,.514);pocket.closePath();const pg=new T.ExtrudeGeometry(pocket,{depth:.004,bevelEnabled:true,bevelSize:.003,bevelThickness:.002,bevelSegments:3,curveSegments:16});const pos=pg.attributes.position;for(let i=0;i<pos.count;i++){const x=pos.getX(i),y=pos.getY(i),r=y>.5?.35-(y-.5)*.34:.35;pos.setZ(i,pos.getZ(i)+Math.sqrt(r*r-x*x)*.86+.004)}pg.computeVertexNormals();mesh(root,pg,cloth);

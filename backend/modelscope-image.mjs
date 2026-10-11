@@ -1,7 +1,7 @@
 import {imageArtistPrompt} from './clothing-brief.mjs';
 // Server-only adapter. Never fall back to a paid provider or repeat a submission.
 import {textureSeed} from './texture-seed.mjs';
-export function createModelScopeImage({token,model='Qwen/Qwen-Image-Edit',fetcher=fetch}={}){
+export function createModelScopeImage({token,model='Qwen/Qwen-Image-Edit',generationModel=model,fetcher=fetch}={}){
  const base='https://api-inference.modelscope.cn/v1';
  async function api(path,{method='GET',body,headers={}}={}){
   const r=await fetcher(base+path,{method,headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json',...headers},...(body?{body:JSON.stringify(body)}:{}),signal:AbortSignal.timeout(30000)});
@@ -9,7 +9,7 @@ export function createModelScopeImage({token,model='Qwen/Qwen-Image-Edit',fetche
   return r.json();
  }
  return {
-  async submit(prompt,color='#ffffff'){if(!token)throw Error('魔搭图片服务尚未配置');const d=await api('/images/generations',{method:'POST',headers:{'X-ModelScope-Async-Mode':'true'},body:{model,prompt,size:'1024x1024',...(/edit/i.test(model)?{image_url:textureSeed(color)}:{})}});if(typeof d.task_id!=='string'||!/^[a-zA-Z0-9_-]{1,128}$/.test(d.task_id))throw Error('魔搭未返回有效任务编号');return d.task_id;},
+  async submit(prompt,color='#ffffff',reference){const selected=reference?model:generationModel;if(!token)throw Error('魔搭图片服务尚未配置');const d=await api('/images/generations',{method:'POST',headers:{'X-ModelScope-Async-Mode':'true'},body:{model:selected,prompt,size:'1024x1024',...(/edit/i.test(selected)?{image_url:reference||textureSeed(color)}:{})}});if(typeof d.task_id!=='string'||!/^[a-zA-Z0-9_-]{1,128}$/.test(d.task_id))throw Error('魔搭未返回有效任务编号');return d.task_id;},
   async query(id){return api('/tasks/'+encodeURIComponent(id),{headers:{'X-ModelScope-Task-Type':'image_generation'}});},
   async download(address){
    const u=new URL(address);if(u.protocol!=='https:'||u.username||u.password||!/(^|\.)(modelscope\.cn|aliyuncs\.com)$/.test(u.hostname))throw Error('魔搭图片下载地址不受支持');
@@ -29,6 +29,6 @@ export function imageTextureRequest(p,prompt){
  if(v.artwork?.layers?.length&&v.artwork.layers.every(layer=>layer.type==='text'))return null;
  const text=String(prompt||'');
  if(!p.imageBrief&&!v.artwork&&!/(图案|印花|纹样|刺绣|豹纹|斑马|动物|猫|狗|蝴蝶|星空|山水|花卉|卡通|logo|pattern|print|embroider)/i.test(text))return null;
- const layout=v.artwork?.layout||'repeat';
+ const layout=p.imageBrief?.layout||v.artwork?.layout||'repeat';
  return {layout,prompt:imageArtistPrompt(v,text,p.imageBrief,layout),reviewPrompt:imageArtistPrompt(v,'',p.imageBrief,layout)};
 }

@@ -9,6 +9,7 @@ const color={type:'string',pattern:'^#[a-fA-F0-9]{6}$'};
 const tailoring={type:'object',additionalProperties:false,properties:{kind:{type:'string',enum:['skirt','dress','top','set','hat','veil']},name:{type:'string',minLength:1,maxLength:50},pattern:{type:'string',enum:['plain','check','stripe','dots','flower']},color,accent:color,length:number(.18,.4),flare:number(.02,.13),pleats:{type:'integer',minimum:0,maximum:24},patternScale:number(.03,.12),pantsColor:color,...surfaceFields},required:['kind','name','pattern','color','accent','length','flare','pleats','patternScale']};
 export function studioTool(scope){return {type:'function',function:{name:'edit_object',description:'提交完整设计；不支持的需求用 explain 说明，不生成替代品',parameters:{type:'object',additionalProperties:false,properties:{operation:{type:'string',enum:scope==='outfit'?['tailor','style','explain']:['create','regenerate','move','remove','explain']},reply:{type:'string'},...(scope==='outfit'?{target:{type:'string'},description:{type:'string'},wearable:{type:'object',additionalProperties:false,properties:wearableFields},tailoring,outfit:{type:'object',additionalProperties:false,properties:{...Object.fromEntries(Object.entries(designFields.outfit).map(([k,v])=>[k,{type:'string',enum:v}])),accessoryColors:{type:'object',additionalProperties:false,properties:{hat:color,shoes:color,accessory:color}}}}}:{target:{type:'string'},description:{type:'string'},object:{type:'object',additionalProperties:false,properties:{name:{type:'string'},kind:{type:'string',enum:['decor','seat','sofa']},floor:{type:'integer',enum:[0,1]},x:number(-4.2,4.2),z:number(-3,3),yaw:number(-Math.PI,Math.PI),width:number(.15,2.5),height:number(.1,1.8),depth:number(.15,1.3),seat:number(.15,.9),tint:color}}})},required:['operation','reply']}}};}
 export function checkStudioPlan(p,scope){
+ if(p?.imageBrief&&(p.imageBrief.subject!==undefined&&(typeof p.imageBrief.subject!=='string'||!p.imageBrief.subject.trim()||p.imageBrief.subject.length>120)||p.imageBrief.layout!==undefined&&!['front','repeat'].includes(p.imageBrief.layout)))throw Error('Invalid artwork subject or layout');
  if(p?.imageBrief&&(p.imageBrief.brand!==undefined&&(typeof p.imageBrief.brand!=='string'||p.imageBrief.brand.length>80)||typeof p.imageBrief.description!=='string'||p.imageBrief.description.length<20||p.imageBrief.description.length>1800||!Array.isArray(p.imageBrief.lettering)||p.imageBrief.lettering.length>4||p.imageBrief.lettering.some(t=>typeof t!=='string'||t.length>40)))throw Error('Invalid visual brief');
  if(!p||typeof p!=='object')throw Error('缺少设计');
  if(p.operation==='explain'){if(typeof p.reply!=='string'||!p.reply.trim())throw Error('缺少说明');return;}
@@ -54,11 +55,16 @@ export function standardHomeTool(type){
 
 export function automaticOutfitTool(type){
  const tool=studioTool('outfit'),p=tool.function.parameters;
- p.properties.imageBrief={type:'object',additionalProperties:false,properties:{brand:{type:'string',maxLength:80,description:'English brand name only when the user requests a specific brand logo; omit for ordinary animals and illustrations.'},description:{type:'string',minLength:20,maxLength:1800},lettering:{type:'array',maxItems:4,items:{type:'string',maxLength:40}}},required:['description','lettering'],description:'Complete semantic visual brief: subject anatomy, composition, details and style; exact visible text only.'};
+ p.properties.imageBrief={type:'object',additionalProperties:false,properties:{subject:{type:'string',minLength:1,maxLength:120,description:'Short English name of the actual graphic subject, e.g. leopard print, not the receiving garment.'},layout:{type:'string',enum:['front','repeat'],description:'repeat for all-over patterns; front for one logo or illustration'},brand:{type:'string',maxLength:80,description:'English brand name only when the user requests a specific brand logo; omit for ordinary animals and illustrations.'},description:{type:'string',minLength:20,maxLength:1800},lettering:{type:'array',maxItems:4,items:{type:'string',maxLength:40}}},required:['subject','layout','description','lettering'],description:'Complete semantic visual brief: subject anatomy, composition, details and style; exact visible text only.'};
  p.properties.operation.enum=type==='accessory'?['style','explain']:['tailor','explain'];
  if(type!=='accessory')delete p.properties.outfit;delete p.properties.wearable;delete p.properties.description;delete p.properties.target;
  p.properties.changedFields={type:'array',items:{type:'string',enum:outfitEditFields},minItems:1,uniqueItems:true};
  p.properties.tailoring=structuredClone(p.properties.tailoring);
+ // Saved artwork can still render old references, but the planner must describe
+ // an identity in natural language rather than select an internal cache key.
+ for(const a of p.properties.tailoring.properties.artwork?.anyOf||[]){
+  if(a.properties){delete a.properties.reference;delete a.properties.brand;}
+ }
  p.properties.tailoring.required=['kind'];
  if(type&&type!=='accessory')p.properties.tailoring.properties.kind.enum=[type];
  if(type==='accessory')delete p.properties.tailoring;

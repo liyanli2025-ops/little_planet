@@ -6,7 +6,7 @@ const p={operation:'asset_create',reply:'预览头纱',description:'白色薄纱
 const wrap=(message,finish_reason='stop')=>JSON.stringify({choices:[{finish_reason,message}]});
 test('flower veil parses from one tool call or complete JSON content, no fabrication',()=>{for(const argumentsValue of [JSON.stringify(p),p])assert.deepEqual(parseStudioReply(wrap({tool_calls:[{function:{name:'edit_object',arguments:argumentsValue}}]}),'outfit'),p);for(const content of [JSON.stringify(p),'```json\n'+JSON.stringify(p)+'\n```'])assert.deepEqual(parseStudioReply(wrap({content}),'outfit'),p)});
 test('reports truncated, prose-only, multiple-tool and missing-field outputs separately',()=>{for(const [raw,code]of [[wrap({content:JSON.stringify(p)},'length'),'truncated'],[wrap({content:'用户的私密描述'}),'no_plan'],[wrap({tool_calls:[{},{}]}),'multiple_tools'],[wrap({content:JSON.stringify({...p,wearable:{name:'小花头纱'}})}),'invalid_plan']]){assert.throws(()=>parseStudioReply(raw,'outfit'),e=>{assert.equal(e.planCode,code);assert.ok(!JSON.stringify(e.diagnostic).includes('私密'));return true})}});
-test('repair instructions route veil to independent model rather than basic skirt',()=>{const s=repairInstruction('outfit','no_plan');assert.match(s,/asset_create/);assert.match(s,/头纱/);assert.match(s,/只提交一次/);assert.match(repairInstruction('home','truncated'),/被截断/)});
+test('repair instructions preserve the existing-model-only clothing constraint',()=>{const s=repairInstruction('outfit','no_plan');assert.doesNotMatch(s,/asset_create|asset_regenerate/);assert.match(s,/tailor/);assert.match(s,/只提交一次/);assert.match(repairInstruction('home','truncated'),/被截断/)});
 
 const tool=argumentsValue=>wrap({tool_calls:[{function:{name:'edit_object',arguments:argumentsValue}}]});
 test('repairs fenced arguments, leading decimals and trailing commas without changing strings',()=>{
@@ -42,3 +42,5 @@ test('optional empty paint attributes and discriminator in changedFields normali
 test('invalid apostrophe escapes inside JSON strings are repaired without changing the requested text',()=>{
  const result=parseStudioReply(wrap({content:'{"operation":"explain","reply":"Print \\\'HELLO\\\'"}'}),'outfit');assert.equal(result.reply,"Print 'HELLO'");
 });
+
+test('moves declared nested edit fields without guessing and rejects conflicting lists',()=>{const tailoring={kind:'top',color:'#123456',changedFields:['color']};const result=parseStudioReply(wrap({content:JSON.stringify({operation:'tailor',tailoring})}),'outfit');assert.deepEqual(result.changedFields,['color']);assert.equal(result.tailoring.changedFields,undefined);assert.throws(()=>parseStudioReply(wrap({content:JSON.stringify({operation:'tailor',tailoring,changedFields:['fabric']})}),'outfit'));});

@@ -31,7 +31,7 @@ export function parseDesignArguments(value,meta={}){
   reject('arguments_json',meta,value);
  }
 }
-export function parseStudioReply(raw,scope){
+export function parseStudioReply(raw,scope,{imageArtwork=false}={}){
  let d;try{d=JSON.parse(raw)}catch{reject('response_json',{bytes:raw.length})}
  const choice=d?.choices?.[0],m=choice?.message,c=m?.tool_calls;
  const meta={finish:['stop','length','tool_calls','content_filter'].includes(choice?.finish_reason)?choice.finish_reason:'other',toolCount:Array.isArray(c)?c.length:0,contentChars:typeof m?.content==='string'?m.content.length:0};
@@ -48,10 +48,24 @@ export function parseStudioReply(raw,scope){
   const content=typeof m?.content==='string'?m.content.trim():'';
   try{p=parseDesignArguments(content,meta)}catch(e){if(content.startsWith('{')||content.startsWith('```'))throw e;reject('no_plan',meta)}
  }
+ // Some JSON-compatible providers put the edit field list inside tailoring.
+ // Move the same declared list; never infer which fields the user requested.
+ if(Array.isArray(p?.tailoring?.changedFields)){
+  if(p.changedFields!==undefined&&JSON.stringify(p.changedFields)!==JSON.stringify(p.tailoring.changedFields))reject('invalid_plan',meta,JSON.stringify(p));
+  p.changedFields=p.tailoring.changedFields;delete p.tailoring.changedFields;
+ }
  if(Array.isArray(p?.changedFields))p.changedFields=p.changedFields.filter(k=>k!=='kind');
+ // Semantic artwork is rendered by the image artist. Do not validate or render
+ // the planner's unused placeholder geometry as though it were the final logo.
+ if(imageArtwork&&p?.imageBrief&&p.tailoring&&(!p.changedFields||p.changedFields.includes('artwork'))&&!(p.tailoring.artwork?.layers?.length&&p.tailoring.artwork.layers.every(l=>l.type==='text'))){
+  const layout=p.imageBrief.layout||(p.tailoring.artwork?.layout==='repeat'?'repeat':'front');
+  p.tailoring.pattern='plain';
+  if(layout==='front'&&p.tailoring.patternScale===0)p.tailoring.patternScale=.06;
+  p.tailoring.artwork={layout,layers:[{type:'rect',x:.5,y:.5,w:.1,h:.1,fill:p.tailoring.accent||'#ffffff'}]};
+ }
  // Optional no-op paint values from JSON-compatible providers are not new design features.
- if(p?.tailoring?.artwork){const a=p.tailoring.artwork;for(const k of ['reference','distribution'])if(a[k]===null)delete a[k];if(Array.isArray(a.layers))for(const layer of a.layers){for(const k of ['stroke','lineWidth','rotation','smooth'])if(layer[k]===null)delete layer[k];if(layer.stroke==='none')delete layer.stroke;if(layer.lineWidth===0&&!layer.stroke&&layer.type!=='line')delete layer.lineWidth;}}
+ if(p?.tailoring?.artwork){const a=p.tailoring.artwork;for(const k of ['reference','distribution','brand'])if(a[k]===null||a[k]==='')delete a[k];if(Array.isArray(a.layers))for(const layer of a.layers){for(const k of ['stroke','lineWidth','rotation','smooth'])if(layer[k]===null)delete layer[k];if(layer.stroke==='none')delete layer.stroke;if(layer.lineWidth===0&&!layer.stroke&&layer.type!=='line')delete layer.lineWidth;}}
  try{checkStudioPlan(p,scope)}catch{reject('invalid_plan',meta,JSON.stringify(p))}
  return p;
 }
-export function repairInstruction(scope,code){return '上次返回未通过校验：'+(reasonText[code]||'参数不完整')+'。只提交一次 edit_object 调用，严格按照工具定义。arguments 必须是合法 JSON：键名和字符串用双引号，小数必须带整数部分且使用英文句点（0.4、-0.2），禁止用逗号写小数（0,4），不要尾逗号或 Markdown。保留用户的设计意图，修正上一份输出。'+(scope==='outfit'?'新增头纱、帽子、包或其他独立作品使用 asset_create，提供 description 和完整 wearable（name,slot,width,height,depth,x,y,z,yaw,tint）；不要改成基础裙装。修改已有作品使用 asset_fit 或 asset_regenerate 并指定 target。只有基础剪裁才使用 tailor。':'新增家具使用 create，提供 description 和完整 object；修改或收起须指定 target。')+'需要澄清时使用 explain。不要只回复一段说明，不要同时提交多项操作。';}
+export function repairInstruction(scope,code){return '上次返回未通过校验：'+(reasonText[code]||'参数不完整')+'。只提交一次 edit_object 调用，严格按照工具定义。arguments 必须是合法 JSON：键名和字符串用双引号，小数必须带整数部分且使用英文句点（0.4、-0.2），禁止用逗号写小数（0,4），不要尾逗号或 Markdown。保留用户的设计意图，修正上一份输出。'+(scope==='outfit'?'服饰新3D生成已关闭，只能使用tailor或已有配饰style。保留用户原意和imageBrief语义说明。首次创建完整填写衣物字段；已有衣物修改时changedFields必须位于顶层，列出修改字段，不能放进tailoring。空的reference、brand、distribution应省略。复杂图案保持pattern=plain，交给图片画师；不能用dots代替豹纹。':'新增家具使用 create，提供 description 和完整 object；修改或收起须指定 target。')+'需要澄清时使用 explain。不要只回复一段说明，不要同时提交多项操作。';}

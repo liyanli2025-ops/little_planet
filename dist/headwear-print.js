@@ -1,3 +1,4 @@
+import {prepareReferenceGraphic} from './reference-graphic.js';
 import {loadBrandMark} from './brand-mark-drawing.js';
 import * as T from './vendor/three.module.js';
 import {drawArtwork} from './garment-surface.js';
@@ -16,6 +17,6 @@ export function addHeadwearPrint(root,curve,v){
  let disposed=false;map.addEventListener('dispose',()=>{disposed=true;});
  function paint(source){if(disposed)return;const ctx=source.getContext('2d'),pixels=ctx.getImageData(0,0,source.width,source.height).data;let x0=source.width,y0=source.height,x1=-1,y1=-1;for(let y=0;y<source.height;y++)for(let x=0;x<source.width;x++)if(pixels[(y*source.width+x)*4+3]>24){x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);}if(x1>=x0){const w=x1-x0+1,h=y1-y0+1,scale=Math.min(240/w,490/h);canvas.getContext('2d').drawImage(source,x0,y0,w,h,(256-w*scale)/2,(512-h*scale)/2,w*scale,h*scale);map.needsUpdate=true;}}
  if(v.artwork){const draw=()=>{if(disposed)return;const source=document.createElement('canvas');source.width=source.height=512;drawArtwork(source.getContext('2d'),v.artwork,512);paint(source);};const image=garmentReferences[v.artwork.reference]?.image;if(v.artwork.brand)loadBrandMark(v.artwork.brand).then(draw).catch(()=>{});else if(image)loadReferenceImage(image).then(draw).catch(()=>{});else draw();}
- else if(v.texture){const image=new Image();image.onload=()=>{if(disposed)return;const source=document.createElement('canvas');source.width=source.height=512;const ctx=source.getContext('2d');ctx.drawImage(image,0,0,512,512);const p=ctx.getImageData(0,0,512,512),background=[p.data[0],p.data[1],p.data[2]];for(let i=0;i<p.data.length;i+=4){const delta=Math.sqrt(background.reduce((n,c,k)=>n+(p.data[i+k]-c)**2,0));p.data[i+3]*=Math.max(0,Math.min(1,(delta-30)/55));}ctx.putImageData(p,0,0);paint(source);};image.src='/api/studio/textures/'+v.texture.id;}
+ else if(v.texture){const image=new Image();image.onload=()=>{if(disposed)return;if(v.texture.mode==='reference'){paint(prepareReferenceGraphic(image,v.accent));return;}const source=document.createElement('canvas');source.width=source.height=512;const ctx=source.getContext('2d');ctx.drawImage(image,0,0,512,512);const p=ctx.getImageData(0,0,512,512),background=[p.data[0],p.data[1],p.data[2]];for(let i=0;i<p.data.length;i+=4){const delta=Math.sqrt(background.reduce((n,c,k)=>n+(p.data[i+k]-c)**2,0));p.data[i+3]*=Math.max(0,Math.min(1,(delta-30)/55));}ctx.putImageData(p,0,0);paint(source);};image.src='/api/studio/textures/'+v.texture.id;}
  return mesh;
 }

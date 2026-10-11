@@ -1,0 +1,3 @@
+import test from 'node:test';import assert from 'node:assert/strict';import {referencePixels} from '../dist/reference-graphic.js';
+test('uniform background becomes transparent, monochrome symbol uses requested accent',()=>{const p=new Uint8ClampedArray(3*3*4).fill(255);p.set([0,0,0,255],16);referencePixels(p,3,3,'#123456');assert.equal(p[3],0);assert.deepEqual([...p.slice(16,20)],[18,52,86,255]);});
+test('transparent references keep opaque black symbol and colored marks retain their colors',()=>{const p=new Uint8ClampedArray(36);p.set([0,0,0,255],16);referencePixels(p,3,3,'#ffffff');assert.equal(p[19],255);const c=new Uint8ClampedArray(36).fill(255);c.set([200,30,10,255],16);referencePixels(c,3,3,'#000000');assert.deepEqual([...c.slice(16,20)],[200,30,10,255]);});

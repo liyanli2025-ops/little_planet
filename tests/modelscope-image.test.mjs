@@ -47,3 +47,7 @@ test('texture schema excludes arbitrary URLs, download excludes arbitrary hosts 
 test('completed result metadata survives download interruption without querying task again',async()=>{
  const f=fixture();try{let s=f.studio();const j=await s.start(1,{scope:'outfit',outfitType:'top',version:0,prompt:'flowers',requestId:randomUUID()});f.setStatus('SUCCEED');f.failDownload();await s.tick();assert.equal(f.queries(),1);assert.notEqual(s.get(1,j.job).status,'ready');f.setStatus('FAILED');s=f.studio();await s.tick();assert.equal(s.get(1,j.job).status,'ready');assert.equal(f.queries(),1);assert.equal(f.count(),1);}finally{f.db.close();}
 });
+
+test('Ralph Lauren exact hat prompt uses the official reference without an image submission',async()=>{
+ const f=fixture();try{f.setPlan({operation:'tailor',tailoring:{...spec,kind:'hat',name:'Polo hat',artwork:null}});const s=f.studio(),j=await s.start(1,{scope:'outfit',outfitType:'hat',version:0,prompt:'\u62c9\u592b\u52b3\u4f26\u7684logo',requestId:randomUUID()});const r=s.get(1,j.job);assert.equal(r.status,'ready');assert.equal(r.result.values.headwear.artwork.reference,'ralphLauren');assert.equal(f.count(),0);}finally{f.db.close();}
+});

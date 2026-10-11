@@ -7,7 +7,7 @@ import {validateTailoring} from '../dist/studio-schema.js';
 const number=(minimum,maximum)=>({type:'number',minimum,maximum});
 const color={type:'string',pattern:'^#[a-fA-F0-9]{6}$'};
 const tailoring={type:'object',additionalProperties:false,properties:{kind:{type:'string',enum:['skirt','dress','top','set','hat','veil']},name:{type:'string',minLength:1,maxLength:50},pattern:{type:'string',enum:['plain','check','stripe','dots','flower']},color,accent:color,length:number(.18,.4),flare:number(.02,.13),pleats:{type:'integer',minimum:0,maximum:24},patternScale:number(.03,.12),pantsColor:color,...surfaceFields},required:['kind','name','pattern','color','accent','length','flare','pleats','patternScale']};
-export function studioTool(scope){return {type:'function',function:{name:'edit_object',description:'提交完整设计；不支持的需求用 explain 说明，不生成替代品',parameters:{type:'object',additionalProperties:false,properties:{operation:{type:'string',enum:scope==='outfit'?['asset_create','asset_regenerate','asset_fit','asset_remove','tailor','style','explain']:['create','regenerate','move','remove','explain']},reply:{type:'string'},...(scope==='outfit'?{target:{type:'string'},description:{type:'string'},wearable:{type:'object',additionalProperties:false,properties:wearableFields},tailoring,outfit:{type:'object',additionalProperties:false,properties:{...Object.fromEntries(Object.entries(designFields.outfit).map(([k,v])=>[k,{type:'string',enum:v}])),accessoryColors:{type:'object',additionalProperties:false,properties:{hat:color,shoes:color,accessory:color}}}}}:{target:{type:'string'},description:{type:'string'},object:{type:'object',additionalProperties:false,properties:{name:{type:'string'},kind:{type:'string',enum:['decor','seat','sofa']},floor:{type:'integer',enum:[0,1]},x:number(-4.2,4.2),z:number(-3,3),yaw:number(-Math.PI,Math.PI),width:number(.15,2.5),height:number(.1,1.8),depth:number(.15,1.3),seat:number(.15,.9),tint:color}}})},required:['operation','reply']}}};}
+export function studioTool(scope){return {type:'function',function:{name:'edit_object',description:'提交完整设计；不支持的需求用 explain 说明，不生成替代品',parameters:{type:'object',additionalProperties:false,properties:{operation:{type:'string',enum:scope==='outfit'?['tailor','style','explain']:['create','regenerate','move','remove','explain']},reply:{type:'string'},...(scope==='outfit'?{target:{type:'string'},description:{type:'string'},wearable:{type:'object',additionalProperties:false,properties:wearableFields},tailoring,outfit:{type:'object',additionalProperties:false,properties:{...Object.fromEntries(Object.entries(designFields.outfit).map(([k,v])=>[k,{type:'string',enum:v}])),accessoryColors:{type:'object',additionalProperties:false,properties:{hat:color,shoes:color,accessory:color}}}}}:{target:{type:'string'},description:{type:'string'},object:{type:'object',additionalProperties:false,properties:{name:{type:'string'},kind:{type:'string',enum:['decor','seat','sofa']},floor:{type:'integer',enum:[0,1]},x:number(-4.2,4.2),z:number(-3,3),yaw:number(-Math.PI,Math.PI),width:number(.15,2.5),height:number(.1,1.8),depth:number(.15,1.3),seat:number(.15,.9),tint:color}}})},required:['operation','reply']}}};}
 export function checkStudioPlan(p,scope){
  if(!p||typeof p!=='object')throw Error('缺少设计');
  if(p.operation==='explain'){if(typeof p.reply!=='string'||!p.reply.trim())throw Error('缺少说明');return;}
@@ -53,13 +53,13 @@ export function standardHomeTool(type){
 
 export function automaticOutfitTool(type){
  const tool=studioTool('outfit'),p=tool.function.parameters;
- p.properties.operation.enum=['tailor','asset_create','asset_regenerate','asset_fit','asset_remove','explain'];
- delete p.properties.outfit;
+ p.properties.operation.enum=type==='accessory'?['style','explain']:['tailor','explain'];
+ if(type!=='accessory')delete p.properties.outfit;delete p.properties.wearable;delete p.properties.description;delete p.properties.target;
  p.properties.changedFields={type:'array',items:{type:'string',enum:outfitEditFields},minItems:1,uniqueItems:true};
  p.properties.tailoring=structuredClone(p.properties.tailoring);
  p.properties.tailoring.required=['kind'];
  if(type&&type!=='accessory')p.properties.tailoring.properties.kind.enum=[type];
  if(type==='accessory')delete p.properties.tailoring;
- tool.function.description='一个设计入口：表面修改用tailor，新立体造型用asset_create，现有模型尺寸位置配色用asset_fit；不让用户选择引擎。';
+ tool.function.description='Use existing fitted models only. Modify color, fabric, logo or artwork with tailor; preset accessories use style. New 3D asset generation is disabled.';
  return tool;
 }

@@ -68,7 +68,7 @@ export function createDesignUI({cloud,context,closePanel,handlers,toast,onScope,
     if(scope==='home'&&!j.selection?.homeType){const current=worlds[context().actor].home.objects||[],o=proposal.values.objects?.find(o=>JSON.stringify(o)!==JSON.stringify(current.find(x=>x.id===o.id)));if(o?.standard&&homeTypes[o.standard]){homeType=o.standard;homeGroup=homeTypes[homeType].group;homeMount=o.mount||homeTypes[homeType].mounts[0];}}
     screen='edit';original=false;onScope(scope);apply();
    }else if(['failed','uncertain'].includes(j.status)){activeJob=null;error=j.error||'生成未完成，原设计保留';}
-   else jobMessage=j.error||({planning:'正在理解你的想法',submitting:'正在提交3D生成',queued:'3D模型排队中',in_progress:'正在生成3D模型'})[j.status];
+    else jobMessage=j.error||(j.provider==='modelscope-image'?{queued:'图案正在排队',in_progress:'正在绘制衣物图案'}:{planning:'正在理解你的想法',submitting:'正在提交设计',queued:'设计排队中',in_progress:'正在生成设计'})[j.status];
   }catch(e){if(token===epoch)error=e.message}finally{checking=false;if(token===epoch)draw()}
  }
  document.addEventListener('studio-model-state',e=>{modelStates.set(e.detail.id,e.detail.state);const relevant=[...(proposal?.values.objects||[]),...(proposal?.values.wearables||[])].some(o=>o.id===e.detail.id);if(!relevant)return;if(e.detail.state==='failed'){lastModelError=e.detail.message;error=lastModelError}else if(e.detail.state==='ready'&&error===lastModelError)error='';draw()});

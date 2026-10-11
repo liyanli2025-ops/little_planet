@@ -6,7 +6,7 @@ import * as T from './vendor/three.module.js';
 import {wardrobeCatalog,wardrobeCategories,wardrobeOutfit} from './wardrobe-catalog.js';
 import {releaseModel} from './studio-models.js';
 export function createWardrobeContents(parent,w){
- const root=new T.Group();root.userData.dynamic=true;parent.add(root);let rows=wardrobeCatalog(),signature='',pages={},fits=[];
+ const root=new T.Group();root.userData.dynamic=true;parent.add(root);let rows=[],signature='',pages={},fits=[];
  const refresh=()=>{for(const fit of fits)fit();root.traverse(o=>o.layers.enable(1));};if(typeof document!=='undefined')document.addEventListener('studio-model-state',refresh);
  const zones={dress:{x:-w*.23,y:1.68,width:w*.43},top:{x:w*.24,y:1.68,width:w*.40},set:{x:-w*.23,y:.85,width:w*.43},accessory:{x:w*.24,y:.72,width:w*.40}};
  function mesh(p,geo,color,x,y,z,action){const m=new T.Mesh(geo,new T.MeshStandardMaterial({color,roughness:.94}));m.position.set(x,y,z);m.castShadow=m.receiveShadow=true;if(action)m.userData.action=action;p.add(m);return m;}
@@ -27,17 +27,33 @@ export function createWardrobeContents(parent,w){
    holder.traverseVisible(o=>{if(o.isMesh){o.geometry.computeBoundingBox();box.union(o.geometry.boundingBox.clone().applyMatrix4(inverse.clone().multiply(o.matrixWorld)));o.userData.action=action;}});
    if(box.isEmpty())return;
    const size=box.getSize(new T.Vector3()),center=box.getCenter(new T.Vector3()),scale=Math.min(width/Math.max(size.x,.01),height/Math.max(size.y,.01));
-   holder.scale.set(scale,scale,row.category!=='accessory'?scale*.3:scale);holder.position.set(-center.x*scale,top-box.max.y*scale,-center.z*holder.scale.z);
+   holder.scale.set(scale,scale,row.category!=='accessory'?scale*.55:scale);holder.position.set(-center.x*scale,top-box.max.y*scale,-center.z*holder.scale.z);
   };fits.push(fit);fit();
  }
  function draw(){fits=[];for(const c of [...root.children])releaseModel(c);
-  // One continuous shelf grid in catalog order; saved pieces precede defaults.
-  const cols=4,count=Math.max(1,Math.ceil(rows.length/cols)),step=Math.min(.47,1.72/count),width=w*.88/cols;
-  for(let row=0;row<count;row++){const y=1.83-row*step;mesh(root,new T.BoxGeometry(w*.91,.018,.43),0xb59a71,0,y-step+.025,-.025);}
-  for(const [index,item] of rows.entries()){const slot=new T.Group(),row=Math.floor(index/cols),column=index%cols,top=1.83-row*step;slot.position.set((column-(cols-1)/2)*width,top,0);root.add(slot);const action='outfit-pick-'+index;
-   garment(slot,item,width*.82,step*.76,action,-.015);
-   const hit=mesh(slot,new T.BoxGeometry(width*.92,step*.9,.37),0xffffff,0,-step*.46,.025,action);hit.material.transparent=true;hit.material.opacity=0;hit.material.depthWrite=false;hit.material.colorWrite=false;
+  // Clothes hang vertically from real rails; accessories rest on lower shelves.
+  const clothes=rows.map((item,index)=>({item,index})).filter(x=>x.item.category!=='accessory'),accessories=rows.map((item,index)=>({item,index})).filter(x=>x.item.category==='accessory');
+  const tiers=clothes.length>6?2:1;
+  const wood=0xa88860,metal=0x827668;
+  function tube(points,r,color,parent=root){const curve=new T.CatmullRomCurve3(points.map(p=>new T.Vector3(...p)));const m=new T.Mesh(new T.TubeGeometry(curve,32,r,8,false),new T.MeshStandardMaterial({color,roughness:.7}));parent.add(m);return m;}
+  for(let tier=0;tier<tiers;tier++){
+   const rail=1.78-tier*.70; tube([[-w*.44,rail,-.02],[w*.44,rail,-.02]],.014,metal);
+   const group=clothes.filter((_,i)=>i%tiers===tier),spacing=w*.82/Math.max(group.length,1);
+   for(const [j,{item,index}] of group.entries()){
+    const slot=new T.Group();slot.position.set((j-(group.length-1)/2)*spacing,rail,0);slot.rotation.y=group.length>4?-.30:0;root.add(slot);const action='outfit-pick-'+index,breadth=Math.min(.52,w*.38),height=tiers===1?1.10:.53;
+    tube([[0,.025,-.02],[.028,.045,-.02],[.043,.015,-.02],[.012,-.045,-.02],[0,-.09,-.02]],.007,metal,slot);
+    tube([[0,-.09,0],[-breadth*.48,-.16,0],[-breadth*.43,-.19,0],[breadth*.43,-.19,0],[breadth*.48,-.16,0],[0,-.09,0]],.009,wood,slot);
+    garment(slot,item,breadth,height,action,-.16);
+    const hit=mesh(slot,new T.BoxGeometry(Math.min(spacing*.95,breadth),height,.24),0xffffff,0,-.16-height*.5,.10,action);hit.material.transparent=true;hit.material.opacity=0;hit.material.depthWrite=false;hit.material.colorWrite=false;
+   }
   }
+  const shelfY=.32;mesh(root,new T.BoxGeometry(w*.91,.024,.43),wood,0,shelfY,-.025);
+  for(const [j,{item,index}] of accessories.entries()){
+   const cols=Math.max(1,Math.ceil(accessories.length/2)),spacing=w*.83/cols,slot=new T.Group();slot.position.set((j%cols-(cols-1)/2)*spacing,shelfY+(j>=cols?.20:0),.06);root.add(slot);const action='outfit-pick-'+index;
+   garment(slot,item,Math.min(.25,spacing*.9),.17,action,.18);
+   const hit=mesh(slot,new T.BoxGeometry(spacing*.94,.18,.28),0xffffff,0,.09,.04,action);hit.material.transparent=true;hit.material.opacity=0;hit.material.depthWrite=false;hit.material.colorWrite=false;
+  }
+  if(accessories.length>1)mesh(root,new T.BoxGeometry(w*.91,.02,.43),wood,0,shelfY+.20,-.025);
   root.traverse(o=>o.layers.enable(1));
  }
 
